@@ -33,15 +33,15 @@ NGUI.UIBasicSprite.Flip = {
 
 Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
     constructor: NGUI.UIBasicSprite,
-    get drawingUVs() {
+    drawingUVs: function() {
         switch (this.mFlip) {
-            case NGUI.Flip.Horizontally: return new THREE.Vector4(this.mOuterUV.xMax, this.mOuterUV.yMin, this.mOuterUV.xMin, this.mOuterUV.yMax);
-            case NGUI.Flip.Vertically: return new THREE.Vector4(this.mOuterUV.xMin, this.mOuterUV.yMax, this.mOuterUV.xMax, this.mOuterUV.yMin);
-            case NGUI.Flip.Both: return new THREE.Vector4(this.mOuterUV.xMax, this.mOuterUV.yMax, this.mOuterUV.xMin, this.mOuterUV.yMin);
+            case NGUI.UIBasicSprite.Flip.Horizontally: return new THREE.Vector4(this.mOuterUV.xMax, this.mOuterUV.yMin, this.mOuterUV.xMin, this.mOuterUV.yMax);
+            case NGUI.UIBasicSprite.Flip.Vertically: return new THREE.Vector4(this.mOuterUV.xMin, this.mOuterUV.yMax, this.mOuterUV.xMax, this.mOuterUV.yMin);
+            case NGUI.UIBasicSprite.Flip.Both: return new THREE.Vector4(this.mOuterUV.xMax, this.mOuterUV.yMax, this.mOuterUV.xMin, this.mOuterUV.yMin);
             default: return new THREE.Vector4(this.mOuterUV.xMin, this.mOuterUV.yMin, this.mOuterUV.xMax, this.mOuterUV.yMax);
         }
     },
-    get drawingColor() { return new THREE.Color(this.mColor.r, this.mColor.g, this.mColor.b, this.this.finalAlpha); },
+    drawingColor: function() { return new THREE.Color(this.mColor.r, this.mColor.g, this.mColor.b, this.this.finalAlpha); },
 	Fill: function(verts, uvs, cols, outer, inner) {
 		this.mOuterUV = outer;
 		this.mInnerUV = inner;
@@ -64,9 +64,9 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 		}
 	},
 	SimpleFill: function(verts, uvs, cols) {
-		var v = this.drawingDimensions;
-		var u = this.drawingUVs;
-		var c = this.drawingColor;
+		var v = this.drawingDimensions();
+		var u = this.drawingUVs();
+		var c = this.drawingColor();
 		verts.Add(new THREE.Vector3(v.x, v.y));
 		verts.Add(new THREE.Vector3(v.x, v.w));
 		verts.Add(new THREE.Vector3(v.z, v.w));

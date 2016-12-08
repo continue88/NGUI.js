@@ -23,8 +23,8 @@ Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
         var sprite = this.GetAtlasSprite();
 		var outer = new NGUI.Rect(sprite.x, sprite.y, sprite.width, sprite.height);
 		var inner = new NGUI.Rect(sprite.x + sprite.borderLeft, sprite.y + sprite.borderTop,
-			sprite.width - sprite.borderLeft - sprite.borderRight,
-			sprite.height - sprite.borderBottom - sprite.borderTop);
+            sprite.width - sprite.borderLeft - sprite.borderRight,
+            sprite.height - sprite.borderBottom - sprite.borderTop);
 
 		outer = NGUIMath.ConvertToTexCoords(outer, tex.image.width, tex.image.height);
 		inner = NGUIMath.ConvertToTexCoords(inner, tex.image.width, tex.image.height);

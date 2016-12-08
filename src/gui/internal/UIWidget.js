@@ -28,9 +28,9 @@ NGUI.UIWidget.Pivot = {
 
 Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
     constructor: NGUI.UIWidget,
-	get pivotOffset() { return NGUIMath.GetPivotOffset(pivot); },
-    get drawingDimensions() {
-        var offset = pivotOffset;
+	get pivotOffset() { return NGUIMath.GetPivotOffset(this.mPivot); },
+    drawingDimensions: function() {
+        var offset = this.pivotOffset;
         var x0 = -offset.x * this.mWidth;
         var y0 = -offset.y * this.mHeight;
         var x1 = x0 + this.mWidth;

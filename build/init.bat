@@ -1,0 +1,1 @@
+dir/s/b ..\src\gui\*.js > files.txt
