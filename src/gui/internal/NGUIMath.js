@@ -21,5 +21,11 @@ NGUIMath = {
 		else v.y = 0;
 
 		return v;
+	},
+	RepeatIndex: function(val, max) {
+		if (max < 1) return 0;
+		while (val < 0) val += max;
+		while (val >= max) val -= max;
+		return val;
 	}
 };
