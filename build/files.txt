@@ -1,6 +1,8 @@
 F:\Projects\H5\NGUI.js\src\gui\common\Rect.js
 F:\Projects\H5\NGUI.js\src\gui\common\Mathf.js
 F:\Projects\H5\NGUI.js\src\gui\internal\NGUIMath.js
+F:\Projects\H5\NGUI.js\src\gui\internal\UIGeometry.js
+F:\Projects\H5\NGUI.js\src\gui\internal\UIDrawCall.js
 F:\Projects\H5\NGUI.js\src\gui\internal\UIRect.js
 F:\Projects\H5\NGUI.js\src\gui\internal\UIWidget.js
 F:\Projects\H5\NGUI.js\src\gui\internal\UIBasicSprite.js

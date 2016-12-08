@@ -11,7 +11,7 @@ NGUI.UIWidget = function() {
 
     // public variables.
     this.panel = null;
-    this.geometry = null;// new NGUI.UIGeometry();
+    this.geometry = new NGUI.UIGeometry();
 };
 
 NGUI.UIWidget.Pivot = {
