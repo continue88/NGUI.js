@@ -19,16 +19,16 @@ NGUI.UIGeometry.prototype = {
 		if (this.verts.length > 0) {
 			this.mRtpVerts = [];
 			for (var i = 0, imax = this.verts.length; i < imax; ++i) 
-                this.mRtpVerts.add(widgetToPanel.MultiplyPoint3x4(this.verts[i]));
+                this.mRtpVerts.push(widgetToPanel.MultiplyPoint3x4(this.verts[i]));
         }
         else if (this.mRtpVerts.length > 0)
             this.mRtpVerts = [];
     },
     WriteToBuffers: function(v, u, c) {
         for (var i = 0; i < this.mRtpVerts.length; ++i) {
-            v.Add(this.mRtpVerts.buffer[i]);
-            u.Add(this.uvs.buffer[i]);
-            c.Add(this.cols.buffer[i]);
+            v.push(this.mRtpVerts.buffer[i]);
+            u.push(this.uvs.buffer[i]);
+            c.push(this.cols.buffer[i]);
         }
     }
 }

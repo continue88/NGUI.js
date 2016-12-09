@@ -8,6 +8,7 @@ NGUI.UISprite = function() {
 
 Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
     constructor: NGUI.UISprite,
+    get material() { return this.mAtlas ? this.mAtlas.material : null; },
     border: function() {
         var sp = this.GetAtlasSprite();
         if (sp) return new THREE.Vector4(sp.borderLeft, sp.borderBottom, sp.borderRight, sp.borderTop);

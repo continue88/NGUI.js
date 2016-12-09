@@ -1,8 +1,8 @@
 
 NGUI.UIBasicSprite = function() {
     NGUI.UIWidget.call();
-    this.mOuterUV = new NGUI.Rect(0, 0, 1, 1);
-    this.mInnerUV = new NGUI.Rect(0, 0, 1, 1);
+    this.mOuterUV = new UnityEngine.Rect(0, 0, 1, 1);
+    this.mInnerUV = new UnityEngine.Rect(0, 0, 1, 1);
     this.mFillAmount = 1.0;
     this.mInvert = false;
     this.mType = NGUI.UIBasicSprite.Type.Simple;
