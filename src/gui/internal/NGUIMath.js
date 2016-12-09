@@ -11,7 +11,7 @@ NGUIMath = {
 		return final;
     },
     GetPivotOffset: function(pv) {
-		var v = new THREE.Vector2();
+		var v = new UnityEngine.Vector2();
 		if (pv == NGUI.UIWidget.Pivot.Top || pv == NGUI.UIWidget.Pivot.Center || pv == NGUI.UIWidget.Pivot.Bottom) v.x = 0.5;
 		else if (pv == NGUI.UIWidget.Pivot.TopRight || pv == NGUI.UIWidget.Pivot.Right || pv == NGUI.UIWidget.Pivot.BottomRight) v.x = 1;
 		else v.x = 0;

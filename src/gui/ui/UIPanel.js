@@ -9,23 +9,29 @@ NGUI.UIPanel = function() {
     this.mRebuild = false;
     this.mForced = false;
     this.mResized = false;
-    this.mClipOffset = new THREE.Vector2();
-    this.mClipRange = new THREE.Vector4();
-    this.mMin = new THREE.Vector2();
-    this.mMax = new THREE.Vector2();
-    this.mClipping = NGUI.UIDrawCall.Clipping.None;
+    this.mClipOffset = new UnityEngine.Vector2();
+    this.mClipRange = new UnityEngine.Vector4();
+    this.mMin = new UnityEngine.Vector2();
+    this.mMax = new UnityEngine.Vector2();
+    this.mClipping = Clipping.None;
 
     this.startingRenderQueue = 3000;
-    this.drawCallClipRange = new THREE.Vector4(0, 0, 1, 1);
-    this.renderQueue = NGUI.UIPanel.RenderQueue.Automatic;
+    this.drawCallClipRange = new UnityEngine.Vector4(0, 0, 1, 1);
+    this.renderQueue = RenderQueue.Automatic;
     this.widgets = []; // NGUI.UIWidget list
     this.drawCalls = []; // NGUI.UIDrawCall
 };
 
-NGUI.UIPanel.RenderQueue = {
+RenderQueue = {
     Automatic: 0,
     StartAt: 1,
     Explicit: 2,
+};
+
+Clipping = {
+    None: 0,
+    SoftClip: 3,				// Alpha-based clipping with a softened edge
+    ConstrainButDontClip: 4,	// No actual clipping, but does have an area
 };
 
 // static variables and function.
@@ -38,12 +44,12 @@ NGUI.UIPanel.UpdateAll = function(frame) {
     var rq = 3000;
     for (var i in list) {
         var p = list[i];
-        if (p.renderQueue == NGUI.UIPanel.RenderQueue.Automatic) {
+        if (p.renderQueue == RenderQueue.Automatic) {
             p.startingRenderQueue = rq;
             p.UpdateDrawCalls();
             rq += p.drawCalls.length + 2;
         }
-        else if (p.renderQueue == NGUI.UIPanel.RenderQueue.StartAt) {
+        else if (p.renderQueue == RenderQueue.StartAt) {
             p.UpdateDrawCalls();
             if (p.drawCalls.length != 0)
                 rq = Math.max(rq, p.startingRenderQueue + p.drawCalls.length);
@@ -59,15 +65,15 @@ NGUI.UIPanel.UpdateAll = function(frame) {
 Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
     constructor: NGUI.UIPanel,
     GetViewSize: function() {
-		if (this.mClipping != NGUI.UIDrawCall.Clipping.None)
-			return new THREE.Vector2(this.mClipRange.z, this.mClipRange.w);
+		if (this.mClipping != Clipping.None)
+			return new UnityEngine.Vector2(this.mClipRange.z, this.mClipRange.w);
         return NGUITools.screenSize;
     },
     finalClipRegion: function() {
         var size = this.GetViewSize();
-    	if (this.mClipping != NGUI.UIDrawCall.Clipping.None)
-            return new THREE.Vector4(this.mClipRange.x + this.mClipOffset.x, this.mClipRange.y + this.mClipOffset.y, size.x, size.y);
-        return new THREE.Vector4(0, 0, size.x, size.y);
+    	if (this.mClipping != Clipping.None)
+            return new UnityEngine.Vector4(this.mClipRange.x + this.mClipOffset.x, this.mClipRange.y + this.mClipOffset.y, size.x, size.y);
+        return new UnityEngine.Vector4(0, 0, size.x, size.y);
     },
     UpdateSelf: function(frame) {
 		this.UpdateTransformMatrix(frame);
@@ -136,12 +142,12 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
     },
     UpdateDrawCalls: function() {
 		var trans = this.transform;
-		if (this.mClipping != NGUI.UIDrawCall.Clipping.None) {
+		if (this.mClipping != Clipping.None) {
 			this.drawCallClipRange = this.finalClipRegion();
 			this.drawCallClipRange.z *= 0.5;
 			this.drawCallClipRange.w *= 0.5;
 		}
-		else drawCallClipRange = new THREE.Vector4(0, 0, 0, 0);
+		else drawCallClipRange = new UnityEngine.Vector4(0, 0, 0, 0);
 
 		// Legacy functionality
 		if (this.drawCallClipRange.z == 0) this.drawCallClipRange.z = NGUITools.screenSize.x * 0.5;
@@ -159,7 +165,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 			t.position = pos;
 			t.rotation = rot;
 			t.localScale = scale;
-			dc.renderQueue = (this.renderQueue == NGUI.UIPanel.RenderQueue.Explicit) ? this.startingRenderQueue : this.startingRenderQueue + i;
+			dc.renderQueue = (this.renderQueue == RenderQueue.Explicit) ? this.startingRenderQueue : this.startingRenderQueue + i;
 			dc.sortingOrder = this.mSortingOrder;
 		}
     },

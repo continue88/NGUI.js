@@ -14,12 +14,6 @@ NGUI.UIDrawCall = function (name, panel, material) {
     this.verts = [];// Vector3
     this.uvs = [];// Vector3
     this.cols = [];// Vector3
-}
-
-NGUI.UIDrawCall.Clipping = {
-    None: 0,
-    SoftClip: 3,				// Alpha-based clipping with a softened edge
-    ConstrainButDontClip: 4,	// No actual clipping, but does have an area
 };
 
 NGUI.UIDrawCall.prototype = {

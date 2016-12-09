@@ -2,7 +2,7 @@
 NGUI.UIWidget = function() {
     NGUI.UIRect.call();
     
-    this.mColor = new THREE.Color(1, 1, 1), // THREE.ColorKeywords.white
+    this.mColor = new UnityEngine.Color(1, 1, 1), // UnityEngine.ColorKeywords.white
     this.mPivot = NGUI.UIWidget.Pivot.Center;
     this.mWidth = 100;
     this.mHeight = 100;
@@ -12,8 +12,8 @@ NGUI.UIWidget = function() {
     this.mIsInFront = true;
     this.mIsVisibleByAlpha = true;
     this.mIsVisibleByPanel = true;
-    this.mDrawRegion = new THREE.Vector4(0, 0, 1, 1);
-    this.mLocalToPanel = new THREE.Matrix4();
+    this.mDrawRegion = new UnityEngine.Vector4(0, 0, 1, 1);
+    this.mLocalToPanel = new UnityEngine.Matrix4();
     this.mMatrixFrame = 1;
 
     // public variables.
@@ -41,7 +41,7 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
     get material() { return null; },
     isVisible: function() { return this.mIsVisibleByAlpha && this.mIsVisibleByPanel && this.mIsInFront && this.finalAlpha > 0.001; },
     hasVertices: function() { return this.geometry.hasVertices(); },
-    border: function() { return new THREE.Vector4(0, 0, 0, 0); },
+    border: function() { return new UnityEngine.Vector4(0, 0, 0, 0); },
     OnFill: function(verts, uvs, cols) { },
     UpdateVisibility: function(visibleByAlpha, visibleByPanel) {
 		if (this.mIsVisibleByAlpha != visibleByAlpha || this.mIsVisibleByPanel != visibleByPanel) {
@@ -58,7 +58,7 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
         var y0 = -offset.y * this.mHeight;
         var x1 = x0 + this.mWidth;
         var y1 = y0 + this.mHeight;
-        return new THREE.Vector4(
+        return new UnityEngine.Vector4(
             this.mDrawRegion.x == 0 ? x0 : UnityEngine.Mathf.Lerp(x0, x1, this.mDrawRegion.x),
             this.mDrawRegion.y == 0 ? y0 : UnityEngine.Mathf.Lerp(y0, y1, this.mDrawRegion.y),
             this.mDrawRegion.z == 1 ? x1 : UnityEngine.Mathf.Lerp(x0, x1, this.mDrawRegion.z),

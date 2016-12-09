@@ -11,8 +11,8 @@ Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
     get material() { return this.mAtlas ? this.mAtlas.material : null; },
     border: function() {
         var sp = this.GetAtlasSprite();
-        if (sp) return new THREE.Vector4(sp.borderLeft, sp.borderBottom, sp.borderRight, sp.borderTop);
-        return new THREE.Vector4(0, 0, 0, 0); 
+        if (sp) return new UnityEngine.Vector4(sp.borderLeft, sp.borderBottom, sp.borderRight, sp.borderTop);
+        return new UnityEngine.Vector4(0, 0, 0, 0); 
     },
     GetAtlasSprite: function() {
         if (this.mAtlas && !this.mSprite) 
