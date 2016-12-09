@@ -42,7 +42,16 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
     isVisible: function() { return this.mIsVisibleByAlpha && this.mIsVisibleByPanel && this.mIsInFront && this.finalAlpha > 0.001; },
     hasVertices: function() { return this.geometry.hasVertices(); },
     border: function() { return new THREE.Vector4(0, 0, 0, 0); },
-    OnFill: function(verts, uvs, cols) { }
+    OnFill: function(verts, uvs, cols) { },
+    UpdateVisibility: function(visibleByAlpha, visibleByPanel) {
+		if (this.mIsVisibleByAlpha != visibleByAlpha || this.mIsVisibleByPanel != visibleByPanel) {
+			this.mChanged = true;
+			this.mIsVisibleByAlpha = visibleByAlpha;
+			this.mIsVisibleByPanel = visibleByPanel;
+			return true;
+		}
+		return false;
+    },
     drawingDimensions: function() {
         var offset = this.pivotOffset;
         var x0 = -offset.x * this.mWidth;

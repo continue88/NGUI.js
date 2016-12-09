@@ -2,17 +2,21 @@
 NGUI.UIPanel = function() {
     NGUI.UIRect.call();
 
-    this.startingRenderQueue = 3000;
     this.mDepth = 0;
     this.mSortingOrder = 0;
     this.mUpdateFrame = 0;
     this.mUpdateScroll = false;
     this.mRebuild = false;
+    this.mForced = false;
+    this.mResized = false;
     this.mClipOffset = new THREE.Vector2();
     this.mClipRange = new THREE.Vector4();
     this.mMin = new THREE.Vector2();
     this.mMax = new THREE.Vector2();
+    this.mClipping = NGUI.UIDrawCall.Clipping.None;
 
+    this.startingRenderQueue = 3000;
+    this.drawCallClipRange = new THREE.Vector4(0, 0, 1, 1);
     this.renderQueue = NGUI.UIPanel.RenderQueue.Automatic;
     this.widgets = []; // NGUI.UIWidget list
     this.drawCalls = []; // NGUI.UIDrawCall
@@ -26,10 +30,10 @@ NGUI.UIPanel.RenderQueue = {
 
 // static variables and function.
 NGUI.UIPanel.list = [];
-NGUI.UIPanel.UpdateAll = function() {
+NGUI.UIPanel.UpdateAll = function(frame) {
     var list = NGUI.UIPanel.list;
     for (var i in list)
-        list[i].UpdateSelf();
+        list[i].UpdateSelf(frame);
 
     var rq = 3000;
     for (var i in list) {
@@ -55,12 +59,20 @@ NGUI.UIPanel.UpdateAll = function() {
 Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
     constructor: NGUI.UIPanel,
     GetViewSize: function() {
-
+		if (this.mClipping != NGUI.UIDrawCall.Clipping.None)
+			return new THREE.Vector2(this.mClipRange.z, this.mClipRange.w);
+        return NGUITools.screenSize;
     },
-    UpdateSelf: function() {
-		this.UpdateTransformMatrix();
-		this.UpdateLayers();
-		this.UpdateWidgets();
+    finalClipRegion: function() {
+        var size = this.GetViewSize();
+    	if (this.mClipping != NGUI.UIDrawCall.Clipping.None)
+            return new THREE.Vector4(this.mClipRange.x + this.mClipOffset.x, this.mClipRange.y + this.mClipOffset.y, size.x, size.y);
+        return new THREE.Vector4(0, 0, size.x, size.y);
+    },
+    UpdateSelf: function(frame) {
+		this.UpdateTransformMatrix(frame);
+		this.UpdateLayers(frame);
+		this.UpdateWidgets(frame);
 		if (this.mRebuild) {
 			this.mRebuild = false;
 			this.FillAllDrawCalls();
@@ -83,7 +95,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 			//if (sv != null) sv.UpdateScrollbars();
 		}
     },
-    UpdateTransformMatrix: function() {
+    UpdateTransformMatrix: function(frame) {
         this.worldToLocal = this.transform.worldToLocalMatrix;
         var size = this.GetViewSize() * 0.5;
         var x = this.mClipOffset.x + this.mClipRange.x;
@@ -93,7 +105,63 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
         this.mMax.x = x + size.x;
         this.mMax.y = y + size.y;
     },
+    UpdateLayers: function(frame) {
+        // TODO: unity3d layer...
+    },
+    UpdateWidgets: function(frame) {
+		var changed = false;
+		for (var i in this.widgets) {
+			var w = this.widgets[i];
+			if (w.panel != this || !w.enabled)
+                continue;
+                
+            // First update the widget's transform
+            if (w.UpdateTransform(frame) || this.mResized) {
+                //var vis = forceVisible || (w.CalculateCumulativeAlpha(frame) > 0.001f);
+                //w.UpdateVisibility(vis, forceVisible || ((clipped || w.hideIfOffScreen) ? IsVisible(w) : true));
+            }
+            
+            // Update the widget's geometry if necessary
+            if (w.UpdateGeometry(frame)) {
+                changed = true;
+                if (!this.mRebuild) {
+                    if (w.drawCall != null)
+                        w.drawCall.isDirty = true;
+                    else
+                        this.FindDrawCall(w);
+                }
+            }
+		}
+		this.mResized = false;
+    },
     UpdateDrawCalls: function() {
+		var trans = this.transform;
+		if (this.mClipping != NGUI.UIDrawCall.Clipping.None) {
+			this.drawCallClipRange = this.finalClipRegion();
+			this.drawCallClipRange.z *= 0.5;
+			this.drawCallClipRange.w *= 0.5;
+		}
+		else drawCallClipRange = new THREE.Vector4(0, 0, 0, 0);
+
+		// Legacy functionality
+		if (this.drawCallClipRange.z == 0) this.drawCallClipRange.z = NGUITools.screenSize.x * 0.5;
+		if (this.drawCallClipRange.w == 0) this.drawCallClipRange.w = NGUITools.screenSize.y * 0.5;
+		var pos = this.transform.localPosition;
+        var parent = this.transform.parent;
+        if (parent != null)
+            pos = parent.TransformPoint(pos);
+
+		var rot = this.transform.rotation;
+		var scale = this.transform.lossyScale;
+		for (var i in this.drawCalls) {
+			var dc = this.drawCalls[i];
+			var t = dc.transform;
+			t.position = pos;
+			t.rotation = rot;
+			t.localScale = scale;
+			dc.renderQueue = (this.renderQueue == NGUI.UIPanel.RenderQueue.Explicit) ? this.startingRenderQueue : this.startingRenderQueue + i;
+			dc.sortingOrder = this.mSortingOrder;
+		}
     },
     FillAllDrawCalls: function() {
         if (this.drawCall.length > 0)

@@ -9,6 +9,7 @@ NGUI.UIDrawCall = function (name, panel, material) {
     this.mSortingOrder = panel.mSortingOrder;
     this.manager = panel;
     this.panel = null; // NGUI.UIPanel
+    this.isDirty = false;
     
     this.verts = [];// Vector3
     this.uvs = [];// Vector3

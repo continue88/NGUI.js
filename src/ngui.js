@@ -1,19 +1,52 @@
 // autogen by combine tools.
-NGUI={}
+
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\common\Rect.js"
+// "E:\Projects\H5\NGUI.js\src\gui\gui.js"
 //
 
-NGUI.Rect = function(left, top, width, height) {
+UnityEngine={
+
+};
+
+NGUI={
+
+};
+
+//
+// "E:\Projects\H5\NGUI.js\src\gui\unity3d\GameObject.js"
+//
+
+UnityEngine.GameObject = function () {
+    this.transform = new UnityEngine.Transform();
+}
+
+//
+// "E:\Projects\H5\NGUI.js\src\gui\unity3d\Mathf.js"
+//
+
+UnityEngine.Mathf = {
+	lerp: function(t, a, b) {
+		return a + t * (b - a);
+	},
+	Clamp01: function(val) {
+		return Math.min(Math.max(0, val), 1);
+	}
+}
+
+//
+// "E:\Projects\H5\NGUI.js\src\gui\unity3d\Rect.js"
+//
+
+UnityEngine.Rect = function(left, top, width, height) {
     this.xMin = left;
     this.xMax = left + width;
     this.yMin = top;
     this.yMax = top + height;
 };
 
-NGUI.Rect.prototype = {
-    constructor: NGUI.Rect,
+UnityEngine.Rect.prototype = {
+    constructor: UnityEngine.Rect,
     get left() { return this.xMin; },
     get top() { return this.yMin; },
     get width() { return this.xMax - this.xMin; },
@@ -26,20 +59,34 @@ NGUI.Rect.prototype = {
         return this;
     },
 };
+
 //
-// "F:\Projects\H5\NGUI.js\src\gui\common\Mathf.js"
+// "E:\Projects\H5\NGUI.js\src\gui\unity3d\Transform.js"
 //
 
-Mathf = {
-	lerp: function(t, a, b) {
-		return a + t * (b - a);
-	},
-	Clamp01: function(val) {
-		return Math.min(Math.max(0, val), 1);
-	}
-}
+UnityEngine.Transform = function() {
+    this.position = new THREE.Vector3();
+    this.rotation = new THREE.Quaternion();
+    this.lossyScale = new THREE.Vector3();
+
+    this.localPosition = new THREE.Vector3();
+    this.localRotation = new THREE.Quaternion();
+    this.localScale = new THREE.Vector3();
+
+    this.worldToLocalMatrix = new THREE.Matrix4();
+    this.localToWorldMatrix = new THREE.Matrix4();
+    this.parent = null; // UnityEngine.Transform
+};
+
+UnityEngine.Transform.prototype = {
+    constructor: UnityEngine.Transform,
+    TransformPoint: function(pos) {
+        return pos;
+    },
+};
+
 //
-// "F:\Projects\H5\NGUI.js\src\gui\internal\NGUIMath.js"
+// "E:\Projects\H5\NGUI.js\src\gui\internal\NGUIMath.js"
 //
 
 NGUIMath = {
@@ -72,8 +119,50 @@ NGUIMath = {
 		return val;
 	}
 };
+
 //
-// "F:\Projects\H5\NGUI.js\src\gui\internal\UIGeometry.js"
+// "E:\Projects\H5\NGUI.js\src\gui\internal\NGUITools.js"
+//
+
+NGUITools = {
+    screenSize: new THREE.Vector2(100, 100),
+};
+
+//
+// "E:\Projects\H5\NGUI.js\src\gui\internal\UIDrawCall.js"
+//
+
+NGUI.UIDrawCall = function (name, panel, material) {
+    
+    this.depthStart = 2147483647; // MaxValue = 2147483647
+    this.depthEnd = -2147483648; // int.MinValue = -2147483648;
+
+    this.baseMaterial = material;
+    this.renderQueue = panel.startingRenderQueue;
+    this.mSortingOrder = panel.mSortingOrder;
+    this.manager = panel;
+    this.panel = null; // NGUI.UIPanel
+    this.isDirty = false;
+    
+    this.verts = [];// Vector3
+    this.uvs = [];// Vector3
+    this.cols = [];// Vector3
+}
+
+NGUI.UIDrawCall.Clipping = {
+    None: 0,
+    SoftClip: 3,				// Alpha-based clipping with a softened edge
+    ConstrainButDontClip: 4,	// No actual clipping, but does have an area
+};
+
+NGUI.UIDrawCall.prototype = {
+    constructor: NGUI.UIDrawCall,
+    UpdateGeometry: function(count) {
+    },
+};
+
+//
+// "E:\Projects\H5\NGUI.js\src\gui\internal\UIGeometry.js"
 //
 
 NGUI.UIGeometry = function() {
@@ -96,29 +185,29 @@ NGUI.UIGeometry.prototype = {
 		if (this.verts.length > 0) {
 			this.mRtpVerts = [];
 			for (var i = 0, imax = this.verts.length; i < imax; ++i) 
-                this.mRtpVerts.add(widgetToPanel.MultiplyPoint3x4(this.verts[i]));
+                this.mRtpVerts.push(widgetToPanel.MultiplyPoint3x4(this.verts[i]));
         }
         else if (this.mRtpVerts.length > 0)
             this.mRtpVerts = [];
     },
     WriteToBuffers: function(v, u, c) {
         for (var i = 0; i < this.mRtpVerts.length; ++i) {
-            v.Add(this.mRtpVerts.buffer[i]);
-            u.Add(this.uvs.buffer[i]);
-            c.Add(this.cols.buffer[i]);
+            v.push(this.mRtpVerts.buffer[i]);
+            u.push(this.uvs.buffer[i]);
+            c.push(this.cols.buffer[i]);
         }
     }
 }
-//
-// "F:\Projects\H5\NGUI.js\src\gui\internal\UIDrawCall.js"
-//
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\internal\UIRect.js"
+// "E:\Projects\H5\NGUI.js\src\gui\internal\UIRect.js"
 //
 
 NGUI.UIRect = function() {
     this.finalAlpha = 1;
+    this.transform = null; // UnityEngine.Transform
+    this.gameObject = null; // UnityEngine.GameObject
+    this.enabled = true;
 };
 
 NGUI.UIRect.prototype = {
@@ -127,8 +216,9 @@ NGUI.UIRect.prototype = {
         return this;
     },
 };
+
 //
-// "F:\Projects\H5\NGUI.js\src\gui\internal\UIWidget.js"
+// "E:\Projects\H5\NGUI.js\src\gui\internal\UIWidget.js"
 //
 
 NGUI.UIWidget = function() {
@@ -139,10 +229,19 @@ NGUI.UIWidget = function() {
     this.mWidth = 100;
     this.mHeight = 100;
     this.mDepth = 0;
+    this.mChanged = false;
+    this.mMoved = false;
+    this.mIsInFront = true;
+    this.mIsVisibleByAlpha = true;
+    this.mIsVisibleByPanel = true;
     this.mDrawRegion = new THREE.Vector4(0, 0, 1, 1);
+    this.mLocalToPanel = new THREE.Matrix4();
+    this.mMatrixFrame = 1;
 
     // public variables.
+    this.fillGeometry = true;
     this.panel = null;
+    this.drawCall = null;
     this.geometry = new NGUI.UIGeometry();
 };
 
@@ -161,7 +260,20 @@ NGUI.UIWidget.Pivot = {
 Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
     constructor: NGUI.UIWidget,
 	get pivotOffset() { return NGUIMath.GetPivotOffset(this.mPivot); },
+    get material() { return null; },
+    isVisible: function() { return this.mIsVisibleByAlpha && this.mIsVisibleByPanel && this.mIsInFront && this.finalAlpha > 0.001; },
+    hasVertices: function() { return this.geometry.hasVertices(); },
     border: function() { return new THREE.Vector4(0, 0, 0, 0); },
+    OnFill: function(verts, uvs, cols) { },
+    UpdateVisibility: function(visibleByAlpha, visibleByPanel) {
+		if (this.mIsVisibleByAlpha != visibleByAlpha || this.mIsVisibleByPanel != visibleByPanel) {
+			this.mChanged = true;
+			this.mIsVisibleByAlpha = visibleByAlpha;
+			this.mIsVisibleByPanel = visibleByPanel;
+			return true;
+		}
+		return false;
+    },
     drawingDimensions: function() {
         var offset = this.pivotOffset;
         var x0 = -offset.x * this.mWidth;
@@ -169,20 +281,60 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
         var x1 = x0 + this.mWidth;
         var y1 = y0 + this.mHeight;
         return new THREE.Vector4(
-            this.mDrawRegion.x == 0 ? x0 : Mathf.Lerp(x0, x1, this.mDrawRegion.x),
-            this.mDrawRegion.y == 0 ? y0 : Mathf.Lerp(y0, y1, this.mDrawRegion.y),
-            this.mDrawRegion.z == 1 ? x1 : Mathf.Lerp(x0, x1, this.mDrawRegion.z),
-            this.mDrawRegion.w == 1 ? y1 : Mathf.Lerp(y0, y1, this.mDrawRegion.w));
+            this.mDrawRegion.x == 0 ? x0 : UnityEngine.Mathf.Lerp(x0, x1, this.mDrawRegion.x),
+            this.mDrawRegion.y == 0 ? y0 : UnityEngine.Mathf.Lerp(y0, y1, this.mDrawRegion.y),
+            this.mDrawRegion.z == 1 ? x1 : UnityEngine.Mathf.Lerp(x0, x1, this.mDrawRegion.z),
+            this.mDrawRegion.w == 1 ? y1 : UnityEngine.Mathf.Lerp(y0, y1, this.mDrawRegion.w));
+    },
+    UpdateGeometry: function(frame) {
+        if (this.mChanged) {
+            this.mChanged = false;
+            if (this.mIsVisibleByAlpha && this.finalAlpha > 0.001) {
+                var hadVertices = this.geometry.hasVertices;
+                if (this.fillGeometry) {
+                    this.geometry.Clear();
+                    this.OnFill(this.geometry.verts, this.geometry.uvs, this.geometry.cols);
+                }
+                if (geometry.hasVertices) {
+					if (this.mMatrixFrame != frame) {
+						this.mLocalToPanel = this.panel.worldToLocal * this.transform.localToWorldMatrix;
+						this.mMatrixFrame = frame;
+					}
+					this.geometry.ApplyTransform(this.mLocalToPanel);
+					this.mMoved = false;
+					return true;
+                }
+            }
+            
+            if (this.fillGeometry) this.geometry.Clear();
+            this.mMoved = false;
+            return true;
+        }
+        else if (this.mMoved && this.geometry.hasVertices()) {
+            if (this.mMatrixFrame != frame) {
+                this.mLocalToPanel = this.panel.worldToLocal * this.transform.localToWorldMatrix;
+                this.mMatrixFrame = frame;
+            }
+			this.geometry.ApplyTransform(this.mLocalToPanel);
+            this.mMoved = false;
+            return true;
+        }
+        this.mMoved = false;
+        return false;
+    },
+    WriteToBuffers: function(v, u, c) {
+        this.geometry.WriteToBuffers(v, u, c);
     },
 });
+
 //
-// "F:\Projects\H5\NGUI.js\src\gui\internal\UIBasicSprite.js"
+// "E:\Projects\H5\NGUI.js\src\gui\internal\UIBasicSprite.js"
 //
 
 NGUI.UIBasicSprite = function() {
     NGUI.UIWidget.call();
-    this.mOuterUV = new NGUI.Rect(0, 0, 1, 1);
-    this.mInnerUV = new NGUI.Rect(0, 0, 1, 1);
+    this.mOuterUV = new UnityEngine.Rect(0, 0, 1, 1);
+    this.mInnerUV = new UnityEngine.Rect(0, 0, 1, 1);
     this.mFillAmount = 1.0;
     this.mInvert = false;
     this.mType = NGUI.UIBasicSprite.Type.Simple;
@@ -497,8 +649,250 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 	}
 });
 
+
 //
-// "F:\Projects\H5\NGUI.js\src\gui\ui\UISprite.js"
+// "E:\Projects\H5\NGUI.js\src\gui\ui\UIAtlas.js"
+//
+
+NGUI.UIAtlas = function() {
+    this.material = new THREE.SpriteMaterial();
+    this.mSprites = {}; // NGUI.UISpriteData
+}
+
+NGUI.UIAtlas.prototype = {
+    constructor: NGUI.UIAtlas,
+    GetSprite: function(name) {
+        return this.mSprites[name];
+    },
+    Load: function(json) {
+        if (!(typeof json === 'object')) return;
+        //this.material = json.texture; // material
+        var sprites = json.mSprites; // sprites
+        if (typeof sprites === 'object') {
+            for (var key in sprites) {
+                var sprite = new NGUI.UISpriteData();
+                sprite.Load(sprites[key]);
+                this.mSprites[sprite.name] = sprite;
+            }
+        }
+    }
+};
+
+//
+// "E:\Projects\H5\NGUI.js\src\gui\ui\UIPanel.js"
+//
+
+NGUI.UIPanel = function() {
+    NGUI.UIRect.call();
+
+    this.mDepth = 0;
+    this.mSortingOrder = 0;
+    this.mUpdateFrame = 0;
+    this.mUpdateScroll = false;
+    this.mRebuild = false;
+    this.mForced = false;
+    this.mResized = false;
+    this.mClipOffset = new THREE.Vector2();
+    this.mClipRange = new THREE.Vector4();
+    this.mMin = new THREE.Vector2();
+    this.mMax = new THREE.Vector2();
+    this.mClipping = NGUI.UIDrawCall.Clipping.None;
+
+    this.startingRenderQueue = 3000;
+    this.drawCallClipRange = new THREE.Vector4(0, 0, 1, 1);
+    this.renderQueue = NGUI.UIPanel.RenderQueue.Automatic;
+    this.widgets = []; // NGUI.UIWidget list
+    this.drawCalls = []; // NGUI.UIDrawCall
+};
+
+NGUI.UIPanel.RenderQueue = {
+    Automatic: 0,
+    StartAt: 1,
+    Explicit: 2,
+};
+
+// static variables and function.
+NGUI.UIPanel.list = [];
+NGUI.UIPanel.UpdateAll = function(frame) {
+    var list = NGUI.UIPanel.list;
+    for (var i in list)
+        list[i].UpdateSelf(frame);
+
+    var rq = 3000;
+    for (var i in list) {
+        var p = list[i];
+        if (p.renderQueue == NGUI.UIPanel.RenderQueue.Automatic) {
+            p.startingRenderQueue = rq;
+            p.UpdateDrawCalls();
+            rq += p.drawCalls.length + 2;
+        }
+        else if (p.renderQueue == NGUI.UIPanel.RenderQueue.StartAt) {
+            p.UpdateDrawCalls();
+            if (p.drawCalls.length != 0)
+                rq = Math.max(rq, p.startingRenderQueue + p.drawCalls.length);
+        }
+        else { // Explicit
+            p.UpdateDrawCalls();
+            if (p.drawCalls.Count != 0)
+                rq = Math.max(rq, p.startingRenderQueue + 1);
+        }
+    }
+}
+
+Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
+    constructor: NGUI.UIPanel,
+    GetViewSize: function() {
+		if (this.mClipping != NGUI.UIDrawCall.Clipping.None)
+			return new THREE.Vector2(this.mClipRange.z, this.mClipRange.w);
+        return NGUITools.screenSize;
+    },
+    finalClipRegion: function() {
+        var size = this.GetViewSize();
+    	if (this.mClipping != NGUI.UIDrawCall.Clipping.None)
+            return new THREE.Vector4(this.mClipRange.x + this.mClipOffset.x, this.mClipRange.y + this.mClipOffset.y, size.x, size.y);
+        return new THREE.Vector4(0, 0, size.x, size.y);
+    },
+    UpdateSelf: function(frame) {
+		this.UpdateTransformMatrix(frame);
+		this.UpdateLayers(frame);
+		this.UpdateWidgets(frame);
+		if (this.mRebuild) {
+			this.mRebuild = false;
+			this.FillAllDrawCalls();
+		}
+		else {
+			for (var i = 0; i < this.drawCalls.length;) {
+				var dc = this.drawCalls[i];
+				if (dc.isDirty && !this.FillDrawCall(dc)) {
+					//UIDrawCall.Destroy(dc);
+					this.drawCalls.splice(i, 1);
+					continue;
+				}
+				++i;
+			}
+		}
+
+		if (this.mUpdateScroll) {
+			this.mUpdateScroll = false;
+			//UIScrollView sv = GetComponent<UIScrollView>();
+			//if (sv != null) sv.UpdateScrollbars();
+		}
+    },
+    UpdateTransformMatrix: function(frame) {
+        this.worldToLocal = this.transform.worldToLocalMatrix;
+        var size = this.GetViewSize() * 0.5;
+        var x = this.mClipOffset.x + this.mClipRange.x;
+        var y = this.mClipOffset.y + this.mClipRange.y;
+        this.mMin.x = x - size.x;
+        this.mMin.y = y - size.y;
+        this.mMax.x = x + size.x;
+        this.mMax.y = y + size.y;
+    },
+    UpdateLayers: function(frame) {
+        // TODO: unity3d layer...
+    },
+    UpdateWidgets: function(frame) {
+		var changed = false;
+		for (var i in this.widgets) {
+			var w = this.widgets[i];
+			if (w.panel != this || !w.enabled)
+                continue;
+                
+            // First update the widget's transform
+            if (w.UpdateTransform(frame) || this.mResized) {
+                //var vis = forceVisible || (w.CalculateCumulativeAlpha(frame) > 0.001f);
+                //w.UpdateVisibility(vis, forceVisible || ((clipped || w.hideIfOffScreen) ? IsVisible(w) : true));
+            }
+            
+            // Update the widget's geometry if necessary
+            if (w.UpdateGeometry(frame)) {
+                changed = true;
+                if (!this.mRebuild) {
+                    if (w.drawCall != null)
+                        w.drawCall.isDirty = true;
+                    else
+                        this.FindDrawCall(w);
+                }
+            }
+		}
+		this.mResized = false;
+    },
+    UpdateDrawCalls: function() {
+		var trans = this.transform;
+		if (this.mClipping != NGUI.UIDrawCall.Clipping.None) {
+			this.drawCallClipRange = this.finalClipRegion();
+			this.drawCallClipRange.z *= 0.5;
+			this.drawCallClipRange.w *= 0.5;
+		}
+		else drawCallClipRange = new THREE.Vector4(0, 0, 0, 0);
+
+		// Legacy functionality
+		if (this.drawCallClipRange.z == 0) this.drawCallClipRange.z = NGUITools.screenSize.x * 0.5;
+		if (this.drawCallClipRange.w == 0) this.drawCallClipRange.w = NGUITools.screenSize.y * 0.5;
+		var pos = this.transform.localPosition;
+        var parent = this.transform.parent;
+        if (parent != null)
+            pos = parent.TransformPoint(pos);
+
+		var rot = this.transform.rotation;
+		var scale = this.transform.lossyScale;
+		for (var i in this.drawCalls) {
+			var dc = this.drawCalls[i];
+			var t = dc.transform;
+			t.position = pos;
+			t.rotation = rot;
+			t.localScale = scale;
+			dc.renderQueue = (this.renderQueue == NGUI.UIPanel.RenderQueue.Explicit) ? this.startingRenderQueue : this.startingRenderQueue + i;
+			dc.sortingOrder = this.mSortingOrder;
+		}
+    },
+    FillAllDrawCalls: function() {
+        if (this.drawCall.length > 0)
+            this.drawCall = []; // clear drawCalls
+
+		var mat = null;
+		var dc = null;
+		var count = 0;
+        for (var i in this.widgets) {
+            var w = this.widgets[i];
+			if (!w.isVisible() || !w.hasVertices()) {
+                w.drawCall = null;
+                continue;
+            }
+            var mt = w.material;
+            if (mat != mt) {
+                if (dc != null && dc.verts.length != 0) {
+                    this.drawCalls.push(dc);
+                    dc.UpdateGeometry(count);
+                    count = 0;
+                    dc = null;
+                }
+                mat = mt;
+            }
+
+            if (mat != null) {
+                if (dc == null) {
+                    dc = new NGUI.UIDrawCall("", this, mat);
+                    dc.depthStart = w.mDepth;
+                    dc.depthEnd = dc.depthStart;
+                    dc.panel = this;
+                }
+                else {
+                    var rd = w.depth;
+                    if (rd < dc.depthStart) dc.depthStart = rd;
+                    if (rd > dc.depthEnd) dc.depthEnd = rd;
+                }
+                w.drawCall = dc;
+
+                ++count;
+                w.WriteToBuffers(dc.verts, dc.uvs, dc.cols);
+            }
+        }
+    },
+});
+
+//
+// "E:\Projects\H5\NGUI.js\src\gui\ui\UISprite.js"
 //
 
 NGUI.UISprite = function() {
@@ -510,6 +904,7 @@ NGUI.UISprite = function() {
 
 Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
     constructor: NGUI.UISprite,
+    get material() { return this.mAtlas ? this.mAtlas.material : null; },
     border: function() {
         var sp = this.GetAtlasSprite();
         if (sp) return new THREE.Vector4(sp.borderLeft, sp.borderBottom, sp.borderRight, sp.borderTop);
@@ -539,49 +934,9 @@ Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
     },
 });
 
-//
-// "F:\Projects\H5\NGUI.js\src\gui\ui\UIAtlas.js"
-//
 
-NGUI.UIAtlas = function() {
-    this.material = new THREE.SpriteMaterial();
-    this.mSprites = {}; // NGUI.UISpriteData
-}
-
-NGUI.UIAtlas.prototype = {
-    constructor: NGUI.UIAtlas,
-    GetSprite: function(name) {
-        return this.mSprites[name];
-    },
-    Load: function(json) {
-        if (!(typeof json === 'object')) return;
-        //this.material = json.texture; // material
-        var sprites = json.mSprites; // sprites
-        if (typeof sprites === 'object') {
-            for (var key in sprites) {
-                var sprite = new NGUI.UISpriteData();
-                sprite.Load(sprites[key]);
-                this.mSprites[sprite.name] = sprite;
-            }
-        }
-    }
-};
 //
-// "F:\Projects\H5\NGUI.js\src\gui\ui\UIPanel.js"
-//
-
-NGUI.UIPanel = function() {
-    NGUI.UIRect.call();
-
-    this.widgets = []; // NGUI.UIWidget list
-    this.drawCalls = []; // NGUI.UIDrawCall
-};
-
-Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
-    constructor: NGUI.UIPanel,
-});
-//
-// "F:\Projects\H5\NGUI.js\src\gui\ui\UISpriteData.js"
+// "E:\Projects\H5\NGUI.js\src\gui\ui\UISpriteData.js"
 //
 
 NGUI.UISpriteData = function() {
