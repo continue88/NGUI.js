@@ -19,6 +19,14 @@ UnityEngine.Matrix4x4.prototype = {
 		return this;
 	},
 	identity: function () { return this.set(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); },
+	equals: function (matrix) {
+		var te = this.elements;
+		var me = matrix.elements;
+		for (var i = 0; i < 16; i ++ ) {
+			if ( te[ i ] !== me[ i ] ) return false;
+		}
+		return true;
+	},
 	transpose: function () {
 		var te = this.elements;
 		var tmp;
