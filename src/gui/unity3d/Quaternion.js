@@ -8,4 +8,5 @@ UnityEngine.Quaternion = function ( x, y, z, w ) {
 
 UnityEngine.Quaternion.prototype = {
 	constructor: UnityEngine.Quaternion,
+	set: function(x, y, z, w) { this.x = x; this.y = y; this.z = z; this.w = w; },
 };

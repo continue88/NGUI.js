@@ -8,6 +8,7 @@ UnityEngine.Vector4 = function ( x, y, z, w ) {
 
 UnityEngine.Vector4.prototype = {
 	constructor: UnityEngine.Vector4,
+	set: function(x, y, z, w) { this.x = x; this.y = y; this.z = z; this.w = w; },
     add: function(v) {
 		this.x += v.x;
 		this.y += v.y;
