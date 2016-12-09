@@ -1,10 +1,12 @@
 
-NGUI.UIAtlas = function() {
+NGUI.UIAtlas = function(gameObject) {
+    UnityEngine.MonoBehaviour.call(gameObject);
+
     this.material = new THREE.SpriteMaterial();
     this.mSprites = {}; // NGUI.UISpriteData
 }
 
-NGUI.UIAtlas.prototype = {
+Object.assign(NGUI.UIAtlas.prototype, UnityEngine.MonoBehaviour.prototype, {
     constructor: NGUI.UIAtlas,
     GetSprite: function(name) {
         return this.mSprites[name];
@@ -21,4 +23,4 @@ NGUI.UIAtlas.prototype = {
             }
         }
     }
-};
+});

@@ -1,8 +1,9 @@
 
-NGUI.UIRoot = function () {
+NGUI.UIRoot = function(gameObject) {
+    UnityEngine.MonoBehaviour.call(gameObject);
     
 };
 
-NGUI.UIRoot.prototype = {
+Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
     constructor: NGUI.UIRoot,
-};
+});

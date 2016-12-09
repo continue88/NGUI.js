@@ -1,6 +1,6 @@
 
-NGUI.UIBasicSprite = function() {
-    NGUI.UIWidget.call();
+NGUI.UIBasicSprite = function(gameObject) {
+    NGUI.UIWidget.call(gameObject);
     this.mOuterUV = new UnityEngine.Rect(0, 0, 1, 1);
     this.mInnerUV = new UnityEngine.Rect(0, 0, 1, 1);
     this.mFillAmount = 1.0;

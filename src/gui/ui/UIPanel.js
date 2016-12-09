@@ -1,6 +1,6 @@
 
-NGUI.UIPanel = function() {
-    NGUI.UIRect.call();
+NGUI.UIPanel = function(gameObject) {
+    NGUI.UIRect.call(gameObject);
 
     this.mDepth = 0;
     this.mSortingOrder = 0;

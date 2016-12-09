@@ -1,6 +1,6 @@
 
-NGUI.UIWidget = function() {
-    NGUI.UIRect.call();
+NGUI.UIWidget = function(gameObject) {
+    NGUI.UIRect.call(gameObject);
     
     this.mColor = new UnityEngine.Color(1, 1, 1), // UnityEngine.ColorKeywords.white
     this.mPivot = NGUI.UIWidget.Pivot.Center;

@@ -1,14 +1,13 @@
 
-NGUI.UIRect = function() {
+NGUI.UIRect = function(gameObject) {
+    UnityEngine.MonoBehaviour.call(gameObject);
+
     this.finalAlpha = 1;
-    this.transform = null; // UnityEngine.Transform
-    this.gameObject = null; // UnityEngine.GameObject
-    this.enabled = true;
 };
 
-NGUI.UIRect.prototype = {
+Object.assign(NGUI.UIRect.prototype, UnityEngine.MonoBehaviour.prototype, {
     constructor: NGUI.UIRect,
     copy: function(source) {
         return this;
     },
-};
+});

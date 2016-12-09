@@ -153,11 +153,28 @@ UnityEngine.Matrix4x4.prototype = {
 		return this;
 	},
 	MultiplyPoint: function(v) {
-
+		var x = v.x, y = v.y, z = v.z;
+		var e = this.elements;
+		var d = 1 / ( e[ 3 ] * x + e[ 7 ] * y + e[ 11 ] * z + e[ 15 ] );
+		return new UnityEngine.Vector3(
+			( e[ 0 ] * x + e[ 4 ] * y + e[ 8 ]  * z + e[ 12 ] ) * d,
+			( e[ 1 ] * x + e[ 5 ] * y + e[ 9 ]  * z + e[ 13 ] ) * d,
+			( e[ 2 ] * x + e[ 6 ] * y + e[ 10 ] * z + e[ 14 ] ) * d);
 	},
 	MultiplyPoint3x4: function(v) {
-
+		var x = v.x, y = v.y, z = v.z;
+		var e = this.elements;
+		return new UnityEngine.Vector3(
+			e[ 0 ] * x + e[ 4 ] * y + e[ 8 ]  * z + e[ 12 ],
+			e[ 1 ] * x + e[ 5 ] * y + e[ 9 ]  * z + e[ 13 ],
+			e[ 2 ] * x + e[ 6 ] * y + e[ 10 ] * z + e[ 14 ]);
 	},
 	MultiplyVector: function(v) {
+		var x = v.x, y = v.y, z = v.z;
+		var e = this.elements;
+		return new UnityEngine.Vector3(
+			e[ 0 ] * x + e[ 4 ] * y + e[ 8 ]  * z,
+			e[ 1 ] * x + e[ 5 ] * y + e[ 9 ]  * z,
+			e[ 2 ] * x + e[ 6 ] * y + e[ 10 ] * z);
 	},
 };
