@@ -7,7 +7,4 @@ NGUI.UIRect = function(gameObject) {
 
 Object.assign(NGUI.UIRect.prototype, UnityEngine.MonoBehaviour.prototype, {
     constructor: NGUI.UIRect,
-    copy: function(source) {
-        return this;
-    },
 });
