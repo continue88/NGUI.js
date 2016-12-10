@@ -6,4 +6,7 @@ NGUI.UIRoot = function(gameObject) {
 
 Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
     constructor: NGUI.UIRoot,
+    Load: function(json) {
+
+    },
 });

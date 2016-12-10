@@ -4,9 +4,11 @@ F:\Projects\H5\NGUI.js\src\gui\unity3d\Component.js
 F:\Projects\H5\NGUI.js\src\gui\unity3d\GameObject.js
 F:\Projects\H5\NGUI.js\src\gui\unity3d\Mathf.js
 F:\Projects\H5\NGUI.js\src\gui\unity3d\Matrix4x4.js
+F:\Projects\H5\NGUI.js\src\gui\unity3d\Material.js
 F:\Projects\H5\NGUI.js\src\gui\unity3d\MonoBehaviour.js
 F:\Projects\H5\NGUI.js\src\gui\unity3d\Quaternion.js
 F:\Projects\H5\NGUI.js\src\gui\unity3d\Rect.js
+F:\Projects\H5\NGUI.js\src\gui\unity3d\Shader.js
 F:\Projects\H5\NGUI.js\src\gui\unity3d\Transform.js
 F:\Projects\H5\NGUI.js\src\gui\unity3d\Vector2.js
 F:\Projects\H5\NGUI.js\src\gui\unity3d\Vector3.js

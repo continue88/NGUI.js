@@ -75,6 +75,9 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
             return new UnityEngine.Vector4(this.mClipRange.x + this.mClipOffset.x, this.mClipRange.y + this.mClipOffset.y, size.x, size.y);
         return new UnityEngine.Vector4(0, 0, size.x, size.y);
     },
+    Load: function(json) {
+
+    },
     UpdateSelf: function(frame) {
 		this.UpdateTransformMatrix(frame);
 		this.UpdateLayers(frame);
