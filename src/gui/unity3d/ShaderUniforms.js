@@ -1,5 +1,9 @@
 
-UnityEngine.ShaderUniforms = function() {
+UnityEngine.ShaderUniforms = function(gl, program, renderer) {
+    this.map = [];
+    this.seq = [];
+    this.renderer = renderer;
+
     // shader value settings.
     setValue1f = function(gl, v) { gl.uniform1f(this.addr, v); };
     setValue2fv = function(gl, v) { if ( v.x === undefined ) gl.uniform2fv(this.addr, v); else gl.uniform2f( this.addr, v.x, v.y ); };
@@ -89,4 +93,68 @@ UnityEngine.ShaderUniforms = function() {
 		this.size = activeInfo.size;
 		this.setValue = getPureArraySetter(activeInfo.type);
 	};
+    StructuredUniform = function(id) {
+        this.id = id;
+        this.map = [];
+        this.seq = [];
+    };
+    StructuredUniform.prototype.setValue = function( gl, value ) {
+        var seq = this.seq;
+        for (var i = 0, n = seq.length; i !== n; ++ i) {
+            var u = seq[i];
+            u.setValue(gl, value[ u.id ]);
+        }
+    };
+    
+    var RePathPart = /([\w\d_]+)(\])?(\[|\.)?/g,
+    addUniform = function( container, uniformObject ) {
+        container.seq.push( uniformObject );
+        container.map[ uniformObject.id ] = uniformObject;
+    },
+    parseUniform = function(activeInfo, addr, container) {
+        var path = activeInfo.name,
+            pathLength = path.length;
+            RePathPart.lastIndex = 0;
+        for (; ;) {
+            var match = RePathPart.exec( path ),
+                matchEnd = RePathPart.lastIndex,
+                id = match[ 1 ],
+                idIsIndex = match[ 2 ] === ']',
+                subscript = match[ 3 ];
+            if ( idIsIndex ) id = id | 0; // convert to integer
+            if ( subscript === undefined ||
+                subscript === '[' && matchEnd + 2 === pathLength ) {
+                addUniform( container, subscript === undefined ?
+                new SingleUniform( id, activeInfo, addr ) :
+                new PureArrayUniform( id, activeInfo, addr ) );
+                break;
+            } else {
+                var map = container.map,
+                next = map[id];
+                if (next === undefined) {
+                    next = new StructuredUniform( id );
+                    addUniform(container, next);
+                }
+                container = next;
+            }
+        }
+    },
+
+    // begin parse...
+    var n = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
+    for (var i = 0; i !== n; ++ i) {
+        var info = gl.getActiveUniform( program, i ),
+            path = info.name,
+            addr = gl.getUniformLocation( program, path );
+        parseUniform(info, addr, this);
+    }
 };
+
+UnityEngine.WebGLUniforms.prototype = {
+    constructor: UnityEngine.WebGLUniforms,
+    setValue: function(name, value) {
+        var u = this.map[name];
+        if (u !== undefined)
+            u.setValue(value, this.renderer);
+    },
+}

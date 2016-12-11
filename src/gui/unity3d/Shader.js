@@ -1,5 +1,5 @@
 
-UnityEngine.Shader = function(json) {
+UnityEngine.Shader = function(gl, renderer, json) {
 	if (!json) json = {};
 	this.name = json.name;
 	this.Cull = json.Cull | 'Off';
@@ -16,7 +16,7 @@ UnityEngine.Shader = function(json) {
 	this.cachedUniforms = undefined;
 	this.cachedAttributes = undefined;
 
-	function fetchAttributeLocations( gl, program ) {
+	function fetchAttributeLocations(gl, program) {
 		var attributes = {};
 		var n = gl.getProgramParameter( program, gl.ACTIVE_ATTRIBUTES );
 		for ( var i = 0; i < n; i ++ ) {
@@ -62,41 +62,7 @@ UnityEngine.Shader = function(json) {
 	}
 
 	function getUniforms(gl, program) {
-		var n = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
-		var rePathPart = /([\w\d_]+)(\])?(\[|\.)?/g,
-		for ( var i = 0; i !== n; ++ i ) {
-			var activeInfo = gl.getActiveUniform(program, i);
-			var path = info.name;
-			var addr = gl.getUniformLocation(program, path);
-
-			//parseUniform(activeInfo, addr, this);
-			var path = activeInfo.name, pathLength = path.length;
-			rePathPart.lastIndex = 0;
-			for (; ;) {
-				var match = rePathPart.exec( path ),
-					matchEnd = rePathPart.lastIndex,
-					id = match[ 1 ],
-					idIsIndex = match[ 2 ] === ']',
-					subscript = match[ 3 ];
-				if (idIsIndex ) id = id | 0; // convert to integer
-				if (subscript === undefined ||
-					subscript === '[' && matchEnd + 2 === pathLength ) {
-					this.cachedUniforms[id] = 
-					addUniform(container, subscript === undefined ?
-							new SingleUniform(id, activeInfo, addr) :
-							new PureArrayUniform(id, activeInfo, addr));
-					break;
-				} else { // step into inner node / create it in case it doesn't exist
-					var map = container.map,
-						next = map[id];
-					if (next === undefined) {
-						next = new StructuredUniform(id);
-						addUniform(container, next);
-					}
-					container = next;
-				}
-			}
-		}
+		return new UnityEngine.ShaderUniforms(gl, program, renderer);
 	}
 
 	function getAttributes(gl, program) {
@@ -116,6 +82,9 @@ UnityEngine.Shader.prototype = {
 	destroy: function() {
 		this.gl.deleteProgram(this.program);
 		this.program = undefined;
+	},
+	PropertyToID: function(name) {
+		// parse property to id.
 	},
 	Load: function(json) {
 		this.vertexShader = json.vs;
