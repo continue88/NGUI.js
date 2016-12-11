@@ -2,7 +2,7 @@
 
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\gui.js"
+// ..\src\gui\gui.js
 //
 
 UnityEngine={
@@ -14,7 +14,7 @@ NGUI={
 };
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\unity3d\Color.js"
+// ..\src\gui\unity3d\Color.js
 //
 
 UnityEngine.Color = function ( r, g, b, a ) {
@@ -41,7 +41,7 @@ UnityEngine.Color.prototype = {
 };
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\unity3d\Component.js"
+// ..\src\gui\unity3d\Component.js
 //
 
 UnityEngine.Component = function(gameObject) {
@@ -54,7 +54,7 @@ UnityEngine.Component.prototype = {
 };
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\unity3d\GameObject.js"
+// ..\src\gui\unity3d\GameObject.js
 //
 
 UnityEngine.GameObject = function () {
@@ -71,8 +71,7 @@ UnityEngine.GameObject.prototype = {
 		if (json.children) {
 			for (var i in json.children) {
 				var go = new UnityEngine.GameObject();
-				go.transform.parent = this.transform;
-				this.transform.children.push(go.transform);
+				go.transform.setParent(this.transform);
 				go.Load(json.children[i]);
 			}
 		}
@@ -93,7 +92,7 @@ UnityEngine.GameObject.prototype = {
 };
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\unity3d\Mathf.js"
+// ..\src\gui\unity3d\Mathf.js
 //
 
 UnityEngine.Mathf = {
@@ -106,7 +105,7 @@ UnityEngine.Mathf = {
 }
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\unity3d\Matrix4x4.js"
+// ..\src\gui\unity3d\Matrix4x4.js
 //
 
 UnityEngine.Matrix4x4 = function () {
@@ -290,7 +289,22 @@ UnityEngine.Matrix4x4.prototype = {
 };
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\unity3d\MonoBehaviour.js"
+// ..\src\gui\unity3d\Material.js
+//
+
+UnityEngine.Material = function() {
+	this.shader = null; // UnityEngine.Shader
+};
+
+UnityEngine.Material.prototype = {
+	constructor: UnityEngine.Material,
+	Load: function(json) {
+
+	},
+};
+
+//
+// ..\src\gui\unity3d\MonoBehaviour.js
 //
 
 
@@ -304,22 +318,35 @@ Object.assign(UnityEngine.MonoBehaviour.prototype, UnityEngine.Component.prototy
 });
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\unity3d\Quaternion.js"
+// ..\src\gui\unity3d\Quaternion.js
 //
 
 UnityEngine.Quaternion = function ( x, y, z, w ) {
 	this.x = x || 0;
 	this.y = y || 0;
 	this.z = z || 0;
-	this.w = w || 0;
+	this.w = w || 1;
 };
 
 UnityEngine.Quaternion.prototype = {
 	constructor: UnityEngine.Quaternion,
+	set: function(x, y, z, w) { this.x = x; this.y = y; this.z = z; this.w = w; },
+	euler: function(x, y, z) {
+		var c1 = Math.cos( x * 0.5 );
+		var c2 = Math.cos( y * 0.5 );
+		var c3 = Math.cos( z * 0.5 );
+		var s1 = Math.sin( x * 0.5 );
+		var s2 = Math.sin( y * 0.5 );
+		var s3 = Math.sin( z * 0.5 );
+		this.x = s1 * c2 * c3 + c1 * s2 * s3;
+		this.y = c1 * s2 * c3 - s1 * c2 * s3;
+		this.z = c1 * c2 * s3 + s1 * s2 * c3;
+		this.w = c1 * c2 * c3 - s1 * s2 * s3;
+	},
 };
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\unity3d\Rect.js"
+// ..\src\gui\unity3d\Rect.js
 //
 
 UnityEngine.Rect = function(left, top, width, height) {
@@ -338,7 +365,232 @@ UnityEngine.Rect.prototype = {
 };
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\unity3d\Transform.js"
+// ..\src\gui\unity3d\Shader.js
+//
+
+UnityEngine.Shader = function(json) {
+	if (!json) json = {};
+	this.name = json.name;
+	this.Cull = json.Cull | 'Off';
+	this.Lighting = json.Lighting | 'Off';
+	this.ZWrite = json.ZWrite | 'Off';
+	this.Fog = json.Fog | { Mode: 'Off' };
+	this.Offset = json.Offset | [-1, -1];
+	this.Blend = json.Blend | ['SrcAlpha', 'OneMinusSrcAlpha'];
+	this.vertexShader = json.vertexShader | 'void main() {\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n}';
+	this.fragmentShader = json.fragmentShader | 'void main() {\n\tgl_FragColor = vec4( 1.0, 0.0, 0.0, 1.0 );\n}';
+
+	this.program = null;
+	this.gl = null; // parse form the context.
+	this.cachedUniforms = undefined;
+	this.cachedAttributes = undefined;
+
+	function fetchAttributeLocations( gl, program ) {
+		var attributes = {};
+		var n = gl.getProgramParameter( program, gl.ACTIVE_ATTRIBUTES );
+		for ( var i = 0; i < n; i ++ ) {
+			var info = gl.getActiveAttrib( program, i );
+			var name = info.name;
+			attributes[ name ] = gl.getAttribLocation( program, name );
+		}
+		return attributes;
+	}
+
+	function compileSource(gl, type, src) {
+		var shader = gl.createShader( type );
+		gl.shaderSource( shader, src );
+		gl.compileShader( shader );
+		if ( gl.getShaderParameter( shader, gl.COMPILE_STATUS ) === false )
+			console.error( 'THREE.WebGLShader: Shader couldn\'t compile.' );
+		return shader;
+	}
+
+	function compileShader(gl, vertexShader, fragmentShader) {
+		var program = gl.createProgram();
+		var glVertexShader = compileSource(gl, gl.VERTEX_SHADER, vertexShader);
+		var glFragmentShader = compileSource(gl, gl.FRAGMENT_SHADER, fragmentShader);
+		gl.attachShader(program, glVertexShader);
+		gl.attachShader(program, glFragmentShader);
+		gl.linkProgram( program );
+		if (gl.getProgramParameter(program, gl.LINK_STATUS) === false) {
+			var programLog = gl.getProgramInfoLog(program);
+			var vertexLog = gl.getShaderInfoLog(glVertexShader);
+			var fragmentLog = gl.getShaderInfoLog(glFragmentShader);
+			console.error('THREE.WebGLProgram: shader error: ', 
+				gl.getError(), 
+				'gl.VALIDATE_STATUS',
+				gl.getProgramParameter(program, gl.VALIDATE_STATUS),
+				'gl.getProgramInfoLog', 
+				programLog,
+				vertexLog, 
+				fragmentLog);
+		}
+		gl.deleteShader(glVertexShader);
+		gl.deleteShader(glFragmentShader);
+		return program;
+	}
+
+	function getUniforms(gl, program) {
+		var n = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
+		var rePathPart = /([\w\d_]+)(\])?(\[|\.)?/g,
+		for ( var i = 0; i !== n; ++ i ) {
+			var activeInfo = gl.getActiveUniform(program, i);
+			var path = info.name;
+			var addr = gl.getUniformLocation(program, path);
+
+			//parseUniform(activeInfo, addr, this);
+			var path = activeInfo.name, pathLength = path.length;
+			rePathPart.lastIndex = 0;
+			for (; ;) {
+				var match = rePathPart.exec( path ),
+					matchEnd = rePathPart.lastIndex,
+					id = match[ 1 ],
+					idIsIndex = match[ 2 ] === ']',
+					subscript = match[ 3 ];
+				if (idIsIndex ) id = id | 0; // convert to integer
+				if (subscript === undefined ||
+					subscript === '[' && matchEnd + 2 === pathLength ) {
+					this.cachedUniforms[id] = 
+					addUniform(container, subscript === undefined ?
+							new SingleUniform(id, activeInfo, addr) :
+							new PureArrayUniform(id, activeInfo, addr));
+					break;
+				} else { // step into inner node / create it in case it doesn't exist
+					var map = container.map,
+						next = map[id];
+					if (next === undefined) {
+						next = new StructuredUniform(id);
+						addUniform(container, next);
+					}
+					container = next;
+				}
+			}
+		}
+	}
+
+	function getAttributes(gl, program) {
+		var attributes = {};
+		var n = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
+		for (var i = 0; i < n; i ++) {
+			var info = gl.getActiveAttrib(program, i);
+			var name = info.name;
+			attributes[name] = gl.getAttribLocation(program, name);
+		}
+		return attributes;
+	}
+};
+
+UnityEngine.Shader.prototype = {
+	constructor: UnityEngine.Shader,
+	destroy: function() {
+		this.gl.deleteProgram(this.program);
+		this.program = undefined;
+	},
+	Load: function(json) {
+		this.vertexShader = json.vs;
+		this.fragmentShader = json.ps; 
+	},
+
+};
+
+//
+// ..\src\gui\unity3d\ShaderUniforms.js
+//
+
+UnityEngine.ShaderUniforms = function() {
+    // shader value settings.
+    setValue1f = function(gl, v) { gl.uniform1f(this.addr, v); };
+    setValue2fv = function(gl, v) { if ( v.x === undefined ) gl.uniform2fv(this.addr, v); else gl.uniform2f( this.addr, v.x, v.y ); };
+    setValue3fv = function(gl, v) { if ( v.x !== undefined ) gl.uniform3f( this.addr, v.x, v.y, v.z ); else if ( v.r !== undefined ) gl.uniform3f( this.addr, v.r, v.g, v.b ); else gl.uniform3fv(this.addr, v); };
+    setValue4fv = function(gl, v) { if ( v.x === undefined ) gl.uniform4fv(this.addr, v); else gl.uniform4f( this.addr, v.x, v.y, v.z, v.w ); };
+    setValue2fm = function(gl, v) { gl.uniformMatrix2fv( this.addr, false, v.elements || v ); };
+    setValue3fm = function(gl, v) { gl.uniformMatrix3fv( this.addr, false, v.elements || v ); };
+    setValue4fm = function(gl, v) { gl.uniformMatrix4fv( this.addr, false, v.elements || v );  };
+    setValueT1 = function(gl, v, renderer) {
+        var unit = renderer.allocTextureUnit();
+        gl.uniform1i(this.addr, unit);
+        if (v) renderer.setTexture2D(v, unit);
+    };
+    setValueT6 = function(gl, v, renderer) { 
+        var unit = renderer.allocTextureUnit();
+        gl.uniform1i(this.addr, unit);
+        if (v) renderer.setTextureCube(v, unit); 
+    }; 
+    setValue1i = function(gl, v) { gl.uniform1i(this.addr, v); };
+    setValue2iv = function(gl, v) { gl.uniform2iv(this.addr, v); };
+    setValue3iv = function(gl, v) { gl.uniform3iv(this.addr, v); };
+    setValue4iv = function(gl, v) { gl.uniform4iv(this.addr, v); };
+    getSingularSetter = function(type) {
+        switch (type) {
+        case 0x1406: return setValue1f; // FLOAT
+        case 0x8b50: return setValue2fv; // _VEC2
+        case 0x8b51: return setValue3fv; // _VEC3
+        case 0x8b52: return setValue4fv; // _VEC4
+        case 0x8b5a: return setValue2fm; // _MAT2
+        case 0x8b5b: return setValue3fm; // _MAT3
+        case 0x8b5c: return setValue4fm; // _MAT4
+        case 0x8b5e: return setValueT1; // SAMPLER_2D
+        case 0x8b60: return setValueT6; // SAMPLER_CUBE
+        case 0x1404: case 0x8b56: return setValue1i; // INT, BOOL
+        case 0x8b53: case 0x8b57: return setValue2iv; // _VEC2
+        case 0x8b54: case 0x8b58: return setValue3iv; // _VEC3
+        case 0x8b55: case 0x8b59: return setValue4iv; // _VEC4
+        }
+    };
+    setValue1fv = function(gl, v) { gl.uniform1fv( this.addr, v ); },
+    setValue1iv = function(gl, v) { gl.uniform1iv( this.addr, v ); },
+    setValueV2a = function(gl, v) { gl.uniform2fv( this.addr, flatten( v, this.size, 2 ) ); },
+    setValueV3a = function(gl, v) { gl.uniform3fv( this.addr, flatten( v, this.size, 3 ) ); },
+    setValueV4a = function(gl, v) { gl.uniform4fv( this.addr, flatten( v, this.size, 4 ) ); },
+    setValueM2a = function(gl, v) { gl.uniformMatrix2fv( this.addr, false, flatten( v, this.size, 4 ) ); },
+    setValueM3a = function(gl, v) { gl.uniformMatrix3fv( this.addr, false, flatten( v, this.size, 9 ) ); },
+    setValueM4a = function(gl, v) { gl.uniformMatrix4fv( this.addr, false, flatten( v, this.size, 16 ) ); },
+    setValueT1a = function(gl, v, renderer) {
+        gl.uniform1iv(this.addr, units);
+        for (var i in v) {
+            var tex = v[i];
+            if (tex) renderer.setTexture2D(tex, renderer.allocTextureUnit());
+        }
+    };
+    setValueT6a = function(gl, v, renderer) {
+        gl.uniform1iv( this.addr, units);
+        for (var i in v) {
+            var tex = v[i];
+            if (tex) renderer.setTextureCube(tex, renderer.allocTextureUnit());
+        }
+    },
+    getPureArraySetter = function(type) {
+        switch (type) {
+        case 0x1406: return setValue1fv; // FLOAT
+        case 0x8b50: return setValueV2a; // _VEC2
+        case 0x8b51: return setValueV3a; // _VEC3
+        case 0x8b52: return setValueV4a; // _VEC4
+        case 0x8b5a: return setValueM2a; // _MAT2
+        case 0x8b5b: return setValueM3a; // _MAT3
+        case 0x8b5c: return setValueM4a; // _MAT4
+        case 0x8b5e: return setValueT1a; // SAMPLER_2D
+        case 0x8b60: return setValueT6a; // SAMPLER_CUBE
+        case 0x1404: case 0x8b56: return setValue1iv; // INT, BOOL
+        case 0x8b53: case 0x8b57: return setValue2iv; // _VEC2
+        case 0x8b54: case 0x8b58: return setValue3iv; // _VEC3
+        case 0x8b55: case 0x8b59: return setValue4iv; // _VEC4
+        }
+    };
+	SingleUniform = function (id, activeInfo, addr) {
+		this.id = id;
+		this.addr = addr;
+		this.setValue = getSingularSetter(activeInfo.type);
+	};
+	PureArrayUniform = function(id, activeInfo, addr) {
+		this.id = id;
+		this.addr = addr;
+		this.size = activeInfo.size;
+		this.setValue = getPureArraySetter(activeInfo.type);
+	};
+};
+
+//
+// ..\src\gui\unity3d\Transform.js
 //
 
 UnityEngine.Transform = function(gameObject) {
@@ -356,23 +608,37 @@ UnityEngine.Transform = function(gameObject) {
 	this.localToWorldMatrix = new UnityEngine.Matrix4();
 	this.parent = null; // UnityEngine.Transform
 	this.children = [];
-	
+	this.needUpdate = false;
 };
 
 Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, {
 	constructor: UnityEngine.Transform,
+	setParent: function(parent) {
+		this.parent = parent;
+		parent.children.push(this);
+	},
 	Load: function(json) {
 		if (json.t) this.localPosition.set(json.t.x, json.t.y, json.t.z);
-		if (json.r) this.localRotation.set(json.r.x, json.r.y, json.r.z, json.r.w);
+		if (json.r) this.localRotation.euler(json.r.x, json.r.y, json.r.z);
 		if (json.s) this.localScale.set(json.s.x, json.s.y, json.s.z);
+		this.needUpdate = true;
+	},
+	Update: function() {
+		if (!this.needUpdate) return;
+		this.needUpdate = false;
+		var localMatrix = new UnityEngine.Matrix4();
+		localMatrix.SetTRS(this.localPosition, this.localRotation, this.localScale);
+		this.localToWorldMatrix.MultiplyMatrices(localMatrix, this.parent.localToWorldMatrix);
+		for (var i in this.children)
+			this.children[i].Update();
 	},
 	TransformPoint: function(pos) {
-		return pos;
+		return this.localToWorldMatrix.MultiplyPoint3x4(pos);
 	},
 });
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\unity3d\Vector2.js"
+// ..\src\gui\unity3d\Vector2.js
 //
 
 UnityEngine.Vector2 = function ( x, y ) {
@@ -382,10 +648,11 @@ UnityEngine.Vector2 = function ( x, y ) {
 
 UnityEngine.Vector2.prototype = {
 	constructor: UnityEngine.Vector2,
-	add: function(v) {
+	set: function(x, y) { this.x = x; this.y = y; },
+    add: function(v) {
 		this.x += v.x;
 		this.y += v.y;
-	},
+    },
 	sub: function(v) {
 		this.x -= v.x;
 		this.y -= v.y;
@@ -425,7 +692,7 @@ UnityEngine.Vector2.prototype = {
 };
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\unity3d\Vector3.js"
+// ..\src\gui\unity3d\Vector3.js
 //
 
 UnityEngine.Vector3 = function ( x, y, z ) {
@@ -436,6 +703,7 @@ UnityEngine.Vector3 = function ( x, y, z ) {
 
 UnityEngine.Vector3.prototype = {
 	constructor: UnityEngine.Vector3,
+	set: function(x, y, z) { this.x = x; this.y = y; this.z = z; },
 	add: function(v) {
 		this.x += v.x;
 		this.y += v.y;
@@ -485,7 +753,7 @@ UnityEngine.Vector3.prototype = {
 };
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\unity3d\Vector4.js"
+// ..\src\gui\unity3d\Vector4.js
 //
 
 UnityEngine.Vector4 = function ( x, y, z, w ) {
@@ -497,6 +765,7 @@ UnityEngine.Vector4 = function ( x, y, z, w ) {
 
 UnityEngine.Vector4.prototype = {
 	constructor: UnityEngine.Vector4,
+	set: function(x, y, z, w) { this.x = x; this.y = y; this.z = z; this.w = w; },
 	add: function(v) {
 		this.x += v.x;
 		this.y += v.y;
@@ -552,7 +821,7 @@ UnityEngine.Vector4.prototype = {
 };
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\internal\NGUIMath.js"
+// ..\src\gui\internal\NGUIMath.js
 //
 
 NGUIMath = {
@@ -587,7 +856,7 @@ NGUIMath = {
 };
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\internal\NGUITools.js"
+// ..\src\gui\internal\NGUITools.js
 //
 
 NGUITools = {
@@ -595,20 +864,20 @@ NGUITools = {
 };
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\internal\UIDrawCall.js"
+// ..\src\gui\internal\UIDrawCall.js
 //
 
 NGUI.UIDrawCall = function (name, panel, material) {
-	
+	this.widgetCount = 0;
 	this.depthStart = 2147483647; // MaxValue = 2147483647
 	this.depthEnd = -2147483648; // int.MinValue = -2147483648;
+	this.isDirty = false;
 
 	this.baseMaterial = material;
 	this.renderQueue = panel.startingRenderQueue;
 	this.mSortingOrder = panel.mSortingOrder;
 	this.manager = panel;
 	this.panel = null; // NGUI.UIPanel
-	this.isDirty = false;
 	
 	this.verts = [];// Vector3
 	this.uvs = [];// Vector3
@@ -622,7 +891,7 @@ NGUI.UIDrawCall.prototype = {
 };
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\internal\UIGeometry.js"
+// ..\src\gui\internal\UIGeometry.js
 //
 
 NGUI.UIGeometry = function() {
@@ -660,7 +929,7 @@ NGUI.UIGeometry.prototype = {
 }
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\internal\UIRect.js"
+// ..\src\gui\internal\UIRect.js
 //
 
 NGUI.UIRect = function(gameObject) {
@@ -671,13 +940,10 @@ NGUI.UIRect = function(gameObject) {
 
 Object.assign(NGUI.UIRect.prototype, UnityEngine.MonoBehaviour.prototype, {
 	constructor: NGUI.UIRect,
-	copy: function(source) {
-		return this;
-	},
 });
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\internal\UIWidget.js"
+// ..\src\gui\internal\UIWidget.js
 //
 
 NGUI.UIWidget = function(gameObject) {
@@ -787,7 +1053,7 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 });
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\internal\UIBasicSprite.js"
+// ..\src\gui\internal\UIBasicSprite.js
 //
 
 NGUI.UIBasicSprite = function(gameObject) {
@@ -1108,7 +1374,7 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\three\GUIRenderer.js"
+// ..\src\gui\three\GUIRenderer.js
 //
 
 GUIRenderer = function (params) {
@@ -1118,7 +1384,7 @@ GUIRenderer = function (params) {
 }
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\ui\UIAtlas.js"
+// ..\src\gui\ui\UIAtlas.js
 //
 
 NGUI.UIAtlas = function(gameObject) {
@@ -1148,7 +1414,7 @@ Object.assign(NGUI.UIAtlas.prototype, UnityEngine.MonoBehaviour.prototype, {
 });
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\ui\UIPanel.js"
+// ..\src\gui\ui\UIPanel.js
 //
 
 NGUI.UIPanel = function(gameObject) {
@@ -1226,6 +1492,9 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		if (this.mClipping != Clipping.None)
 			return new UnityEngine.Vector4(this.mClipRange.x + this.mClipOffset.x, this.mClipRange.y + this.mClipOffset.y, size.x, size.y);
 		return new UnityEngine.Vector4(0, 0, size.x, size.y);
+	},
+	Load: function(json) {
+
 	},
 	UpdateSelf: function(frame) {
 		this.UpdateTransformMatrix(frame);
@@ -1323,7 +1592,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 	},
 	FillAllDrawCalls: function() {
 		if (this.drawCall.length > 0)
-			this.drawCall = []; // clear drawCalls
+			this.drawCall.length = 0; // clear drawCalls
 
 		var mat = null;
 		var dc = null;
@@ -1367,7 +1636,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 });
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\ui\UIRoot.js"
+// ..\src\gui\ui\UIRoot.js
 //
 
 NGUI.UIRoot = function(gameObject) {
@@ -1377,10 +1646,13 @@ NGUI.UIRoot = function(gameObject) {
 
 Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
 	constructor: NGUI.UIRoot,
+	Load: function(json) {
+
+	},
 });
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\ui\UISprite.js"
+// ..\src\gui\ui\UISprite.js
 //
 
 NGUI.UISprite = function() {
@@ -1418,13 +1690,13 @@ Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
 
 		outer = NGUIMath.ConvertToTexCoords(outer, tex.image.width, tex.image.height);
 		inner = NGUIMath.ConvertToTexCoords(inner, tex.image.width, tex.image.height);
-	    this.Fill(verts, uvs, cols, outer, inner);
-    },
+		this.Fill(verts, uvs, cols, outer, inner);
+	},
 });
 
 
 //
-// "F:\Projects\H5\NGUI.js\src\gui\ui\UISpriteData.js"
+// ..\src\gui\ui\UISpriteData.js
 //
 
 NGUI.UISpriteData = function() {
@@ -1446,9 +1718,9 @@ NGUI.UISpriteData = function() {
 };
 
 NGUI.UISpriteData.prototype = {
-    constructor: NGUI.UISpriteData,
-    Load: function(json) {
-        Object.assign(this, json);
-        return this;
-    },
+	constructor: NGUI.UISpriteData,
+	Load: function(json) {
+		Object.assign(this, json);
+		return this;
+	},
 };
