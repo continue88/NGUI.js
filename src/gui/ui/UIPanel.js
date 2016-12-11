@@ -174,7 +174,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 	},
 	FillAllDrawCalls: function() {
 		if (this.drawCall.length > 0)
-			this.drawCall = []; // clear drawCalls
+			this.drawCall.length = 0; // clear drawCalls
 
 		var mat = null;
 		var dc = null;
