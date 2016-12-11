@@ -2,6 +2,7 @@
 UnityEngine.ShaderUniforms = function(gl, program, renderer) {
     this.map = [];
     this.seq = [];
+    this.gl = gl;
     this.renderer = renderer;
 
     // shader value settings.
@@ -155,6 +156,6 @@ UnityEngine.WebGLUniforms.prototype = {
     setValue: function(name, value) {
         var u = this.map[name];
         if (u !== undefined)
-            u.setValue(value, this.renderer);
+            u.setValue(this.gl, value, this.renderer);
     },
 }
