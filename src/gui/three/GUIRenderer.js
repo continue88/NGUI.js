@@ -1,6 +1,6 @@
 
 GUIRenderer = function (params) {
-    render: function() {
-        
-    }
+	render: function() {
+		
+	}
 }

@@ -1,10 +1,10 @@
 
 NGUI.UIRect = function(gameObject) {
-    UnityEngine.MonoBehaviour.call(gameObject);
+	UnityEngine.MonoBehaviour.call(gameObject);
 
-    this.finalAlpha = 1;
+	this.finalAlpha = 1;
 };
 
 Object.assign(NGUI.UIRect.prototype, UnityEngine.MonoBehaviour.prototype, {
-    constructor: NGUI.UIRect,
+	constructor: NGUI.UIRect,
 });

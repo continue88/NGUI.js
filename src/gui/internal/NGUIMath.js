@@ -1,6 +1,6 @@
 
 NGUIMath = {
-    ConvertToTexCoords: function(rect, width, height) {
+	ConvertToTexCoords: function(rect, width, height) {
 		var final = rect;
 		if (width != 0 && height != 0) {
 			final.xMin = rect.xMin / width;
@@ -9,8 +9,8 @@ NGUIMath = {
 			final.yMax = 1 - rect.yMin / height;
 		}
 		return final;
-    },
-    GetPivotOffset: function(pv) {
+	},
+	GetPivotOffset: function(pv) {
 		var v = new UnityEngine.Vector2();
 		if (pv == NGUI.UIWidget.Pivot.Top || pv == NGUI.UIWidget.Pivot.Center || pv == NGUI.UIWidget.Pivot.Bottom) v.x = 0.5;
 		else if (pv == NGUI.UIWidget.Pivot.TopRight || pv == NGUI.UIWidget.Pivot.Right || pv == NGUI.UIWidget.Pivot.BottomRight) v.x = 1;

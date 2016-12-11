@@ -1,4 +1,4 @@
 
 NGUITools = {
-    screenSize: new UnityEngine.Vector2(100, 100),
+	screenSize: new UnityEngine.Vector2(100, 100),
 };

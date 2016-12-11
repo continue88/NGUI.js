@@ -1,75 +1,75 @@
 
 NGUI.UIBasicSprite = function(gameObject) {
-    NGUI.UIWidget.call(gameObject);
-    this.mOuterUV = new UnityEngine.Rect(0, 0, 1, 1);
-    this.mInnerUV = new UnityEngine.Rect(0, 0, 1, 1);
-    this.mFillAmount = 1.0;
-    this.mInvert = false;
-    this.mType = SpriteType.Simple;
-    this.mFillDirection = FillDirection.Radial360;
-    this.mFlip = Flip.Nothing;
+	NGUI.UIWidget.call(gameObject);
+	this.mOuterUV = new UnityEngine.Rect(0, 0, 1, 1);
+	this.mInnerUV = new UnityEngine.Rect(0, 0, 1, 1);
+	this.mFillAmount = 1.0;
+	this.mInvert = false;
+	this.mType = SpriteType.Simple;
+	this.mFillDirection = FillDirection.Radial360;
+	this.mFlip = Flip.Nothing;
 };
 
 SpriteType = {
-    Simple: 0,
-    Sliced: 1,
-    Tiled: 2,
-    Filled: 3,
-    Advanced: 4,
+	Simple: 0,
+	Sliced: 1,
+	Tiled: 2,
+	Filled: 3,
+	Advanced: 4,
 };
 FillDirection = {
-    Horizontal: 0,
-    Vertical: 1,
-    Radial90: 2,
-    Radial180: 3,
-    Radial360: 4,
+	Horizontal: 0,
+	Vertical: 1,
+	Radial90: 2,
+	Radial180: 3,
+	Radial360: 4,
 };
 AdvancedType = {
-    Invisible: 0,
-    Sliced: 1,
-    Tiled: 2,
+	Invisible: 0,
+	Sliced: 1,
+	Tiled: 2,
 };
 Flip = {
-    Nothing: 0,
-    Horizontally: 1,
-    Vertically: 2,
-    Both: 3,
+	Nothing: 0,
+	Horizontally: 1,
+	Vertically: 2,
+	Both: 3,
 };
 
 gTempPos = [new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngine.Vector2()];
 gTempUVs = [new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngine.Vector2()];
 
 Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
-    constructor: NGUI.UIBasicSprite,
-    get pixelSize() { return 1; },
-    drawingUVs: function() {
-        switch (this.mFlip) {
-            case Flip.Horizontally: return new UnityEngine.Vector4(this.mOuterUV.xMax, this.mOuterUV.yMin, this.mOuterUV.xMin, this.mOuterUV.yMax);
-            case Flip.Vertically: return new UnityEngine.Vector4(this.mOuterUV.xMin, this.mOuterUV.yMax, this.mOuterUV.xMax, this.mOuterUV.yMin);
-            case Flip.Both: return new UnityEngine.Vector4(this.mOuterUV.xMax, this.mOuterUV.yMax, this.mOuterUV.xMin, this.mOuterUV.yMin);
-            default: return new UnityEngine.Vector4(this.mOuterUV.xMin, this.mOuterUV.yMin, this.mOuterUV.xMax, this.mOuterUV.yMax);
-        }
-    },
-    drawingColor: function() { return new UnityEngine.Color(this.mColor.r, this.mColor.g, this.mColor.b, this.this.finalAlpha); },
+	constructor: NGUI.UIBasicSprite,
+	get pixelSize() { return 1; },
+	drawingUVs: function() {
+		switch (this.mFlip) {
+			case Flip.Horizontally: return new UnityEngine.Vector4(this.mOuterUV.xMax, this.mOuterUV.yMin, this.mOuterUV.xMin, this.mOuterUV.yMax);
+			case Flip.Vertically: return new UnityEngine.Vector4(this.mOuterUV.xMin, this.mOuterUV.yMax, this.mOuterUV.xMax, this.mOuterUV.yMin);
+			case Flip.Both: return new UnityEngine.Vector4(this.mOuterUV.xMax, this.mOuterUV.yMax, this.mOuterUV.xMin, this.mOuterUV.yMin);
+			default: return new UnityEngine.Vector4(this.mOuterUV.xMin, this.mOuterUV.yMin, this.mOuterUV.xMax, this.mOuterUV.yMax);
+		}
+	},
+	drawingColor: function() { return new UnityEngine.Color(this.mColor.r, this.mColor.g, this.mColor.b, this.this.finalAlpha); },
 	Fill: function(verts, uvs, cols, outer, inner) {
 		this.mOuterUV = outer;
 		this.mInnerUV = inner;
 		switch (this.mType) {
-        case SpriteType.Simple:
-            this.SimpleFill(verts, uvs, cols);
-            break;
-        case SpriteType.Sliced:
-            this.SlicedFill(verts, uvs, cols);
-            break;
-        case SpriteType.Filled:
-            this.FilledFill(verts, uvs, cols);
-            break;
-        case SpriteType.Tiled:
-            this.TiledFill(verts, uvs, cols);
-            break;
-        case SpriteType.Advanced:
-            this.AdvancedFill(verts, uvs, cols);
-            break;
+		case SpriteType.Simple:
+			this.SimpleFill(verts, uvs, cols);
+			break;
+		case SpriteType.Sliced:
+			this.SlicedFill(verts, uvs, cols);
+			break;
+		case SpriteType.Filled:
+			this.FilledFill(verts, uvs, cols);
+			break;
+		case SpriteType.Tiled:
+			this.TiledFill(verts, uvs, cols);
+			break;
+		case SpriteType.Advanced:
+			this.AdvancedFill(verts, uvs, cols);
+			break;
 		}
 	},
 	SimpleFill: function(verts, uvs, cols) {
@@ -103,7 +103,7 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 		gTempPos[3].y = v.w;
 
 		if (this.mFlip == Flip.Horizontally || 
-            this.mFlip == Flip.Both) {
+			this.mFlip == Flip.Both) {
 			gTempPos[1].x = gTempPos[0].x + br.z;
 			gTempPos[2].x = gTempPos[3].x - br.x;
 			gTempUVs[3].x = this.mOuterUV.xMin;
@@ -121,7 +121,7 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 		}
 
 		if (this.mFlip == Flip.Vertically || 
-            this.mFlip == Flip.Both) {
+			this.mFlip == Flip.Both) {
 			gTempPos[1].y = gTempPos[0].y + br.w;
 			gTempPos[2].y = gTempPos[3].y - br.y;
 			gTempUVs[3].y = this.mOuterUV.yMin;
@@ -142,7 +142,7 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 			var x2 = x + 1;
 			for (var y = 0; y < 3; ++y) {
 				if (centerType == AdvancedType.Invisible && x == 1 && y == 1)
-                    continue;
+					continue;
 				var y2 = y + 1;
 				verts.push(new UnityEngine.Vector3(gTempPos[x].x, gTempPos[y].y));
 				verts.push(new UnityEngine.Vector3(gTempPos[x].x, gTempPos[y2].y));
@@ -165,7 +165,7 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 		var u = this.drawingUVs();
 		var c = this.drawingColor();
 		if (this.mFillDirection == FillDirection.Horizontal || 
-            this.mFillDirection == FillDirection.Vertical) {
+			this.mFillDirection == FillDirection.Vertical) {
 			if (this.mFillDirection == FillDirection.Horizontal) {
 				var fill = (u.z - u.x) * this.mFillAmount;
 				if (this.mInvert) {
@@ -215,7 +215,7 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 			if (this.mFillDirection == FillDirection.Radial180) {
 				for (var side = 0; side < 2; ++side) {
 					var fx0 = 0;
-                    var fx1 = 0;
+					var fx1 = 0;
 					var fy0 = 0;
 					var fy1 = 1;
 
@@ -257,9 +257,9 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 			if (this.mFillDirection == FillDirection.Radial360) {
 				for (var corner = 0; corner < 4; ++corner) {
 					var fx0 = 0;
-                    var fx1 = 0;
-                    var fy0 = 0;
-                    var fy1 = 0;
+					var fx1 = 0;
+					var fy0 = 0;
+					var fy1 = 0;
 
 					if (corner < 2) { fx0 = 0; fx1 = 0.5; }
 					else { fx0 = 0.5; fx1 = 1; }
@@ -310,7 +310,7 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 			cols.push(c);
 		}
 	},
-    AdvancedFill: function(verts, uvs, cols) {
-        // not implemented...
+	AdvancedFill: function(verts, uvs, cols) {
+		// not implemented...
 	}
 });

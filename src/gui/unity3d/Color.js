@@ -8,12 +8,12 @@ UnityEngine.Color = function ( r, g, b, a ) {
 
 UnityEngine.Color.prototype = {
 	constructor: UnityEngine.Color,
-    add: function(v) {
+	add: function(v) {
 		this.r += v.r;
 		this.g += v.g;
 		this.b += v.b;
 		this.a += v.a;
-    },
+	},
 	sub: function(v) {
 		this.r -= v.r;
 		this.g -= v.g;

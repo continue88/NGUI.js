@@ -8,11 +8,11 @@ UnityEngine.Vector3 = function ( x, y, z ) {
 UnityEngine.Vector3.prototype = {
 	constructor: UnityEngine.Vector3,
 	set: function(x, y, z) { this.x = x; this.y = y; this.z = z; },
-    add: function(v) {
+	add: function(v) {
 		this.x += v.x;
 		this.y += v.y;
 		this.z += v.z;
-    },
+	},
 	sub: function(v) {
 		this.x -= v.x;
 		this.y -= v.y;

@@ -18,9 +18,9 @@ NGUI.UISpriteData = function() {
 };
 
 NGUI.UISpriteData.prototype = {
-    constructor: NGUI.UISpriteData,
-    Load: function(json) {
-        Object.assign(this, json);
-        return this;
-    },
+	constructor: NGUI.UISpriteData,
+	Load: function(json) {
+		Object.assign(this, json);
+		return this;
+	},
 };
