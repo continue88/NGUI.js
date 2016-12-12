@@ -14,6 +14,60 @@ NGUI={
 };
 
 //
+// ..\src\gui\unity3d\Camera.js
+//
+
+UnityEngine.Camera = function() {
+    this.isOrthoGraphic = false;
+    this.nearClipPlane = 0.1;
+    this.farClipPlane = 1000;
+    this.rect = new UnityEngine.Rect();
+};
+
+Object.assign(NGUI.Camera.prototype, UnityEngine.Component.prototype, {
+    constructor: UnityEngine.Camera,
+    GetSides: function(depth, relativeTo) {
+        mSides = [];
+		if (this.isOrthoGraphic) {
+			var os = this.orthographicSize;
+                x0 = -os;
+                x1 = os;
+                y0 = -os;
+                y1 = os;
+			var rect = this.rect;
+			var size = screenSize;
+			var aspect = size.x / size.y;
+			aspect *= rect.width / rect.height;
+			x0 *= aspect;
+			x1 *= aspect;
+
+			// We want to ignore the scale, as scale doesn't affect the camera's view region in Unity
+			var t = this.transform;
+			var rot = t.rotation;
+			var pos = t.position;
+			mSides[0] = rot * (new UnityEngine.Vector3(x0, 0, depth)) + pos;
+			mSides[1] = rot * (new UnityEngine.Vector3(0, y1, depth)) + pos;
+			mSides[2] = rot * (new UnityEngine.Vector3(x1, 0, depth)) + pos;
+			mSides[3] = rot * (new UnityEngine.Vector3(0, y0, depth)) + pos;
+		} else {
+			mSides[0] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0, 0.5, depth));
+			mSides[1] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0.5, 1, depth));
+			mSides[2] = this.ViewportToWorldPoint(new UnityEngine.Vector3(1, 0.5, depth));
+			mSides[3] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0.5, 0, depth));
+		}
+		
+		if (relativeTo !== undefined) {
+			for (var i = 0; i < 4; ++i)
+				mSides[i] = relativeTo.InverseTransformPoint(mSides[i]);
+		}
+		return mSides;
+    },
+    ViewportToWorldPoint: function(point) {
+    },
+};
+
+
+//
 // ..\src\gui\unity3d\Color.js
 //
 
@@ -95,8 +149,9 @@ UnityEngine.GameObject.prototype = {
 // ..\src\gui\unity3d\Mathf.js
 //
 
-UnityEngine.Mathf = {
-	lerp: function(t, a, b) {
+Mathf = UnityEngine.Mathf = {
+	FloorToInt: function(v) { return Math.floor(v); },
+	Lerp: function(t, a, b) {
 		return a + t * (b - a);
 	},
 	Clamp01: function(val) {
@@ -293,14 +348,23 @@ UnityEngine.Matrix4x4.prototype = {
 //
 
 UnityEngine.Material = function() {
-	this.shader = null; // UnityEngine.Shader
+	this.shader = undefined; // UnityEngine.Shader
 };
 
 UnityEngine.Material.prototype = {
 	constructor: UnityEngine.Material,
 	Load: function(json) {
-
 	},
+	setValue: function(name, value) { this.shader.cachedUniforms.setValue(name, value); },
+	//SetColor: function(name, color) { this.setValue(name, color); },
+	//SetColorArray: function(name, colorArray) { this.setValue(name, colorArray); },
+	//SetFloat: function(name, value) { this.setValue(name, value); },
+	//SetFloatArray: function(name, valueArray) { this.setValue(name, valueArray); },
+	//SetVector: function(name, vector) { this.setValue(name, vector); },
+	//SetVectorArray: function(name, vectorArray) { this.setValue(name, vectorArray); },
+	//SetMatrix: function(name, matrix) { this.setValue(name, matrix); },
+	//SetMatrixArray: function(name, matrixArray) { this.setValue(name, matrixArray); },
+	//SetTexture: function(name, texture) { this.setValue(name, texture); },
 };
 
 //
@@ -368,7 +432,7 @@ UnityEngine.Rect.prototype = {
 // ..\src\gui\unity3d\Shader.js
 //
 
-UnityEngine.Shader = function(json) {
+UnityEngine.Shader = function(gl, renderer, json) {
 	if (!json) json = {};
 	this.name = json.name;
 	this.Cull = json.Cull | 'Off';
@@ -380,12 +444,12 @@ UnityEngine.Shader = function(json) {
 	this.vertexShader = json.vertexShader | 'void main() {\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n}';
 	this.fragmentShader = json.fragmentShader | 'void main() {\n\tgl_FragColor = vec4( 1.0, 0.0, 0.0, 1.0 );\n}';
 
-	this.program = null;
-	this.gl = null; // parse form the context.
+	this.program = undefined;
+	this.gl = undefined; // parse form the context.
 	this.cachedUniforms = undefined;
 	this.cachedAttributes = undefined;
 
-	function fetchAttributeLocations( gl, program ) {
+	function fetchAttributeLocations(gl, program) {
 		var attributes = {};
 		var n = gl.getProgramParameter( program, gl.ACTIVE_ATTRIBUTES );
 		for ( var i = 0; i < n; i ++ ) {
@@ -431,41 +495,7 @@ UnityEngine.Shader = function(json) {
 	}
 
 	function getUniforms(gl, program) {
-		var n = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
-		var rePathPart = /([\w\d_]+)(\])?(\[|\.)?/g,
-		for ( var i = 0; i !== n; ++ i ) {
-			var activeInfo = gl.getActiveUniform(program, i);
-			var path = info.name;
-			var addr = gl.getUniformLocation(program, path);
-
-			//parseUniform(activeInfo, addr, this);
-			var path = activeInfo.name, pathLength = path.length;
-			rePathPart.lastIndex = 0;
-			for (; ;) {
-				var match = rePathPart.exec( path ),
-					matchEnd = rePathPart.lastIndex,
-					id = match[ 1 ],
-					idIsIndex = match[ 2 ] === ']',
-					subscript = match[ 3 ];
-				if (idIsIndex ) id = id | 0; // convert to integer
-				if (subscript === undefined ||
-					subscript === '[' && matchEnd + 2 === pathLength ) {
-					this.cachedUniforms[id] = 
-					addUniform(container, subscript === undefined ?
-							new SingleUniform(id, activeInfo, addr) :
-							new PureArrayUniform(id, activeInfo, addr));
-					break;
-				} else { // step into inner node / create it in case it doesn't exist
-					var map = container.map,
-						next = map[id];
-					if (next === undefined) {
-						next = new StructuredUniform(id);
-						addUniform(container, next);
-					}
-					container = next;
-				}
-			}
-		}
+		return new UnityEngine.ShaderUniforms(gl, program, renderer);
 	}
 
 	function getAttributes(gl, program) {
@@ -486,6 +516,9 @@ UnityEngine.Shader.prototype = {
 		this.gl.deleteProgram(this.program);
 		this.program = undefined;
 	},
+	PropertyToID: function(name) {
+		// parse property to id.
+	},
 	Load: function(json) {
 		this.vertexShader = json.vs;
 		this.fragmentShader = json.ps; 
@@ -497,7 +530,12 @@ UnityEngine.Shader.prototype = {
 // ..\src\gui\unity3d\ShaderUniforms.js
 //
 
-UnityEngine.ShaderUniforms = function() {
+UnityEngine.ShaderUniforms = function(gl, program, renderer) {
+    this.map = [];
+    this.seq = [];
+    this.gl = gl;
+    this.renderer = renderer;
+
     // shader value settings.
     setValue1f = function(gl, v) { gl.uniform1f(this.addr, v); };
     setValue2fv = function(gl, v) { if ( v.x === undefined ) gl.uniform2fv(this.addr, v); else gl.uniform2f( this.addr, v.x, v.y ); };
@@ -587,7 +625,71 @@ UnityEngine.ShaderUniforms = function() {
 		this.size = activeInfo.size;
 		this.setValue = getPureArraySetter(activeInfo.type);
 	};
+    StructuredUniform = function(id) {
+        this.id = id;
+        this.map = [];
+        this.seq = [];
+    };
+    StructuredUniform.prototype.setValue = function( gl, value ) {
+        var seq = this.seq;
+        for (var i = 0, n = seq.length; i !== n; ++ i) {
+            var u = seq[i];
+            u.setValue(gl, value[ u.id ]);
+        }
+    };
+    
+    var RePathPart = /([\w\d_]+)(\])?(\[|\.)?/g,
+    addUniform = function( container, uniformObject ) {
+        container.seq.push( uniformObject );
+        container.map[ uniformObject.id ] = uniformObject;
+    },
+    parseUniform = function(activeInfo, addr, container) {
+        var path = activeInfo.name,
+            pathLength = path.length;
+            RePathPart.lastIndex = 0;
+        for (; ;) {
+            var match = RePathPart.exec( path ),
+                matchEnd = RePathPart.lastIndex,
+                id = match[ 1 ],
+                idIsIndex = match[ 2 ] === ']',
+                subscript = match[ 3 ];
+            if ( idIsIndex ) id = id | 0; // convert to integer
+            if ( subscript === undefined ||
+                subscript === '[' && matchEnd + 2 === pathLength ) {
+                addUniform( container, subscript === undefined ?
+                new SingleUniform( id, activeInfo, addr ) :
+                new PureArrayUniform( id, activeInfo, addr ) );
+                break;
+            } else {
+                var map = container.map,
+                next = map[id];
+                if (next === undefined) {
+                    next = new StructuredUniform( id );
+                    addUniform(container, next);
+                }
+                container = next;
+            }
+        }
+    },
+
+    // begin parse...
+    var n = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
+    for (var i = 0; i !== n; ++ i) {
+        var info = gl.getActiveUniform( program, i ),
+            path = info.name,
+            addr = gl.getUniformLocation( program, path );
+        parseUniform(info, addr, this);
+    }
 };
+
+UnityEngine.WebGLUniforms.prototype = {
+    constructor: UnityEngine.WebGLUniforms,
+    setValue: function(name, value) {
+        var u = this.map[name];
+        if (u !== undefined)
+            u.setValue(this.gl, value, this.renderer);
+    },
+}
 
 //
 // ..\src\gui\unity3d\Transform.js
@@ -606,7 +708,8 @@ UnityEngine.Transform = function(gameObject) {
 
 	this.worldToLocalMatrix = new UnityEngine.Matrix4();
 	this.localToWorldMatrix = new UnityEngine.Matrix4();
-	this.parent = null; // UnityEngine.Transform
+
+	this.parent = undefined; // UnityEngine.Transform
 	this.children = [];
 	this.needUpdate = false;
 };
@@ -629,8 +732,12 @@ Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, 
 		var localMatrix = new UnityEngine.Matrix4();
 		localMatrix.SetTRS(this.localPosition, this.localRotation, this.localScale);
 		this.localToWorldMatrix.MultiplyMatrices(localMatrix, this.parent.localToWorldMatrix);
+		this.worldToLocalMatrix.getInverse(this.localToWorldMatrix);
 		for (var i in this.children)
 			this.children[i].Update();
+	},
+	InverseTransformPoint: function(pos) {
+		return this.worldToLocalMatrix.MultiplyPoint3x4(pos);
 	},
 	TransformPoint: function(pos) {
 		return this.localToWorldMatrix.MultiplyPoint3x4(pos);
@@ -700,6 +807,15 @@ UnityEngine.Vector3 = function ( x, y, z ) {
 	this.y = y || 0;
 	this.z = z || 0;
 };
+
+UnityEngine.Vector3.SqrMagnitude = function(v1, v2) {
+	if (v2 === undefined)
+		return v1.x * v1.x + v1.y * v1.y + v1.z * v1.z;
+	var x = v1.x - v2.x,
+		y = v1.y - v2.y,
+		z = v1.z - v2.z;
+	return x * x + y * y + z * z;
+}
 
 UnityEngine.Vector3.prototype = {
 	constructor: UnityEngine.Vector3,
@@ -821,6 +937,69 @@ UnityEngine.Vector4.prototype = {
 };
 
 //
+// ..\src\gui\internal\AnchorPoint.js
+//
+
+NGUI.AnchorPoint = function(relative) {
+    this.target = undefined; // UnityEngine.Transform
+    this.relative = relative | 0;
+    this.absolute = 0;
+    this.rect = undefined; // NGUI.UIRect
+    this.targetCam = undefined; // NGUI.UICamera
+};
+
+NGUI.AnchorPoint.prototype = {
+    constructor: NGUI.AnchorPoint,
+    Set: function(target, relative, absolute) {
+        if (target instanceof UnityEngine.Transform) {
+            this.target = target;
+        } else {
+            absolute = relative;
+            relative = target;
+        }
+        this.relative = relative;
+        this.absolute = Math.floor(absolute + 0.5);
+    },
+    SetToNearest: function(abs0, abs1, abs2, rel0, rel1, rel2) {
+        var a0 = Math.abs(abs0);
+        var a1 = Math.abs(abs1);
+        var a2 = Math.abs(abs2);
+        if (a0 < a1 && a0 < a2) this.Set(rel0 | 0, abs0);
+        else if (a1 < a0 && a1 < a2) this.Set(rel1 | 0.5, abs1);
+        else this.Set(rel2 | 1, abs2);
+    },
+    SetHorizontal: function(parent, localPos) {
+        if (this.rect) {
+            var sides = this.rect.GetSides(parent);
+            var targetPos = Mathf.Lerp(sides[0].x, sides[2].x, relative);
+            this.absolute = Mathf.FloorToInt(localPos - targetPos + 0.5);
+        } else {
+            var targetPos = target.position;
+            if (parent !== undefined) targetPos = parent.InverseTransformPoint(targetPos);
+            this.absolute = Mathf.FloorToInt(localPos - targetPos.x + 0.5);
+        }
+    },
+    SetVertical: function(parent, localPos) {
+        if (this.rect) {
+            var sides = this.rect.GetSides(parent);
+            var targetPos = Mathf.Lerp(sides[3].y, sides[1].y, relative);
+            this.absolute = Mathf.FloorToInt(localPos - targetPos + 0.5);
+        } else {
+            var targetPos = target.position;
+            if (parent !== undefined) targetPos = parent.InverseTransformPoint(targetPos);
+            this.absolute = Mathf.FloorToInt(localPos - targetPos.y + 0.5);
+        }
+    },
+    GetSides: function(relativeTo) {
+        if (this.target !== undefined) {
+            if (this.rect !== undefined) return this.rect.GetSides(relativeTo);
+            if (this.target.camera !== undefined) return this.target.camera.GetSides(relativeTo);
+        }
+        return undefined;
+    }
+};
+
+//
 // ..\src\gui\internal\NGUIMath.js
 //
 
@@ -837,12 +1016,12 @@ NGUIMath = {
 	},
 	GetPivotOffset: function(pv) {
 		var v = new UnityEngine.Vector2();
-		if (pv == NGUI.UIWidget.Pivot.Top || pv == NGUI.UIWidget.Pivot.Center || pv == NGUI.UIWidget.Pivot.Bottom) v.x = 0.5;
-		else if (pv == NGUI.UIWidget.Pivot.TopRight || pv == NGUI.UIWidget.Pivot.Right || pv == NGUI.UIWidget.Pivot.BottomRight) v.x = 1;
+		if (pv == WidgetPivot.Top || pv == WidgetPivot.Center || pv == WidgetPivot.Bottom) v.x = 0.5;
+		else if (pv == WidgetPivot.TopRight || pv == WidgetPivot.Right || pv == WidgetPivot.BottomRight) v.x = 1;
 		else v.x = 0;
 
-		if (pv == NGUI.UIWidget.Pivot.Left || pv == NGUI.UIWidget.Pivot.Center || pv == NGUI.UIWidget.Pivot.Right) v.y = 0.5;
-		else if (pv == NGUI.UIWidget.Pivot.TopLeft || pv == NGUI.UIWidget.Pivot.Top || pv == NGUI.UIWidget.Pivot.TopRight) v.y = 1;
+		if (pv == WidgetPivot.Left || pv == WidgetPivot.Center || pv == WidgetPivot.Right) v.y = 0.5;
+		else if (pv == WidgetPivot.TopLeft || pv == WidgetPivot.Top || pv == WidgetPivot.TopRight) v.y = 1;
 		else v.y = 0;
 
 		return v;
@@ -877,7 +1056,7 @@ NGUI.UIDrawCall = function (name, panel, material) {
 	this.renderQueue = panel.startingRenderQueue;
 	this.mSortingOrder = panel.mSortingOrder;
 	this.manager = panel;
-	this.panel = null; // NGUI.UIPanel
+	this.panel = undefined; // NGUI.UIPanel
 	
 	this.verts = [];// Vector3
 	this.uvs = [];// Vector3
@@ -935,11 +1114,65 @@ NGUI.UIGeometry.prototype = {
 NGUI.UIRect = function(gameObject) {
 	UnityEngine.MonoBehaviour.call(gameObject);
 
+	this.leftAnchor = new NGUI.AnchorPoint();
+	this.rightAnchor = new NGUI.AnchorPoint();
+	this.bottomAnchor = new NGUI.AnchorPoint();
+	this.topAnchor = new NGUI.AnchorPoint();
+
 	this.finalAlpha = 1;
+	this.mSides = [];
+	this.mCam = undefined;
+	this.mUpdateAnchors = true;
+	this.mUpdateFrame = -1;
+	this.mAnchorsCached = false;
 };
 
 Object.assign(NGUI.UIRect.prototype, UnityEngine.MonoBehaviour.prototype, {
 	constructor: NGUI.UIRect,
+	cameraRayDistance: function() {
+		if (this.mCam === undefined) return 0;
+		if (this.mCam.isOrthoGraphic) return 100;
+		return (this.mCam.nearClipPlane + this.mCam.farClipPlane) * 0.5;
+	},
+	Load: function(json) {
+
+	},
+	GetSides: function(relativeTo) {
+		if (this.mCam !== undefined) return this.mCam.GetSides(this.cameraRayDistance(), relativeTo);
+		var pos = this.transform.position;
+		for (var i = 0; i < 4; ++i) this.mSides[i] = pos;
+		if (relativeTo !== undefined) {
+			for (var i = 0; i < 4; ++i)
+				this.mSides[i] = relativeTo.InverseTransformPoint(this.mSides[i]);
+		}
+		return this.mSides;
+	},
+	OnAnchor: function() { },
+	UpdateAnchors: function(frame) {
+		var anchored = false;
+		this.mUpdateFrame = frame;
+		if (this.leftAnchor.target !== undefined) {
+			anchored = true;
+			if (this.leftAnchor.rect !== undefined && this.leftAnchor.rect.mUpdateFrame !== frame)
+				this.leftAnchor.rect.UpdateAnchors(frame);
+		}
+		if (this.bottomAnchor.target!== undefined) {
+			anchored = true;
+			if (this.bottomAnchor.rect !== undefined && this.bottomAnchor.rect.mUpdateFrame !== frame)
+				this.bottomAnchor.rect.UpdateAnchors(frame);
+		}
+		if (this.rightAnchor.target!== undefined) {
+			anchored = true;
+			if (this.rightAnchor.rect !== undefined && this.rightAnchor.rect.mUpdateFrame !== frame)
+				this.rightAnchor.rect.UpdateAnchors(frame);
+		}
+		if (this.topAnchor.target!== undefined) {
+			anchored = true;
+			if (this.topAnchor.rect !== undefined && this.topAnchor.rect.mUpdateFrame !== frame)
+				this.topAnchor.rect.UpdateAnchors(frame);
+		}
+		if (anchored) this.OnAnchor();
+	},
 });
 
 //
@@ -950,7 +1183,7 @@ NGUI.UIWidget = function(gameObject) {
 	NGUI.UIRect.call(gameObject);
 	
 	this.mColor = new UnityEngine.Color(1, 1, 1), // UnityEngine.ColorKeywords.white
-	this.mPivot = NGUI.UIWidget.Pivot.Center;
+	this.mPivot = WidgetPivot.Center;
 	this.mWidth = 100;
 	this.mHeight = 100;
 	this.mDepth = 0;
@@ -964,13 +1197,18 @@ NGUI.UIWidget = function(gameObject) {
 	this.mMatrixFrame = 1;
 
 	// public variables.
+	this.minWidth = 2;
+	this.minHeight = 2;
+	this.aspectRatio = 1;
+	this.keepAspectRatio = AspectRatioSource.Free;
 	this.fillGeometry = true;
-	this.panel = null;
-	this.drawCall = null;
+	this.autoResizeBoxCollider = true;
+	this.panel = undefined;
+	this.drawCall = undefined;
 	this.geometry = new NGUI.UIGeometry();
 };
 
-NGUI.UIWidget.Pivot = {
+WidgetPivot = {
 	TopLeft: 0,
 	Top: 1,
 	TopRight: 2,
@@ -982,13 +1220,34 @@ NGUI.UIWidget.Pivot = {
 	BottomRight: 8,
 };
 
+AspectRatioSource = {
+	Free: 0,
+	BasedOnWidth: 1,
+	BasedOnHeight: 2,
+}
+
 Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 	constructor: NGUI.UIWidget,
 	get pivotOffset() { return NGUIMath.GetPivotOffset(this.mPivot); },
-	get material() { return null; },
+	get material() { return undefined; },
 	isVisible: function() { return this.mIsVisibleByAlpha && this.mIsVisibleByPanel && this.mIsInFront && this.finalAlpha > 0.001; },
 	hasVertices: function() { return this.geometry.hasVertices(); },
 	border: function() { return new UnityEngine.Vector4(0, 0, 0, 0); },
+	drawingDimensions: function() {
+		var offset = this.pivotOffset;
+		var x0 = -offset.x * this.mWidth;
+		var y0 = -offset.y * this.mHeight;
+		var x1 = x0 + this.mWidth;
+		var y1 = y0 + this.mHeight;
+		return new UnityEngine.Vector4(
+			this.mDrawRegion.x == 0 ? x0 : Mathf.Lerp(x0, x1, this.mDrawRegion.x),
+			this.mDrawRegion.y == 0 ? y0 : Mathf.Lerp(y0, y1, this.mDrawRegion.y),
+			this.mDrawRegion.z == 1 ? x1 : Mathf.Lerp(x0, x1, this.mDrawRegion.z),
+			this.mDrawRegion.w == 1 ? y1 : Mathf.Lerp(y0, y1, this.mDrawRegion.w));
+	},
+	Load: function(json) {
+		//NGUI.UIRect.Load.call(json);
+	},
 	OnFill: function(verts, uvs, cols) { },
 	UpdateVisibility: function(visibleByAlpha, visibleByPanel) {
 		if (this.mIsVisibleByAlpha != visibleByAlpha || this.mIsVisibleByPanel != visibleByPanel) {
@@ -999,17 +1258,98 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 		}
 		return false;
 	},
-	drawingDimensions: function() {
-		var offset = this.pivotOffset;
-		var x0 = -offset.x * this.mWidth;
-		var y0 = -offset.y * this.mHeight;
-		var x1 = x0 + this.mWidth;
-		var y1 = y0 + this.mHeight;
-		return new UnityEngine.Vector4(
-			this.mDrawRegion.x == 0 ? x0 : UnityEngine.Mathf.Lerp(x0, x1, this.mDrawRegion.x),
-			this.mDrawRegion.y == 0 ? y0 : UnityEngine.Mathf.Lerp(y0, y1, this.mDrawRegion.y),
-			this.mDrawRegion.z == 1 ? x1 : UnityEngine.Mathf.Lerp(x0, x1, this.mDrawRegion.z),
-			this.mDrawRegion.w == 1 ? y1 : UnityEngine.Mathf.Lerp(y0, y1, this.mDrawRegion.w));
+	OnAnchor: function() {
+		var lt, bt, rt, tt;
+		var trans = this.transform;
+		var parent = trans.parent;
+		var pos = trans.localPosition;
+		var pvt = this.pivotOffset;
+
+		// Attempt to fast-path if all anchors match
+		if (this.leftAnchor.target === this.bottomAnchor.target &&
+			this.leftAnchor.target === this.rightAnchor.target &&
+			this.leftAnchor.target === this.topAnchor.target) {
+			var sides = this.leftAnchor.GetSides(parent);
+			if (sides !== undefined) {
+				lt = NGUIMath.Lerp(sides[0].x, sides[2].x, this.leftAnchor.relative) + this.leftAnchor.absolute;
+				rt = NGUIMath.Lerp(sides[0].x, sides[2].x, this.rightAnchor.relative) + this.rightAnchor.absolute;
+				bt = NGUIMath.Lerp(sides[3].y, sides[1].y, this.bottomAnchor.relative) + this.bottomAnchor.absolute;
+				tt = NGUIMath.Lerp(sides[3].y, sides[1].y, this.topAnchor.relative) + this.topAnchor.absolute;
+				this.mIsInFront = true;
+			} else { // Anchored to a single transform
+				var lp = this.GetLocalPos(leftAnchor, parent);
+				lt = lp.x + this.leftAnchor.absolute;
+				bt = lp.y + this.bottomAnchor.absolute;
+				rt = lp.x + this.rightAnchor.absolute;
+				tt = lp.y + this.topAnchor.absolute;
+				this.mIsInFront = (!this.hideIfOffScreen || lp.z >= 0);
+			}
+		} else {
+			this.mIsInFront = true;
+			if (this.leftAnchor.target !== undefined) { // Left anchor point
+				var sides = this.leftAnchor.GetSides(parent);
+				if (sides !== undefined)
+					lt = Mathf.Lerp(sides[0].x, sides[2].x, this.leftAnchor.relative) + this.leftAnchor.absolute;
+				else
+					lt = this.GetLocalPos(this.leftAnchor, parent).x + this.leftAnchor.absolute;
+			}
+			else lt = pos.x - pvt.x * this.mWidth;
+			if (this.rightAnchor.target !== undefined) { // Right anchor point
+				var sides = this.rightAnchor.GetSides(parent);
+				if (sides !== undefined)
+					rt = Mathf.Lerp(sides[0].x, sides[2].x, this.rightAnchor.relative) + this.rightAnchor.absolute;
+				else
+					rt = this.GetLocalPos(this.rightAnchor, parent).x + this.rightAnchor.absolute;
+			}
+			else rt = pos.x - pvt.x * this.mWidth + this.mWidth;
+			if (this.bottomAnchor.target !== undefined) { // Bottom anchor point
+				var sides = this.bottomAnchor.GetSides(parent);
+				if (sides !== undefined)
+					bt = Mathf.Lerp(sides[3].y, sides[1].y, this.bottomAnchor.relative) + this.bottomAnchor.absolute;
+				else
+					bt = this.GetLocalPos(this.bottomAnchor, parent).y + this.bottomAnchor.absolute;
+			}
+			else bt = pos.y - pvt.y * MathfmHeight;
+			if (this.topAnchor.target !== undefined) { // Top anchor point
+				var sides = this.topAnchor.GetSides(parent);
+				if (this.sides != null)
+					tt = Mathf.Lerp(sides[3].y, sides[1].y, this.topAnchor.relative) + this.topAnchor.absolute;
+				else
+					tt = this.GetLocalPos(this.topAnchor, parent).y + this.topAnchor.absolute;
+			}
+			else tt = pos.y - pvt.y * this.mHeight + this.mHeight;
+		}
+
+		// Calculate the new position, width and height
+		var newPos = new UnityEngine.Vector3(Mathf.Lerp(lt, rt, pvt.x), Mathf.Lerp(bt, tt, pvt.y), pos.z);
+		var w = Mathf.FloorToInt(rt - lt + 0.5);
+		var h = Mathf.FloorToInt(tt - bt + 0.5);
+
+		// Maintain the aspect ratio if requested and possible
+		if (this.keepAspectRatio !== AspectRatioSource.Free && this.aspectRatio !== 0) {
+			if (keepAspectRatio === AspectRatioSource.BasedOnHeight)
+				w = Mathf.RoundToInt(h * this.aspectRatio);
+			else h = Mathf.RoundToInt(w / this.aspectRatio);
+		}
+
+		// Don't let the width and height get too small
+		if (w < this.minWidth) w = this.minWidth;
+		if (h < this.minHeight) h = this.minHeight;
+
+		// Update the position if it has changed
+		if (UnityEngine.Vector3.SqrMagnitude(pos, newPos) > 0.001) {
+			this.transform.localPosition = newPos;
+			this.transform.needUpdate = true;
+			if (this.mIsInFront) this.mChanged = true;
+		}
+
+		// Update the width and height if it has changed
+		if (this.mWidth !== w || this.mHeight !== h) {
+			this.mWidth = w;
+			this.mHeight = h;
+			if (this.mIsInFront) this.mChanged = true;
+			//if (autoResizeBoxCollider) ResizeCollider();
+		}
 	},
 	UpdateGeometry: function(frame) {
 		if (this.mChanged) {
@@ -1519,12 +1859,12 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		if (this.mUpdateScroll) {
 			this.mUpdateScroll = false;
 			//UIScrollView sv = GetComponent<UIScrollView>();
-			//if (sv != null) sv.UpdateScrollbars();
+			//if (sv !== undefined) sv.UpdateScrollbars();
 		}
 	},
 	UpdateTransformMatrix: function(frame) {
 		this.worldToLocal = this.transform.worldToLocalMatrix;
-		var size = this.GetViewSize() * 0.5;
+		var size = this.GetViewSize().multiplyScalar(0.5);
 		var x = this.mClipOffset.x + this.mClipRange.x;
 		var y = this.mClipOffset.y + this.mClipRange.y;
 		this.mMin.x = x - size.x;
@@ -1552,7 +1892,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 			if (w.UpdateGeometry(frame)) {
 				changed = true;
 				if (!this.mRebuild) {
-					if (w.drawCall != null)
+					if (w.drawCall !== undefined)
 						w.drawCall.isDirty = true;
 					else
 						this.FindDrawCall(w);
@@ -1575,7 +1915,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		if (this.drawCallClipRange.w == 0) this.drawCallClipRange.w = NGUITools.screenSize.y * 0.5;
 		var pos = this.transform.localPosition;
 		var parent = this.transform.parent;
-		if (parent != null)
+		if (parent !== undefined)
 			pos = parent.TransformPoint(pos);
 
 		var rot = this.transform.rotation;
@@ -1594,28 +1934,28 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		if (this.drawCall.length > 0)
 			this.drawCall.length = 0; // clear drawCalls
 
-		var mat = null;
-		var dc = null;
+		var mat = undefined;
+		var dc = undefined;
 		var count = 0;
 		for (var i in this.widgets) {
 			var w = this.widgets[i];
 			if (!w.isVisible() || !w.hasVertices()) {
-				w.drawCall = null;
+				w.drawCall = undefined;
 				continue;
 			}
 			var mt = w.material;
 			if (mat != mt) {
-				if (dc != null && dc.verts.length != 0) {
+				if (dc !== undefined && dc.verts.length != 0) {
 					this.drawCalls.push(dc);
 					dc.UpdateGeometry(count);
 					count = 0;
-					dc = null;
+					dc = undefined;
 				}
 				mat = mt;
 			}
 
-			if (mat != null) {
-				if (dc == null) {
+			if (mat !== undefined) {
+				if (dc === undefined) {
 					dc = new NGUI.UIDrawCall("", this, mat);
 					dc.depthStart = w.mDepth;
 					dc.depthEnd = dc.depthStart;
@@ -1657,14 +1997,14 @@ Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
 
 NGUI.UISprite = function() {
 	NGUI.UIBasicSprite.call();
-	this.mAtlas = null;
+	this.mAtlas = undefined;
 	this.mSpriteName = '';
-	this.mSprite = null; // refrence to UISpriteData
+	this.mSprite = undefined; // refrence to UISpriteData
 };
 
 Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
 	constructor: NGUI.UISprite,
-	get material() { return this.mAtlas ? this.mAtlas.material : null; },
+	get material() { return this.mAtlas ? this.mAtlas.material : undefined; },
 	border: function() {
 		var sp = this.GetAtlasSprite();
 		if (sp) return new UnityEngine.Vector4(sp.borderLeft, sp.borderBottom, sp.borderRight, sp.borderTop);
@@ -1679,7 +2019,7 @@ Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
 		// this.mAtlas, find atlas...
 	},
 	OnFill: function(verts, uvs, cols) {
-		var tex = this.mAtlas ? this.mAtlas.material.map : null;
+		var tex = this.mAtlas ? this.mAtlas.material.map : undefined;
 		if (!tex || !tex.image) return;
 
 		var sprite = this.GetAtlasSprite();
