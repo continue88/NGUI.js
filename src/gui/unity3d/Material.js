@@ -1,6 +1,6 @@
 
 UnityEngine.Material = function() {
-	this.shader = null; // UnityEngine.Shader
+	this.shader = undefined; // UnityEngine.Shader
 };
 
 UnityEngine.Material.prototype = {

@@ -5,6 +5,15 @@ UnityEngine.Vector3 = function ( x, y, z ) {
 	this.z = z || 0;
 };
 
+UnityEngine.Vector3.SqrMagnitude = function(v1, v2) {
+	if (v2 === undefined)
+		return v1.x * v1.x + v1.y * v1.y + v1.z * v1.z;
+	var x = v1.x - v2.x,
+		y = v1.y - v2.y,
+		z = v1.z - v2.z;
+	return x * x + y * y + z * z;
+}
+
 UnityEngine.Vector3.prototype = {
 	constructor: UnityEngine.Vector3,
 	set: function(x, y, z) { this.x = x; this.y = y; this.z = z; },

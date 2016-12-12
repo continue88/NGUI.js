@@ -1,14 +1,14 @@
 
 NGUI.UISprite = function() {
 	NGUI.UIBasicSprite.call();
-	this.mAtlas = null;
+	this.mAtlas = undefined;
 	this.mSpriteName = '';
-	this.mSprite = null; // refrence to UISpriteData
+	this.mSprite = undefined; // refrence to UISpriteData
 };
 
 Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
 	constructor: NGUI.UISprite,
-	get material() { return this.mAtlas ? this.mAtlas.material : null; },
+	get material() { return this.mAtlas ? this.mAtlas.material : undefined; },
 	border: function() {
 		var sp = this.GetAtlasSprite();
 		if (sp) return new UnityEngine.Vector4(sp.borderLeft, sp.borderBottom, sp.borderRight, sp.borderTop);
@@ -23,7 +23,7 @@ Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
 		// this.mAtlas, find atlas...
 	},
 	OnFill: function(verts, uvs, cols) {
-		var tex = this.mAtlas ? this.mAtlas.material.map : null;
+		var tex = this.mAtlas ? this.mAtlas.material.map : undefined;
 		if (!tex || !tex.image) return;
 
 		var sprite = this.GetAtlasSprite();

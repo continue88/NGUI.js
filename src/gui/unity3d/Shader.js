@@ -11,8 +11,8 @@ UnityEngine.Shader = function(gl, renderer, json) {
 	this.vertexShader = json.vertexShader | 'void main() {\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n}';
 	this.fragmentShader = json.fragmentShader | 'void main() {\n\tgl_FragColor = vec4( 1.0, 0.0, 0.0, 1.0 );\n}';
 
-	this.program = null;
-	this.gl = null; // parse form the context.
+	this.program = undefined;
+	this.gl = undefined; // parse form the context.
 	this.cachedUniforms = undefined;
 	this.cachedAttributes = undefined;
 

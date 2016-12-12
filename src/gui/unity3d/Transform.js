@@ -12,7 +12,8 @@ UnityEngine.Transform = function(gameObject) {
 
 	this.worldToLocalMatrix = new UnityEngine.Matrix4();
 	this.localToWorldMatrix = new UnityEngine.Matrix4();
-	this.parent = null; // UnityEngine.Transform
+
+	this.parent = undefined; // UnityEngine.Transform
 	this.children = [];
 	this.needUpdate = false;
 };
@@ -35,8 +36,12 @@ Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, 
 		var localMatrix = new UnityEngine.Matrix4();
 		localMatrix.SetTRS(this.localPosition, this.localRotation, this.localScale);
 		this.localToWorldMatrix.MultiplyMatrices(localMatrix, this.parent.localToWorldMatrix);
+		this.worldToLocalMatrix.getInverse(this.localToWorldMatrix);
 		for (var i in this.children)
 			this.children[i].Update();
+	},
+	InverseTransformPoint: function(pos) {
+		return this.worldToLocalMatrix.MultiplyPoint3x4(pos);
 	},
 	TransformPoint: function(pos) {
 		return this.localToWorldMatrix.MultiplyPoint3x4(pos);

@@ -101,12 +101,12 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		if (this.mUpdateScroll) {
 			this.mUpdateScroll = false;
 			//UIScrollView sv = GetComponent<UIScrollView>();
-			//if (sv != null) sv.UpdateScrollbars();
+			//if (sv !== undefined) sv.UpdateScrollbars();
 		}
 	},
 	UpdateTransformMatrix: function(frame) {
 		this.worldToLocal = this.transform.worldToLocalMatrix;
-		var size = this.GetViewSize() * 0.5;
+		var size = this.GetViewSize().multiplyScalar(0.5);
 		var x = this.mClipOffset.x + this.mClipRange.x;
 		var y = this.mClipOffset.y + this.mClipRange.y;
 		this.mMin.x = x - size.x;
@@ -134,7 +134,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 			if (w.UpdateGeometry(frame)) {
 				changed = true;
 				if (!this.mRebuild) {
-					if (w.drawCall != null)
+					if (w.drawCall !== undefined)
 						w.drawCall.isDirty = true;
 					else
 						this.FindDrawCall(w);
@@ -157,7 +157,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		if (this.drawCallClipRange.w == 0) this.drawCallClipRange.w = NGUITools.screenSize.y * 0.5;
 		var pos = this.transform.localPosition;
 		var parent = this.transform.parent;
-		if (parent != null)
+		if (parent !== undefined)
 			pos = parent.TransformPoint(pos);
 
 		var rot = this.transform.rotation;
@@ -176,28 +176,28 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		if (this.drawCall.length > 0)
 			this.drawCall.length = 0; // clear drawCalls
 
-		var mat = null;
-		var dc = null;
+		var mat = undefined;
+		var dc = undefined;
 		var count = 0;
 		for (var i in this.widgets) {
 			var w = this.widgets[i];
 			if (!w.isVisible() || !w.hasVertices()) {
-				w.drawCall = null;
+				w.drawCall = undefined;
 				continue;
 			}
 			var mt = w.material;
 			if (mat != mt) {
-				if (dc != null && dc.verts.length != 0) {
+				if (dc !== undefined && dc.verts.length != 0) {
 					this.drawCalls.push(dc);
 					dc.UpdateGeometry(count);
 					count = 0;
-					dc = null;
+					dc = undefined;
 				}
 				mat = mt;
 			}
 
-			if (mat != null) {
-				if (dc == null) {
+			if (mat !== undefined) {
+				if (dc === undefined) {
 					dc = new NGUI.UIDrawCall("", this, mat);
 					dc.depthStart = w.mDepth;
 					dc.depthEnd = dc.depthStart;
