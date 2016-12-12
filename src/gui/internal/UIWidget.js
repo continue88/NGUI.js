@@ -66,7 +66,7 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 			this.mDrawRegion.w == 1 ? y1 : Mathf.Lerp(y0, y1, this.mDrawRegion.w));
 	},
 	Load: function(json) {
-		//NGUI.UIRect.Load.call(json);
+		NGUI.UIRect.Load.call(this, json);
 	},
 	OnFill: function(verts, uvs, cols) { },
 	UpdateVisibility: function(visibleByAlpha, visibleByPanel) {

@@ -1,5 +1,6 @@
 
-UnityEngine.Camera = function() {
+UnityEngine.Camera = function(gameObject) {
+	UnityEngine.Component.call(gameObject);
     this.isOrthoGraphic = false;
     this.nearClipPlane = 0.1;
     this.farClipPlane = 1000;
@@ -17,7 +18,7 @@ Object.assign(NGUI.Camera.prototype, UnityEngine.Component.prototype, {
                 y0 = -os;
                 y1 = os;
 			var rect = this.rect;
-			var size = screenSize;
+			var size = NGUITools.screenSize;
 			var aspect = size.x / size.y;
 			aspect *= rect.width / rect.height;
 			x0 *= aspect;
