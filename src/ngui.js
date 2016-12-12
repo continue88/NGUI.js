@@ -17,7 +17,8 @@ NGUI={
 // ..\src\gui\unity3d\Camera.js
 //
 
-UnityEngine.Camera = function() {
+UnityEngine.Camera = function(gameObject) {
+	UnityEngine.Component.call(gameObject);
     this.isOrthoGraphic = false;
     this.nearClipPlane = 0.1;
     this.farClipPlane = 1000;
@@ -35,7 +36,7 @@ Object.assign(NGUI.Camera.prototype, UnityEngine.Component.prototype, {
                 y0 = -os;
                 y1 = os;
 			var rect = this.rect;
-			var size = screenSize;
+			var size = NGUITools.screenSize;
 			var aspect = size.x / size.y;
 			aspect *= rect.width / rect.height;
 			x0 *= aspect;
@@ -368,6 +369,98 @@ UnityEngine.Material.prototype = {
 };
 
 //
+// ..\src\gui\unity3d\Mesh.js
+//
+
+UnityEngine.Mesh = function() {
+    this.vertices = undefined;
+    this.uv = undefined;
+    this.colors = undefined;
+    this.colors32 = undefined;
+
+    this.triangles = undefined;
+    this.normals = undefined;
+    this.tangents = undefined;
+
+    this.attributes = {};
+};
+
+function CopyVector3sArray(vectors) {
+    var offset = 0;
+    var array = new Float32Array(vectors.length * 3);
+    for (var i in vectors) {
+        var vector = vectors[i];
+        array[offset++] = vector.x;
+        array[offset++] = vector.y;
+        array[offset++] = vector.z;
+    }
+    return array;
+}
+function CopyVector4sArray(vectors) {
+    var offset = 0;
+    var array = new Float32Array(vectors.length * 4);
+    for (var i in vectors) {
+        var vector = vectors[i];
+        array[offset++] = vector.x;
+        array[offset++] = vector.y;
+        array[offset++] = vector.z;
+        array[offset++] = vector.w;
+    }
+    return array;
+}
+function CopyVector2sArray(uv) {
+    var offset = 0;
+    var array = new Float32Array(vectors.length * 2);
+    for (var i in vectors) {
+        var vector = vectors[i];
+        array[offset++] = vector.x;
+        array[offset++] = vector.y;
+    }
+    return array;
+}
+function CopyColorsArray(colors) {
+    var offset = 0;
+    var array = new Float32Array(vectors.length * 3);
+    for (var i in colors) {
+        var color = colors[i];
+        array[offset++] = color.r;
+        array[offset++] = color.g;
+        array[offset++] = color.b;
+    }
+    return array;
+}
+function CopyColors32Array(colors32) {
+    var offset = 0;
+    var array = new Uint32Array(vectors.length);
+    for (var i in colors32) array[offset++] = colors32[i];
+    return array;
+}
+
+UnityEngine.Mesh.prototype = {
+    constructor: UnityEngine.Mesh,
+    UpdateBuffer: function(gl, name, dataArray, bufferType, dynamic) {
+        var attrib = this.attributes[name];
+        if (attrib === undefined) {
+            this.attributes[name] = attrib = {
+                glBuffer: gl.createBuffer(),
+                usage: dynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW,
+            };
+            gl.bindBuffer(bufferType, attrib.glBuffer);
+            gl.bufferData(bufferType, dataArray, attrib.usage);
+        } else {
+            gl.bindBuffer(bufferType, attrib.glBuffer);
+            gl.bufferSubData(bufferType, 0, dataArray);
+        }
+    },
+    UpdateBuffers: function(gl) {
+        if (this.vertices !== undefined) this.UpdateBuffer(gl, 'position', CopyVector3sArray(this.vertices), gl.ARRAY_BUFFER, true);
+        if (this.uv !== undefined) this.UpdateBuffer(gl, 'uv', CopyVector2sArray(this.uv), gl.ARRAY_BUFFER, true);
+        if (this.colors !== undefined) this.UpdateBuffer(gl, 'color', CopyColorsArray(this.colors), gl.ARRAY_BUFFER, true);
+        if (this.colors32 !== undefined) this.UpdateBuffer(gl, 'color', CopyColors32Array(this.colors32), gl.ARRAY_BUFFER, true);
+    },
+}
+
+//
 // ..\src\gui\unity3d\MonoBehaviour.js
 //
 
@@ -448,73 +541,67 @@ UnityEngine.Shader = function(gl, renderer, json) {
 	this.gl = undefined; // parse form the context.
 	this.cachedUniforms = undefined;
 	this.cachedAttributes = undefined;
+}
 
-	function fetchAttributeLocations(gl, program) {
-		var attributes = {};
-		var n = gl.getProgramParameter( program, gl.ACTIVE_ATTRIBUTES );
-		for ( var i = 0; i < n; i ++ ) {
-			var info = gl.getActiveAttrib( program, i );
-			var name = info.name;
-			attributes[ name ] = gl.getAttribLocation( program, name );
-		}
-		return attributes;
-	}
+UnityEngine.Shader.compileSource = function(gl, type, src) {
+	var shader = gl.createShader( type );
+	gl.shaderSource( shader, src );
+	gl.compileShader( shader );
+	if ( gl.getShaderParameter( shader, gl.COMPILE_STATUS ) === false )
+		console.error( 'THREE.WebGLShader: Shader couldn\'t compile.' );
+	return shader;
+}
 
-	function compileSource(gl, type, src) {
-		var shader = gl.createShader( type );
-		gl.shaderSource( shader, src );
-		gl.compileShader( shader );
-		if ( gl.getShaderParameter( shader, gl.COMPILE_STATUS ) === false )
-			console.error( 'THREE.WebGLShader: Shader couldn\'t compile.' );
-		return shader;
+UnityEngine.Shader.compileShader = function(gl, vertexShader, fragmentShader) {
+	var program = gl.createProgram();
+	var glVertexShader = UnityEngine.Shader.compileSource(gl, gl.VERTEX_SHADER, vertexShader);
+	var glFragmentShader = UnityEngine.Shader.compileSource(gl, gl.FRAGMENT_SHADER, fragmentShader);
+	gl.attachShader(program, glVertexShader);
+	gl.attachShader(program, glFragmentShader);
+	gl.linkProgram( program );
+	if (gl.getProgramParameter(program, gl.LINK_STATUS) === false) {
+		var programLog = gl.getProgramInfoLog(program);
+		var vertexLog = gl.getShaderInfoLog(glVertexShader);
+		var fragmentLog = gl.getShaderInfoLog(glFragmentShader);
+		console.error('THREE.WebGLProgram: shader error: ', 
+			gl.getError(), 
+			'gl.VALIDATE_STATUS',
+			gl.getProgramParameter(program, gl.VALIDATE_STATUS),
+			'gl.getProgramInfoLog', 
+			programLog,
+			vertexLog, 
+			fragmentLog);
 	}
+	gl.deleteShader(glVertexShader);
+	gl.deleteShader(glFragmentShader);
+	return program;
+}
 
-	function compileShader(gl, vertexShader, fragmentShader) {
-		var program = gl.createProgram();
-		var glVertexShader = compileSource(gl, gl.VERTEX_SHADER, vertexShader);
-		var glFragmentShader = compileSource(gl, gl.FRAGMENT_SHADER, fragmentShader);
-		gl.attachShader(program, glVertexShader);
-		gl.attachShader(program, glFragmentShader);
-		gl.linkProgram( program );
-		if (gl.getProgramParameter(program, gl.LINK_STATUS) === false) {
-			var programLog = gl.getProgramInfoLog(program);
-			var vertexLog = gl.getShaderInfoLog(glVertexShader);
-			var fragmentLog = gl.getShaderInfoLog(glFragmentShader);
-			console.error('THREE.WebGLProgram: shader error: ', 
-				gl.getError(), 
-				'gl.VALIDATE_STATUS',
-				gl.getProgramParameter(program, gl.VALIDATE_STATUS),
-				'gl.getProgramInfoLog', 
-				programLog,
-				vertexLog, 
-				fragmentLog);
-		}
-		gl.deleteShader(glVertexShader);
-		gl.deleteShader(glFragmentShader);
-		return program;
-	}
+UnityEngine.Shader.getUniforms = function(gl, program) {
+	return new UnityEngine.ShaderUniforms(gl, program, renderer);
+}
 
-	function getUniforms(gl, program) {
-		return new UnityEngine.ShaderUniforms(gl, program, renderer);
+UnityEngine.Shader.getAttributes = function(gl, program) {
+	var attributes = {};
+	var n = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
+	for (var i = 0; i < n; i ++) {
+		var info = gl.getActiveAttrib(program, i);
+		var name = info.name;
+		attributes[name] = gl.getAttribLocation(program, name);
 	}
-
-	function getAttributes(gl, program) {
-		var attributes = {};
-		var n = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
-		for (var i = 0; i < n; i ++) {
-			var info = gl.getActiveAttrib(program, i);
-			var name = info.name;
-			attributes[name] = gl.getAttribLocation(program, name);
-		}
-		return attributes;
-	}
-};
+	return attributes;
+}
 
 UnityEngine.Shader.prototype = {
 	constructor: UnityEngine.Shader,
 	destroy: function() {
 		this.gl.deleteProgram(this.program);
 		this.program = undefined;
+	},
+	getAttributes: function() {
+		if (this.cachedAttributes === undefined)
+			this.cachedAttributes = UnityEngine.Shader.getAttributes(this.gl, this.program);
+		return this.cachedAttributes;
 	},
 	PropertyToID: function(name) {
 		// parse property to id.
@@ -523,7 +610,6 @@ UnityEngine.Shader.prototype = {
 		this.vertexShader = json.vs;
 		this.fragmentShader = json.ps; 
 	},
-
 };
 
 //
@@ -1246,7 +1332,7 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 			this.mDrawRegion.w == 1 ? y1 : Mathf.Lerp(y0, y1, this.mDrawRegion.w));
 	},
 	Load: function(json) {
-		//NGUI.UIRect.Load.call(json);
+		NGUI.UIRect.Load.call(this, json);
 	},
 	OnFill: function(verts, uvs, cols) { },
 	UpdateVisibility: function(visibleByAlpha, visibleByPanel) {
@@ -1718,10 +1804,34 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 //
 
 GUIRenderer = function (params) {
+};
+
+GUIRenderer.prototype = {
+	renderSingleObject: function(gl, mesh, material) {
+		var shader = material.shader;
+		var meshAttributes = mesh.attributes;
+		var shaderAttributes = shader.getAttributes();
+		for (var name in shaderAttributes) {
+			var shaderAttribute = shaderAttributes[name];
+			if (shaderAttribute > 0) {
+				var meshAttribute = meshAttributes[name];
+				if (meshAttribute !== undefined) {
+					var type = gl.FLOAT;
+					var array = meshAttribute.array;
+					var normalized = geometryAttribute.normalized;
+					gl.bindBuffer(gl.ARRAY_BUFFER, buffer );
+					gl.vertexAttribPointer(shaderAttribute, size, type, normalized, 0, startIndex * size * array.BYTES_PER_ELEMENT );
+				}
+			} else {
+
+			}
+		}
+	},
+	renderObjects: function() {
+	},
 	render: function() {
-		
-	}
-}
+	},
+};
 
 //
 // ..\src\gui\ui\UIAtlas.js
