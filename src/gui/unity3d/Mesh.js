@@ -9,7 +9,7 @@ UnityEngine.Mesh = function() {
     this.normals = undefined;
     this.tangents = undefined;
 
-    this.attributs = {};
+    this.attributes = {};
 };
 
 function CopyVector3sArray(vectors) {
@@ -66,10 +66,12 @@ function CopyColors32Array(colors32) {
 UnityEngine.Mesh.prototype = {
     constructor: UnityEngine.Mesh,
     UpdateBuffer: function(gl, name, dataArray, bufferType, dynamic) {
-        var attrib = this.attributs[name];
+        var attrib = this.attributes[name];
         if (attrib === undefined) {
-            attrib.glBuffer = gl.createBuffer();
-            attrib.usage = dynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW;
+            this.attributes[name] = attrib = {
+                glBuffer: gl.createBuffer(),
+                usage: dynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW,
+            };
             gl.bindBuffer(bufferType, attrib.glBuffer);
             gl.bufferData(bufferType, dataArray, attrib.usage);
         } else {
