@@ -25,6 +25,7 @@ internal\UIRect.js
 internal\UIWidget.js
 internal\UIBasicSprite.js
 three\GUIRenderer.js
+three\GUIPlugin.js
 ui\UIAtlas.js
 ui\UIPanel.js
 ui\UIRoot.js
