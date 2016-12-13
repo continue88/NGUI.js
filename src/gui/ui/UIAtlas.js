@@ -1,6 +1,6 @@
 
 NGUI.UIAtlas = function(gameObject) {
-	this.material = undefined;
+	this.material = undefined; // { image:{width:100, height:100}, tex: './tex/atlas.png' }
 	this.mSprites = {}; // NGUI.UISpriteData
 }
 
