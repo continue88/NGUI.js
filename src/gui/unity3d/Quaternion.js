@@ -22,7 +22,22 @@ UnityEngine.Quaternion.prototype = {
 		this.w = c1 * c2 * c3 - s1 * s2 * s3;
 	},
 	eulerAngles: function() {
-		return new UnityEngine.Vector3();
+		var matrix = UnityEngine.Matrix4x4.Temp;
+		matrix.makeRotationFromQuaternion(this);
+		var te = matrix.elements;
+		var m11 = te[ 0 ], m12 = te[ 4 ], m13 = te[ 8 ];
+		var m21 = te[ 1 ], m22 = te[ 5 ], m23 = te[ 9 ];
+		var m31 = te[ 2 ], m32 = te[ 6 ], m33 = te[ 10 ];
+		var ret = new UnityEngine.Vector3();
+		ret.y = Math.asin(Mathf.Clamp( m13, -1, 1 ));
+		if (Math.abs( m13 ) < 0.99999) {
+			ret.x = Math.atan2( - m23, m33 );
+			ret.z = Math.atan2( - m12, m11 );
+		} else {
+			ret.x = Math.atan2( m32, m22 );
+			ret.z = 0;
+		}
+		return ret;
 	},
 	multiply: function(a, b) {
 		var qax = a.x, qay = a.y, qaz = a.z, qaw = a.w;

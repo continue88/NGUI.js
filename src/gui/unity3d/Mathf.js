@@ -6,6 +6,9 @@ Mathf = UnityEngine.Mathf = {
 	Lerp: function(t, a, b) {
 		return a + t * (b - a);
 	},
+	Clamp: function(val, min, max) {
+		return Math.min(Math.max(min, val), max);
+	},
 	Clamp01: function(val) {
 		return Math.min(Math.max(0, val), 1);
 	}
