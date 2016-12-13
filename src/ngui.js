@@ -23,12 +23,16 @@ UnityEngine.Camera = function(gameObject) {
     this.nearClipPlane = 0.1;
     this.farClipPlane = 1000;
     this.rect = new UnityEngine.Rect();
+
+	this.worldToCameraMatrix = new UnityEngine.Matrix4x4();
+	this.projectionMatrix = new UnityEngine.Matrix4x4();
+	this.cameraToWorldMatrix = new UnityEngine.Matrix4x4();
 };
 
 Object.assign(NGUI.Camera.prototype, UnityEngine.Component.prototype, {
     constructor: UnityEngine.Camera,
     GetSides: function(depth, relativeTo) {
-        mSides = [];
+        var mSides = [];
 		if (this.isOrthoGraphic) {
 			var os = this.orthographicSize;
                 x0 = -os;
@@ -51,10 +55,10 @@ Object.assign(NGUI.Camera.prototype, UnityEngine.Component.prototype, {
 			mSides[2] = rot * (new UnityEngine.Vector3(x1, 0, depth)) + pos;
 			mSides[3] = rot * (new UnityEngine.Vector3(0, y0, depth)) + pos;
 		} else {
-			mSides[0] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0, 0.5, depth));
-			mSides[1] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0.5, 1, depth));
-			mSides[2] = this.ViewportToWorldPoint(new UnityEngine.Vector3(1, 0.5, depth));
-			mSides[3] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0.5, 0, depth));
+			mSides[0] = this.ViewportToWorldPoint(0, 0.5, depth);
+			mSides[1] = this.ViewportToWorldPoint(0.5, 1, depth);
+			mSides[2] = this.ViewportToWorldPoint(1, 0.5, depth);
+			mSides[3] = this.ViewportToWorldPoint(0.5, 0, depth);
 		}
 		
 		if (relativeTo !== undefined) {
@@ -63,9 +67,12 @@ Object.assign(NGUI.Camera.prototype, UnityEngine.Component.prototype, {
 		}
 		return mSides;
     },
-    ViewportToWorldPoint: function(point) {
+    ViewportToWorldPoint: function(screenX, screenY, screenZ) {
+		screenX = 2 * screenX - 1;
+		screenY = 1 - 2 * screenY;
+		// TODO: ViewportToWorldPoint
     },
-};
+});
 
 
 //
@@ -96,6 +103,17 @@ UnityEngine.Color.prototype = {
 };
 
 //
+// ..\src\gui\unity3d\Color32.js
+//
+
+UnityEngine.Color32 = function(r, g, b, a) {
+    this.r = r || 0;
+    this.g = g || 0;
+    this.b = b || 0;
+    this.a = a || 255;
+};
+
+//
 // ..\src\gui\unity3d\Component.js
 //
 
@@ -120,16 +138,17 @@ UnityEngine.GameObject = function () {
 
 UnityEngine.GameObject.prototype = {
 	constructor: UnityEngine.GameObject,
+	GetComponent: function(typeName) {
+		var componentType = NGUI[componentTypeName] | UnityEngine[componentTypeName];
+		for (var i in this.components) {
+			var comp = this.components[i];
+			if (comp instanceof componentType)
+				return comp;
+		}
+	},
 	Load: function(json) {
 		this.name = json.name;
 		if (json.transform) this.transform.Load(json.transform);
-		if (json.children) {
-			for (var i in json.children) {
-				var go = new UnityEngine.GameObject();
-				go.transform.setParent(this.transform);
-				go.Load(json.children[i]);
-			}
-		}
 		if (json.components) {
 			for (var i in json.components) {
 				var componentData = json.components[i];
@@ -142,6 +161,13 @@ UnityEngine.GameObject.prototype = {
 				}
 			}
 		}
+		if (json.children) {
+			for (var i in json.children) {
+				var go = new UnityEngine.GameObject();
+				go.transform.setParent(this.transform);
+				go.Load(json.children[i]);
+			}
+		}
 		return this;
 	},
 };
@@ -151,6 +177,8 @@ UnityEngine.GameObject.prototype = {
 //
 
 Mathf = UnityEngine.Mathf = {
+	Deg2Rad: 0.0174532924,
+	Rad2Deg: 57.29578,
 	FloorToInt: function(v) { return Math.floor(v); },
 	Lerp: function(t, a, b) {
 		return a + t * (b - a);
@@ -420,30 +448,49 @@ function CopyVector2sArray(uv) {
 }
 function CopyColorsArray(colors) {
     var offset = 0;
-    var array = new Float32Array(vectors.length * 3);
+    var array = new Float32Array(vectors.length * 4);
     for (var i in colors) {
         var color = colors[i];
         array[offset++] = color.r;
         array[offset++] = color.g;
         array[offset++] = color.b;
+        array[offset++] = color.a;
     }
     return array;
 }
 function CopyColors32Array(colors32) {
     var offset = 0;
-    var array = new Uint32Array(vectors.length);
-    for (var i in colors32) array[offset++] = colors32[i];
+    var array = new Uint8ClampedArray(colors32.length * 4);
+    for (var i in colors32) {
+        var color32 = colors32[i];
+        array[offset++] = color32.r;
+        array[offset++] = color32.g;
+        array[offset++] = color32.b;
+        array[offset++] = color32.a;
+    }
     return array;
 }
 
 UnityEngine.Mesh.prototype = {
     constructor: UnityEngine.Mesh,
-    UpdateBuffer: function(gl, name, dataArray, bufferType, dynamic) {
+    destroy: function() {
+        for (var i in this.attributes) {
+            var attrib = this.attributes[i];
+            // TODO: destroy attrib.glBuffer
+            gl.deleteBuffer(attrib.glBuffer);
+        }
+    },
+    UpdateBuffer: function(gl, name, dataArray, bufferType, dynamic, size, type, normalized, stride, offset) {
         var attrib = this.attributes[name];
         if (attrib === undefined) {
             this.attributes[name] = attrib = {
                 glBuffer: gl.createBuffer(),
                 usage: dynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW,
+                size: size,
+                type: type,
+                normalized: normalized,
+                stride: stride,
+                offset: offset,
             };
             gl.bindBuffer(bufferType, attrib.glBuffer);
             gl.bufferData(bufferType, dataArray, attrib.usage);
@@ -453,10 +500,37 @@ UnityEngine.Mesh.prototype = {
         }
     },
     UpdateBuffers: function(gl) {
-        if (this.vertices !== undefined) this.UpdateBuffer(gl, 'position', CopyVector3sArray(this.vertices), gl.ARRAY_BUFFER, true);
-        if (this.uv !== undefined) this.UpdateBuffer(gl, 'uv', CopyVector2sArray(this.uv), gl.ARRAY_BUFFER, true);
-        if (this.colors !== undefined) this.UpdateBuffer(gl, 'color', CopyColorsArray(this.colors), gl.ARRAY_BUFFER, true);
-        if (this.colors32 !== undefined) this.UpdateBuffer(gl, 'color', CopyColors32Array(this.colors32), gl.ARRAY_BUFFER, true);
+        if (this.vertices === undefined)
+            return; // skip update.
+
+        if (this.vertices !== undefined) this.UpdateBuffer(gl, 'position', this.vertices, gl.ARRAY_BUFFER, true, 3, gl.FLOAT, false, 3 * 4, 0);
+        if (this.uv !== undefined) this.UpdateBuffer(gl, 'uv', this.uv, gl.ARRAY_BUFFER, true, 2, gl.FLOAT, false, 2 * 4, 0);
+        if (this.colors !== undefined) this.UpdateBuffer(gl, 'color', this.colors, gl.ARRAY_BUFFER, true, 4, gl.FLOAT, false, 4 * 4, 0);
+        if (this.colors32 !== undefined) this.UpdateBuffer(gl, 'color', this.colors32, gl.ARRAY_BUFFER, true, 4, gl.GL_UNSIGNED_BYTE, false, 4 * 1, 0);
+        this.vertices = undefined;
+        this.uv = undefined;
+        this.colors = undefined;
+        this.colors32 = undefined;
+    },
+    CopyVertexData: function(verts, uvs, colors32) {
+        this.vertices = CopyVector3sArray(vertices);
+        this.uv = CopyVector2sArray(uvs);
+        this.colors32 = CopyColors32Array(colors32);
+    },
+    SetupVertexAttrib: function(gl, vertexAttrib, programAttrib) {
+        gl.bindBuffer( gl.ARRAY_BUFFER, vertexAttrib.glBuffer );
+        gl.vertexAttribPointer( programAttrib,
+            vertexAttrib.size, 
+            vertexAttrib.type, 
+            vertexAttrib.normalized, 
+            vertexAttrib.stride,
+            vertexAttrib.offset);
+    },
+    SetupVertexAttribs: function(gl, programAttributes) {
+        this.UpdateBuffers(gl);
+        this.SetupVertexAttrib(gl, this.attributes.position, programAttributes.position);
+        this.SetupVertexAttrib(gl, this.attributes.uv, programAttributes.uv);
+        this.SetupVertexAttrib(gl, this.attributes.color, programAttributes.color);
     },
 }
 
@@ -500,6 +574,9 @@ UnityEngine.Quaternion.prototype = {
 		this.z = c1 * c2 * s3 + s1 * s2 * c3;
 		this.w = c1 * c2 * c3 - s1 * s2 * s3;
 	},
+	eulerAngles: function() {
+		return new UnityEngine.Vector3();
+	}
 };
 
 //
@@ -842,6 +919,7 @@ UnityEngine.Vector2 = function ( x, y ) {
 UnityEngine.Vector2.prototype = {
 	constructor: UnityEngine.Vector2,
 	set: function(x, y) { this.x = x; this.y = y; },
+	clone: function () { return new this.constructor( this.x, this.y ); },
     add: function(v) {
 		this.x += v.x;
 		this.y += v.y;
@@ -906,6 +984,7 @@ UnityEngine.Vector3.SqrMagnitude = function(v1, v2) {
 UnityEngine.Vector3.prototype = {
 	constructor: UnityEngine.Vector3,
 	set: function(x, y, z) { this.x = x; this.y = y; this.z = z; },
+	clone: function () { return new this.constructor( this.x, this.y, this.z ); },
 	add: function(v) {
 		this.x += v.x;
 		this.y += v.y;
@@ -968,6 +1047,7 @@ UnityEngine.Vector4 = function ( x, y, z, w ) {
 UnityEngine.Vector4.prototype = {
 	constructor: UnityEngine.Vector4,
 	set: function(x, y, z, w) { this.x = x; this.y = y; this.z = z; this.w = w; },
+	clone: function () { return new this.constructor( this.x, this.y, this.z, this.w ); },
 	add: function(v) {
 		this.x += v.x;
 		this.y += v.y;
@@ -1117,7 +1197,12 @@ NGUIMath = {
 		while (val < 0) val += max;
 		while (val >= max) val -= max;
 		return val;
-	}
+	},
+	WrapAngle: function(angle) {
+		while (angle > 180) angle -= 360;
+		while (angle < -180) angle += 360;
+		return angle;
+	},
 };
 
 //
@@ -1126,6 +1211,17 @@ NGUIMath = {
 
 NGUITools = {
 	screenSize: new UnityEngine.Vector2(100, 100),
+	FindInParents: function(go, typeName) {
+		var comp = go.GetComponent(typeName);
+		if (comp === undefined) {
+			var t = go.transform.parent;
+			while (t !== undefined && comp === undefined) {
+				comp = t.gameObject.GetComponent(typeName);
+				t = t.parent;
+			}
+		}
+		return comp;
+	},
 };
 
 //
@@ -1133,6 +1229,9 @@ NGUITools = {
 //
 
 NGUI.UIDrawCall = function (name, panel, material) {
+
+	this.mClipCount = panel.clipCount();
+
 	this.widgetCount = 0;
 	this.depthStart = 2147483647; // MaxValue = 2147483647
 	this.depthEnd = -2147483648; // int.MinValue = -2147483648;
@@ -1142,16 +1241,63 @@ NGUI.UIDrawCall = function (name, panel, material) {
 	this.renderQueue = panel.startingRenderQueue;
 	this.mSortingOrder = panel.mSortingOrder;
 	this.manager = panel;
-	this.panel = undefined; // NGUI.UIPanel
+	this.panel = panel; // NGUI.UIPanel
 	
 	this.verts = [];// Vector3
-	this.uvs = [];// Vector3
+	this.uvs = [];// Vector2
 	this.cols = [];// Vector3
+
+	this.mMesh = undefined;
+
+	this.ClipRange = []; // Vector4
+	this.ClipArgs = []; // Vector4
 };
 
 NGUI.UIDrawCall.prototype = {
 	constructor: NGUI.UIDrawCall,
+	destroy: function() {
+		if (this.mMesh) {
+			this.mMesh.destroy();
+			this.mMesh = undefined;
+		}
+	},
 	UpdateGeometry: function(count) {
+		this.mMesh = new UnityEngine.Mesh();
+		this.mMesh.CopyVertexData(this.verts, this.uvs, this.cols);
+		this.verts.length = 0;
+		this.uvs.length = 0;
+		this.cols.length = 0;
+	},
+	SetClipping: function(index, cr, soft, angle) {
+		angle *= -Mathf.Deg2Rad;
+		var sharpness = new UnityEngine.Vector2(1000.0, 1000.0);
+		if (soft.x > 0) sharpness.x = cr.z / soft.x;
+		if (soft.y > 0) sharpness.y = cr.w / soft.y;
+		this.ClipRange[index] = new UnityEngine.Vector4(-cr.x / cr.z, -cr.y / cr.w, 1 / cr.z, 1 / cr.w);
+		this.ClipArgs[index] = new UnityEngine.Vector4(sharpness.x, sharpness.y, Math.sin(angle), Math.cos(angle));
+	},
+	OnWillRenderObject: function() {
+		var currentPanel = this.panel;
+		for (var i = 0; currentPanel !== undefined; ) {
+			if (currentPanel.hasClipping) {
+				var angle = 0;
+				var cr = currentPanel.drawCallClipRange.clone();
+				if (currentPanel != this.panel) {
+					var pos = currentPanel.transform.InverseTransformPoint(this.panel.transform.position);
+					cr.x -= pos.x;
+					cr.y -= pos.y;
+					var v0 = this.panel.transform.rotation.eulerAngles();
+					var v1 = currentPanel.transform.rotation.eulerAngles();
+					var diff = v1.sub(v0);
+					diff.x = NGUIMath.WrapAngle(diff.x);
+					diff.y = NGUIMath.WrapAngle(diff.y);
+					diff.z = NGUIMath.WrapAngle(diff.z);
+					angle = diff.z;
+				}
+				this.SetClipping(i++, cr, currentPanel.clipSoftness, angle);
+			}
+			currentPanel = currentPanel.parentPanel;
+		}
 	},
 };
 
@@ -1170,27 +1316,23 @@ NGUI.UIGeometry.prototype = {
 	constructor: NGUI.UIGeometry,
 	hasVertices: function() { return this.verts.length > 0; },
 	clear: function() {
-		if (this.verts.length > 0) this.verts = [];
-		if (this.uvs.length > 0) this.uvs = [];
-		if (this.cols.length > 0) this.cols = [];
-		if (this.mRtpVerts.length > 0) this.mRtpVerts = [];
+		this.verts.length = 0;
+		this.uvs.length = 0;
+		this.cols.length = 0;
+		this.mRtpVerts.length = 0;
 	},
 	ApplyTransform: function(widgetToPanel) {
-		if (this.verts.length > 0) {
-			this.mRtpVerts = [];
-			for (var i = 0, imax = this.verts.length; i < imax; ++i) 
-				this.mRtpVerts.push(widgetToPanel.MultiplyPoint3x4(this.verts[i]));
-		}
-		else if (this.mRtpVerts.length > 0)
-			this.mRtpVerts = [];
+		this.mRtpVerts.length = 0;
+		for (var i in this.verts)
+			this.mRtpVerts.push(widgetToPanel.MultiplyPoint3x4(this.verts[i]));
 	},
 	WriteToBuffers: function(v, u, c) {
-		for (var i = 0; i < this.mRtpVerts.length; ++i) {
+		for (var i in this.mRtpVerts) {
 			v.push(this.mRtpVerts.buffer[i]);
 			u.push(this.uvs.buffer[i]);
 			c.push(this.cols.buffer[i]);
 		}
-	}
+	},
 }
 
 //
@@ -1533,7 +1675,13 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 			default: return new UnityEngine.Vector4(this.mOuterUV.xMin, this.mOuterUV.yMin, this.mOuterUV.xMax, this.mOuterUV.yMax);
 		}
 	},
-	drawingColor: function() { return new UnityEngine.Color(this.mColor.r, this.mColor.g, this.mColor.b, this.this.finalAlpha); },
+	drawingColor: function() { 
+		return new UnityEngine.Color32(
+			this.mColor.r * 255,
+			this.mColor.g * 255,
+			this.mColor.b * 255,
+			this.this.finalAlpha * 255); 
+	},
 	Fill: function(verts, uvs, cols, outer, inner) {
 		this.mOuterUV = outer;
 		this.mInnerUV = inner;
@@ -1799,6 +1947,72 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 });
 
 
+NGUI.UIBasicSprite.RadialCut = function(xy, uv, fill, invert, corner) {
+	if (fill < 0.001) return false;
+	if ((corner & 1) == 1) invert = !invert;
+	if (!invert && fill > 0.999) return true;
+	
+	var angle = Mathf.Clamp01(fill);
+	if (invert) angle = 1 - angle;
+	angle *= 90 * Mathf.Deg2Rad;
+
+	var cos = Math.cos(angle);
+	var sin = Math.sin(angle);
+	NGUI.UIBasicSprite.RadialCut2(xy, cos, sin, invert, corner);
+	NGUI.UIBasicSprite.RadialCut2(uv, cos, sin, invert, corner);
+	return true;
+}
+
+NGUI.UIBasicSprite.RadialCut2 = function(xy, cos, sin, invert, corner) {
+	var i0 = corner;
+	var i1 = NGUIMath.RepeatIndex(corner + 1, 4);
+	var i2 = NGUIMath.RepeatIndex(corner + 2, 4);
+	var i3 = NGUIMath.RepeatIndex(corner + 3, 4);
+	if ((corner & 1) == 1) {
+		if (sin > cos) {
+			cos /= sin;
+			sin = 1;
+			if (invert) {
+				xy[i1].x = Mathf.Lerp(xy[i0].x, xy[i2].x, cos);
+				xy[i2].x = xy[i1].x;
+			}
+		} else if (cos > sin) {
+			sin /= cos;
+			cos = 1;
+			if (!invert) {
+				xy[i2].y = Mathf.Lerp(xy[i0].y, xy[i2].y, sin);
+				xy[i3].y = xy[i2].y;
+			}
+		} else {
+			cos = 1;
+			sin = 1;
+		}
+		if (!invert) xy[i3].x = Mathf.Lerp(xy[i0].x, xy[i2].x, cos);
+		else xy[i1].y = Mathf.Lerp(xy[i0].y, xy[i2].y, sin);
+	} else {
+		if (cos > sin) {
+			sin /= cos;
+			cos = 1;
+			if (!invert) {
+				xy[i1].y = Mathf.Lerp(xy[i0].y, xy[i2].y, sin);
+				xy[i2].y = xy[i1].y;
+			}
+		} else if (sin > cos) {
+			cos /= sin;
+			sin = 1;
+			if (invert) {
+				xy[i2].x = Mathf.Lerp(xy[i0].x, xy[i2].x, cos);
+				xy[i3].x = xy[i2].x;
+			}
+		} else {
+			cos = 1;
+			sin = 1;
+		}
+		if (invert) xy[i3].y = Mathf.Lerp(xy[i0].y, xy[i2].y, sin);
+		else xy[i1].x = Mathf.Lerp(xy[i0].x, xy[i2].x, cos);
+	}
+}
+
 //
 // ..\src\gui\three\GUIRenderer.js
 //
@@ -1831,6 +2045,284 @@ GUIRenderer.prototype = {
 	},
 	render: function() {
 	},
+};
+
+//
+// ..\src\gui\three\GUIPlugin.js
+//
+
+THREE.GUIPlugin = function(renderer, drawCalls) {
+	var gl = renderer.context;
+	var state = renderer.state;
+	var vertexBuffer, elementBuffer;
+	var programInfos;
+	var texture;
+
+	// decompose matrixWorld
+	var spritePosition = new THREE.Vector3();
+	var spriteRotation = new THREE.Quaternion();
+	var spriteScale = new THREE.Vector3();
+
+	this.render = function ( scene, camera ) {
+		if (programInfos === undefined)
+			programInfos = createProgramInfos();
+
+		state.disable( gl.CULL_FACE );
+        state.setBlending( THREE.NormalBlending );
+        state.setDepthTest( false );
+        state.setDepthWrite( false );
+        
+        for (var i in drawCalls) {
+            var drawCall = drawCalls[i];
+            var mesh = drawCall.mMesh;
+            var programInfo = programInfos[drawCall.mClipCount];
+                
+            gl.useProgram( programInfo.program );
+            state.initAttributes();
+            state.enableAttribute( programInfo.attributes.position );
+            state.enableAttribute( programInfo.attributes.uv );
+            state.enableAttribute( programInfo.attributes.color );
+            state.disableUnusedAttributes();
+
+            // vertex buffers.
+            mesh.SetupVertexAttribs(gl, programInfo.attributes);
+
+            // TODO: setup the UNITY_MATRIX_MVP (ModelViewProj)
+            gl.uniformMatrix4fv( programInfo.uniforms.UNITY_MATRIX_MVP, false, camera.projectionMatrix.elements );
+            if (programInfo.uniforms._ClipRange0 >= 0) {
+                var clipRange = drawCall.ClipRange[0],
+                    clipArgs = drawCall.ClipArgs[0];
+                gl.uniform4f(programInfo.uniforms._ClipRange0, clipRange.x, clipRange.y, clipRange.z, clipRange.w);
+                gl.uniform4f(programInfo.uniforms._ClipArgs0, clipArgs.x, clipArgs.y, clipArgs.z, clipArgs.w);
+            }
+            if (programInfo.uniforms._ClipRange1 >= 0) {
+                var clipRange = drawCall.ClipRange[1],
+                    clipArgs = drawCall.ClipArgs[1];
+                gl.uniform4f(programInfo.uniforms._ClipRange1, clipRange.x, clipRange.y, clipRange.z, clipRange.w);
+                gl.uniform4f(programInfo.uniforms._ClipRange1, clipArgs.x, clipArgs.y, clipArgs.z, clipArgs.w);
+            }
+            if (programInfo.uniforms._ClipRange2 >= 0) {
+                var clipRange = drawCall.ClipRange[2],
+                    clipArgs = drawCall.ClipArgs[2];
+                gl.uniform4f(programInfo.uniforms._ClipRange2, clipRange.x, clipRange.y, clipRange.z, clipRange.w);
+                gl.uniform4f(programInfo.uniforms._ClipRange2, clipArgs.x, clipArgs.y, clipArgs.z, clipArgs.w);
+            }
+
+            // setup texture. 
+            state.activeTexture( gl.TEXTURE0 );
+            gl.uniform1i( uniforms.map, 0 );
+            
+			if (material.map) {
+				renderer.setTexture2D( material.map, 0 );
+			} else {
+				renderer.setTexture2D( texture, 0 );
+			}
+
+			gl.drawElements( gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0 );
+		}
+
+		// restore gl
+		state.enable( gl.CULL_FACE );
+		renderer.resetGLState();
+	};
+
+	function createProgram(vertexShaderSrc, fragmentShaderSrc) {
+		var program = gl.createProgram();
+		var vertexShader = gl.createShader( gl.VERTEX_SHADER );
+		var fragmentShader = gl.createShader( gl.FRAGMENT_SHADER );
+		gl.shaderSource( vertexShader, vertexShaderSrc );
+		gl.shaderSource( fragmentShader,  );
+		gl.compileShader(vertexShader);
+		gl.compileShader(fragmentShader);
+		gl.attachShader(program, vertexShader);
+		gl.attachShader(program, fragmentShader);
+		gl.linkProgram(program );
+        gl.deleteShader(vertexShader);
+        gl.deleteShader(fragmentShader);
+		return program;
+	}
+
+    function createProgramInfos() {
+        var program0 = createProgram([
+			'precision ' + renderer.getPrecision() + ' float;',
+			'uniform mat4 UNITY_MATRIX_MVP;',
+			'attribute vec3 vertex;',
+			'attribute vec2 uv;',
+			'attribute vec3 color;',
+			'varying vec2 vUV;',
+            'varying vec3 vColor;',
+			'void main() {',
+            '   vUV = uv',
+            '   vColor = color',
+			'   gl_Position = UNITY_MATRIX_MVP * vec4(vertex, 1.0);',
+			'}'
+		].join('\n'), [
+			'precision ' + renderer.getPrecision() + ' float;',
+			'uniform sampler2D _MainTex;',
+			'varying vec2 vUV;',
+            'varying vec3 vColor;',
+			'void main() {',
+				'gl_FragColor = texture2D(_MainTex, vUV) * vec4(vColor, 1.0);',
+			'}'
+		].join('\n'));
+        
+        var program1 = createProgram([
+			'precision ' + renderer.getPrecision() + ' float;',
+			'uniform mat4 UNITY_MATRIX_MVP;',
+            'uniform vec4 _ClipRange0;',
+			'attribute vec3 vertex;',
+			'attribute vec2 uv;',
+			'attribute vec3 color;',
+			'varying vec2 vUV;',
+            'varying vec3 vColor;',
+            'varying vec2 vWorldPos;',
+			'void main() {',
+            '   vUV = uv',
+            '   vColor = color',
+            '   vWorldPos = vertex * _ClipRange0.zw + _ClipRange0.xy;',
+			'   gl_Position = UNITY_MATRIX_MVP * vec4(vertex, 1.0);',
+			'}'
+		].join('\n'), [
+			'precision ' + renderer.getPrecision() + ' float;',
+			'uniform sampler2D _MainTex;',
+            'uniform vec2 _ClipArgs0;',
+			'varying vec2 vUV;',
+            'varying vec3 vColor;',
+            'varying vec2 vWorldPos;',
+			'void main() {',
+            '   vec2 factor = (vec2(1.0, 1.0) - abs(vWorldPos)) * _ClipArgs0;',
+            '   vec4 col = texture2D(_MainTex, vUV) * vec4(vColor, 1.0);',
+            '   col.a *= clamp( min(factor.x, factor.y), 0.0, 1.0);',
+			'   gl_FragColor = col;',
+			'}'
+		].join('\n'));
+        
+        var program2 = createProgram([
+			'precision ' + renderer.getPrecision() + ' float;',
+			'uniform mat4 UNITY_MATRIX_MVP;',
+            'uniform vec4 _ClipRange0;',
+            'uniform vec4 _ClipRange1;',
+            'uniform vec4 _ClipArgs1;',
+			'attribute vec3 vertex;',
+			'attribute vec2 uv;',
+			'attribute vec3 color;',
+			'varying vec2 vUV;',
+            'varying vec3 vColor;',
+            'varying vec4 vWorldPos;',
+			'vec2 Rotate (vec2 v, vec2 rot) {',
+			'	vec2 ret;',
+			'	ret.x = v.x * rot.y - v.y * rot.x;',
+			'	ret.y = v.x * rot.x + v.y * rot.y;',
+			'	return ret;',
+			'}',
+			'void main() {',
+            '   vUV = uv',
+            '   vColor = color',
+            '   vWorldPos.xy = vertex * _ClipRange0.zw + _ClipRange0.xy;',
+            '   vWorldPos.zw = Rotate(vertex.xy, _ClipArgs1.zw) * _ClipRange1.zw + _ClipRange1.xy;',
+			'   gl_Position = UNITY_MATRIX_MVP * vec4(vertex, 1.0);',
+			'}'
+		].join('\n'), [
+			'precision ' + renderer.getPrecision() + ' float;',
+			'uniform sampler2D _MainTex;',
+            'uniform vec4 _ClipArgs0;',
+            'uniform vec4 _ClipArgs1;',
+			'varying vec2 vUV;',
+            'varying vec3 vColor;',
+            'varying vec4 vWorldPos;',
+			'void main() {',
+            '   vec2 factor = (vec2(1.0, 1.0) - abs(vWorldPos.xy)) * _ClipArgs0.xy;',
+            '   float f = min(factor.x, factor.y);',
+            '   factor = (vec2(1.0, 1.0) - abs(vWorldPos.zw)) * _ClipArgs1.xy;',
+            '   f = min(f, min(factor.x, factor.y));',
+            '   vec4 col = texture2D(_MainTex, vUV) * vec4(vColor, 1.0);',
+            '   col.a *= clamp(f, 0.0, 1.0);',
+			'   gl_FragColor = col;',
+			'}'
+		].join('\n'));
+        
+        var program3 = createProgram([
+			'precision ' + renderer.getPrecision() + ' float;',
+			'uniform mat4 UNITY_MATRIX_MVP;',
+            'uniform vec4 _ClipRange0;',
+            'uniform vec4 _ClipRange1;',
+            'uniform vec4 _ClipArgs1;',
+            'uniform vec4 _ClipArgs2;',
+			'attribute vec3 vertex;',
+			'attribute vec2 uv;',
+			'attribute vec3 color;',
+			'varying vec2 vUV;',
+            'varying vec3 vColor;',
+            'varying vec4 vWorldPos;',
+            'varying vec2 vWorldPos2;',
+			'vec2 Rotate (vec2 v, vec2 rot) {',
+			'	vec2 ret;',
+			'	ret.x = v.x * rot.y - v.y * rot.x;',
+			'	ret.y = v.x * rot.x + v.y * rot.y;',
+			'	return ret;',
+			'}',
+			'void main() {',
+            '   vUV = uv',
+            '   vColor = color',
+            '   vWorldPos.xy = vertex * _ClipRange0.zw + _ClipRange0.xy;',
+            '   vWorldPos.zw = Rotate(vertex.xy, _ClipArgs1.zw) * _ClipRange1.zw + _ClipRange1.xy;',
+            '   vWorldPos2 = Rotate(vertex.xy, _ClipArgs2.zw) * _ClipRange2.zw + _ClipRange2.xy;',
+			'   gl_Position = UNITY_MATRIX_MVP * vec4(vertex, 1.0);',
+			'}'
+		].join('\n'), [
+			'precision ' + renderer.getPrecision() + ' float;',
+			'uniform sampler2D _MainTex;',
+            'uniform vec4 _ClipArgs0;',
+            'uniform vec4 _ClipArgs1;',
+            'uniform vec4 _ClipArgs2;',
+			'varying vec2 vUV;',
+            'varying vec3 vColor;',
+            'varying vec4 vWorldPos;',
+            'varying vec2 vWorldPos2;',
+			'void main() {',
+            '   vec2 factor = (vec2(1.0, 1.0) - abs(vWorldPos.xy)) * _ClipArgs0.xy;',
+            '   float f = min(factor.x, factor.y);',
+            '   factor = (vec2(1.0, 1.0) - abs(vWorldPos.zw)) * _ClipArgs1.xy;',
+            '   f = min(f, min(factor.x, factor.y));',
+            '   factor = (vec2(1.0, 1.0) - abs(vWorldPos2)) * _ClipArgs2.xy;',
+            '   f = min(f, min(factor.x, factor.y));',
+            '   vec4 col = texture2D(_MainTex, vUV) * vec4(vColor, 1.0);',
+            '   col.a *= clamp(f, 0.0, 1.0);',
+			'   gl_FragColor = col;',
+			'}'
+		].join('\n'));
+        
+        var programs = [program0, program1, program2, program3];
+        var programInfos = [];
+        for (var i = 0; i < programs.length; i++) {
+            var program = programs[i];
+            var programInfo = {
+                program: program,
+                attributes: {
+                    position: gl.getAttribLocation ( program, 'vertex' ),
+                    uv: gl.getAttribLocation ( program, 'uv' ),
+                    color: gl.getAttribLocation ( program, 'color' ) 
+                },
+                uniforms: {
+                    UNITY_MATRIX_MVP: gl.getUniformLocation( program, 'UNITY_MATRIX_MVP'),
+                },
+            }
+            if (i >= 1) {
+                programInfo.uniforms._ClipRange0 = gl.getUniformLocation( program1, '_ClipRange0');
+                programInfo.uniforms._ClipArgs0 = gl.getUniformLocation( program1, '_ClipArgs0');
+            } 
+            if (i >= 2) {
+                programInfo.uniforms._ClipRange1 = gl.getUniformLocation( program1, '_ClipRange1');
+                programInfo.uniforms._ClipArgs1 = gl.getUniformLocation( program1, '_ClipArgs1');
+            }
+            if (i >= 3) {
+                programInfo.uniforms._ClipRange2 = gl.getUniformLocation( program1, '_ClipRange2');
+                programInfo.uniforms._ClipArgs2 = gl.getUniformLocation( program1, '_ClipArgs2');
+            }
+            programInfos.push(programInfo);
+        }
+        return programInfos;
+    }
 };
 
 //
@@ -1874,7 +2366,7 @@ NGUI.UIPanel = function(gameObject) {
 	this.mSortingOrder = 0;
 	this.mUpdateFrame = 0;
 	this.mUpdateScroll = false;
-	this.mRebuild = false;
+	this.mRebuild = true;
 	this.mForced = false;
 	this.mResized = false;
 	this.mClipOffset = new UnityEngine.Vector2();
@@ -1888,6 +2380,7 @@ NGUI.UIPanel = function(gameObject) {
 	this.renderQueue = RenderQueue.Automatic;
 	this.widgets = []; // NGUI.UIWidget list
 	this.drawCalls = []; // NGUI.UIDrawCall
+	this.parentPanel = undefined;
 };
 
 RenderQueue = {
@@ -1932,6 +2425,7 @@ NGUI.UIPanel.UpdateAll = function(frame) {
 
 Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 	constructor: NGUI.UIPanel,
+	get hasClipping() { return this.mClipping === Clipping.SoftClip;  },
 	GetViewSize: function() {
 		if (this.mClipping != Clipping.None)
 			return new UnityEngine.Vector2(this.mClipRange.z, this.mClipRange.w);
@@ -1943,8 +2437,22 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 			return new UnityEngine.Vector4(this.mClipRange.x + this.mClipOffset.x, this.mClipRange.y + this.mClipOffset.y, size.x, size.y);
 		return new UnityEngine.Vector4(0, 0, size.x, size.y);
 	},
+	clipCount: function() {
+		var count = 0;
+		var p = this;
+		while (p !== undefined) {
+			if (p.mClipping === Clipping.SoftClip) ++count;
+			p = p.parentPanel;
+		}
+		return count;
+	},
 	Load: function(json) {
-
+		NGUI.UIRect.Load.call(this, json);
+		this.FindParent();
+	},
+	FindParent: function() {
+		var parent = this.transform.parent;
+		this.parentPanel = (parent !== undefined) ? NGUITools.FindInParents(parent.gameObject, 'UIPanel') : undefined;
 	},
 	UpdateSelf: function(frame) {
 		this.UpdateTransformMatrix(frame);
@@ -1953,19 +2461,17 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		if (this.mRebuild) {
 			this.mRebuild = false;
 			this.FillAllDrawCalls();
-		}
-		else {
+		} else {
 			for (var i = 0; i < this.drawCalls.length;) {
 				var dc = this.drawCalls[i];
 				if (dc.isDirty && !this.FillDrawCall(dc)) {
-					//UIDrawCall.Destroy(dc);
+					dc.destroy();
 					this.drawCalls.splice(i, 1);
 					continue;
 				}
 				++i;
 			}
 		}
-
 		if (this.mUpdateScroll) {
 			this.mUpdateScroll = false;
 			//UIScrollView sv = GetComponent<UIScrollView>();
@@ -2069,9 +2575,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 					dc = new NGUI.UIDrawCall("", this, mat);
 					dc.depthStart = w.mDepth;
 					dc.depthEnd = dc.depthStart;
-					dc.panel = this;
-				}
-				else {
+				} else {
 					var rd = w.depth;
 					if (rd < dc.depthStart) dc.depthStart = rd;
 					if (rd > dc.depthEnd) dc.depthEnd = rd;

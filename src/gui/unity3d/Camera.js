@@ -5,12 +5,16 @@ UnityEngine.Camera = function(gameObject) {
     this.nearClipPlane = 0.1;
     this.farClipPlane = 1000;
     this.rect = new UnityEngine.Rect();
+
+	this.worldToCameraMatrix = new UnityEngine.Matrix4x4();
+	this.projectionMatrix = new UnityEngine.Matrix4x4();
+	this.cameraToWorldMatrix = new UnityEngine.Matrix4x4();
 };
 
 Object.assign(NGUI.Camera.prototype, UnityEngine.Component.prototype, {
     constructor: UnityEngine.Camera,
     GetSides: function(depth, relativeTo) {
-        mSides = [];
+        var mSides = [];
 		if (this.isOrthoGraphic) {
 			var os = this.orthographicSize;
                 x0 = -os;
@@ -33,10 +37,10 @@ Object.assign(NGUI.Camera.prototype, UnityEngine.Component.prototype, {
 			mSides[2] = rot * (new UnityEngine.Vector3(x1, 0, depth)) + pos;
 			mSides[3] = rot * (new UnityEngine.Vector3(0, y0, depth)) + pos;
 		} else {
-			mSides[0] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0, 0.5, depth));
-			mSides[1] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0.5, 1, depth));
-			mSides[2] = this.ViewportToWorldPoint(new UnityEngine.Vector3(1, 0.5, depth));
-			mSides[3] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0.5, 0, depth));
+			mSides[0] = this.ViewportToWorldPoint(0, 0.5, depth);
+			mSides[1] = this.ViewportToWorldPoint(0.5, 1, depth);
+			mSides[2] = this.ViewportToWorldPoint(1, 0.5, depth);
+			mSides[3] = this.ViewportToWorldPoint(0.5, 0, depth);
 		}
 		
 		if (relativeTo !== undefined) {
@@ -45,6 +49,9 @@ Object.assign(NGUI.Camera.prototype, UnityEngine.Component.prototype, {
 		}
 		return mSides;
     },
-    ViewportToWorldPoint: function(point) {
+    ViewportToWorldPoint: function(screenX, screenY, screenZ) {
+		screenX = 2 * screenX - 1;
+		screenY = 1 - 2 * screenY;
+		// TODO: ViewportToWorldPoint
     },
-};
+});

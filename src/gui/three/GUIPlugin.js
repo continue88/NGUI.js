@@ -22,8 +22,8 @@ THREE.GUIPlugin = function(renderer, drawCalls) {
         
         for (var i in drawCalls) {
             var drawCall = drawCalls[i];
+            var mesh = drawCall.mMesh;
             var programInfo = programInfos[drawCall.mClipCount];
-            var buffStride = (3 + 2 + 3) * 4;
                 
             gl.useProgram( programInfo.program );
             state.initAttributes();
@@ -32,10 +32,8 @@ THREE.GUIPlugin = function(renderer, drawCalls) {
             state.enableAttribute( programInfo.attributes.color );
             state.disableUnusedAttributes();
 
-            gl.bindBuffer( gl.ARRAY_BUFFER, drawCall.vertexBuffer );
-            gl.vertexAttribPointer( programInfo.attributes.position, 3, gl.FLOAT, false, buffStride, 0 );
-            gl.vertexAttribPointer( programInfo.attributes.uv, 2, gl.FLOAT, false, buffStride, 3 * 4 );
-            gl.vertexAttribPointer( programInfo.attributes.color, 3, gl.FLOAT, false, buffStride, 5 * 4 );
+            // vertex buffers.
+            mesh.SetupVertexAttribs(gl, programInfo.attributes);
 
             // TODO: setup the UNITY_MATRIX_MVP (ModelViewProj)
             gl.uniformMatrix4fv( programInfo.uniforms.UNITY_MATRIX_MVP, false, camera.projectionMatrix.elements );

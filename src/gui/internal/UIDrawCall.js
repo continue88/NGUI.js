@@ -27,9 +27,14 @@ NGUI.UIDrawCall = function (name, panel, material) {
 NGUI.UIDrawCall.prototype = {
 	constructor: NGUI.UIDrawCall,
 	destroy: function() {
+		if (this.mMesh) {
+			this.mMesh.destroy();
+			this.mMesh = undefined;
+		}
 	},
 	UpdateGeometry: function(count) {
 		this.mMesh = new UnityEngine.Mesh();
+		this.mMesh.CopyVertexData(this.verts, this.uvs, this.cols);
 		this.verts.length = 0;
 		this.uvs.length = 0;
 		this.cols.length = 0;
@@ -52,7 +57,7 @@ NGUI.UIDrawCall.prototype = {
 					var pos = currentPanel.transform.InverseTransformPoint(this.panel.transform.position);
 					cr.x -= pos.x;
 					cr.y -= pos.y;
-					var v0 = panel.transform.rotation.eulerAngles();
+					var v0 = this.panel.transform.rotation.eulerAngles();
 					var v1 = currentPanel.transform.rotation.eulerAngles();
 					var diff = v1.sub(v0);
 					diff.x = NGUIMath.WrapAngle(diff.x);
@@ -60,7 +65,7 @@ NGUI.UIDrawCall.prototype = {
 					diff.z = NGUIMath.WrapAngle(diff.z);
 					angle = diff.z;
 				}
-				SetClipping(i++, cr, currentPanel.clipSoftness, angle);
+				this.SetClipping(i++, cr, currentPanel.clipSoftness, angle);
 			}
 			currentPanel = currentPanel.parentPanel;
 		}
