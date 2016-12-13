@@ -16,13 +16,9 @@ NGUI.UIGeometry.prototype = {
 		this.mRtpVerts.length = 0;
 	},
 	ApplyTransform: function(widgetToPanel) {
-		if (this.verts.length > 0) {
-			this.mRtpVerts = [];
-			for (var i in this.verts) 
-				this.mRtpVerts.push(widgetToPanel.MultiplyPoint3x4(this.verts[i]));
-		}
-		else if (this.mRtpVerts.length > 0)
-			this.mRtpVerts = [];
+		this.mRtpVerts.length = 0;
+		for (var i in this.verts)
+			this.mRtpVerts.push(widgetToPanel.MultiplyPoint3x4(this.verts[i]));
 	},
 	WriteToBuffers: function(v, u, c) {
 		for (var i in this.mRtpVerts) {
