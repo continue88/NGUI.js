@@ -57,6 +57,9 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 			this.mColor.b * 255,
 			this.this.finalAlpha * 255); 
 	},
+	Load: function(json) {
+		NGUI.UIWidget.Load.call(this, json);
+	},
 	Fill: function(verts, uvs, cols, outer, inner) {
 		this.mOuterUV = outer;
 		this.mInnerUV = inner;

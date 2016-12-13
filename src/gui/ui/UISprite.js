@@ -14,17 +14,19 @@ Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
 		if (sp) return new UnityEngine.Vector4(sp.borderLeft, sp.borderBottom, sp.borderRight, sp.borderTop);
 		return new UnityEngine.Vector4(0, 0, 0, 0); 
 	},
+	Load: function(json) {
+		NGUI.UIBasicSprite.Load.call(this, json);
+		// json.atlas; // TODO: find atlas with name.
+		this.mSpriteName = this.sprite;
+	},
 	GetAtlasSprite: function() {
-		if (this.mAtlas && !this.mSprite) 
+		if (this.mAtlas !== undefined && this.mSprite === undefined) 
 			this.mSprite = this.mAtlas.GetSprite(this.mSpriteName);
 		return this.mSprite;
 	},
-	Load: function(json) {
-		// this.mAtlas, find atlas...
-	},
 	OnFill: function(verts, uvs, cols) {
 		var tex = this.mAtlas ? this.mAtlas.material.map : undefined;
-		if (!tex || !tex.image) return;
+		if (tex === undefined || tex.image === undefined) return;
 
 		var sprite = this.GetAtlasSprite();
 		var outer = new NGUI.Rect(sprite.x, sprite.y, sprite.width, sprite.height);
