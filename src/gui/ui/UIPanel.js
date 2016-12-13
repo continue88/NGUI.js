@@ -20,6 +20,7 @@ NGUI.UIPanel = function(gameObject) {
 	this.renderQueue = RenderQueue.Automatic;
 	this.widgets = []; // NGUI.UIWidget list
 	this.drawCalls = []; // NGUI.UIDrawCall
+	this.parentPanel = undefined;
 };
 
 RenderQueue = {
@@ -64,6 +65,7 @@ NGUI.UIPanel.UpdateAll = function(frame) {
 
 Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 	constructor: NGUI.UIPanel,
+	get hasClipping() { return this.mClipping === Clipping.SoftClip;  },
 	GetViewSize: function() {
 		if (this.mClipping != Clipping.None)
 			return new UnityEngine.Vector2(this.mClipRange.z, this.mClipRange.w);
@@ -76,7 +78,12 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		return new UnityEngine.Vector4(0, 0, size.x, size.y);
 	},
 	Load: function(json) {
-
+		NGUI.UIRect.Load.call(this, json);
+		this.FindParent();
+	},
+	FindParent: function() {
+		var parent = this.transform.parent;
+		this.parentPanel = (parent !== undefined) ? NGUITools.FindInParents(parent.gameObject, 'UIPanel') : undefined;
 	},
 	UpdateSelf: function(frame) {
 		this.UpdateTransformMatrix(frame);

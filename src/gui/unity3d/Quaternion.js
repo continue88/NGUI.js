@@ -21,4 +21,7 @@ UnityEngine.Quaternion.prototype = {
 		this.z = c1 * c2 * s3 + s1 * s2 * c3;
 		this.w = c1 * c2 * c3 - s1 * s2 * s3;
 	},
+	eulerAngles: function() {
+		return new UnityEngine.Vector3();
+	}
 };

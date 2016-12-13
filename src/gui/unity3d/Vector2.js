@@ -7,6 +7,7 @@ UnityEngine.Vector2 = function ( x, y ) {
 UnityEngine.Vector2.prototype = {
 	constructor: UnityEngine.Vector2,
 	set: function(x, y) { this.x = x; this.y = y; },
+	clone: function () { return new this.constructor( this.x, this.y ); },
     add: function(v) {
 		this.x += v.x;
 		this.y += v.y;

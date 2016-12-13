@@ -17,6 +17,7 @@ UnityEngine.Vector3.SqrMagnitude = function(v1, v2) {
 UnityEngine.Vector3.prototype = {
 	constructor: UnityEngine.Vector3,
 	set: function(x, y, z) { this.x = x; this.y = y; this.z = z; },
+	clone: function () { return new this.constructor( this.x, this.y, this.z ); },
 	add: function(v) {
 		this.x += v.x;
 		this.y += v.y;

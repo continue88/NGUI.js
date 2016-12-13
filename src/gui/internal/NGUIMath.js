@@ -27,5 +27,10 @@ NGUIMath = {
 		while (val < 0) val += max;
 		while (val >= max) val -= max;
 		return val;
-	}
+	},
+	WrapAngle: function(angle) {
+		while (angle > 180) angle -= 360;
+		while (angle < -180) angle += 360;
+		return angle;
+	},
 };
