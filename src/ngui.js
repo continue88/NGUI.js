@@ -19,18 +19,37 @@ NGUI={
 
 UnityEngine.Camera = function(gameObject) {
 	UnityEngine.Component.call(gameObject);
+
     this.isOrthoGraphic = false;
+	this.orthographicSize = 1;
+	this.aspect = 1;
+	this.fieldOfView = 1;
     this.nearClipPlane = 0.1;
     this.farClipPlane = 1000;
     this.rect = new UnityEngine.Rect();
 
-	this.worldToCameraMatrix = new UnityEngine.Matrix4x4();
 	this.projectionMatrix = new UnityEngine.Matrix4x4();
-	this.cameraToWorldMatrix = new UnityEngine.Matrix4x4();
+	this.cameraToWorldMatrix = this.transform.localToWorldMatrix;
+	this.worldToCameraMatrix = this.transform.worldToLocalMatrix;
+
+	// cached matrix. 
+	this.viewProjMatrix = undefined;
+	this.invViewProjMatrix = undefined; 
 };
 
 Object.assign(NGUI.Camera.prototype, UnityEngine.Component.prototype, {
     constructor: UnityEngine.Camera,
+	Load: function(json) {
+		this.isOrthoGraphic = json.orth;
+		this.nearClipPlane = json.near;
+		this.farClipPlane = json.far;
+		this.aspect = json.aspect;
+		this.fieldOfView = json.fov;
+		if (this.isOrthoGraphic)
+			this.projectionMatrix.Ortho(); // TODO: build ortho data.
+		else
+			this.projectionMatrix.Perspective(this.fieldOfView, this.aspect, this.nearClipPlane, this.farClipPlane);
+	},
     GetSides: function(depth, relativeTo) {
         var mSides = [];
 		if (this.isOrthoGraphic) {
@@ -55,10 +74,10 @@ Object.assign(NGUI.Camera.prototype, UnityEngine.Component.prototype, {
 			mSides[2] = rot * (new UnityEngine.Vector3(x1, 0, depth)) + pos;
 			mSides[3] = rot * (new UnityEngine.Vector3(0, y0, depth)) + pos;
 		} else {
-			mSides[0] = this.ViewportToWorldPoint(0, 0.5, depth);
-			mSides[1] = this.ViewportToWorldPoint(0.5, 1, depth);
-			mSides[2] = this.ViewportToWorldPoint(1, 0.5, depth);
-			mSides[3] = this.ViewportToWorldPoint(0.5, 0, depth);
+			mSides[0] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0, 0.5, depth));
+			mSides[1] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0.5, 1, depth));
+			mSides[2] = this.ViewportToWorldPoint(new UnityEngine.Vector3(1, 0.5, depth));
+			mSides[3] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0.5, 0, depth));
 		}
 		
 		if (relativeTo !== undefined) {
@@ -67,10 +86,18 @@ Object.assign(NGUI.Camera.prototype, UnityEngine.Component.prototype, {
 		}
 		return mSides;
     },
-    ViewportToWorldPoint: function(screenX, screenY, screenZ) {
-		screenX = 2 * screenX - 1;
-		screenY = 1 - 2 * screenY;
-		// TODO: ViewportToWorldPoint
+    ViewportToWorldPoint: function(screenPoint) {
+		screenPoint.x = 2 * screenPoint.x - 1;
+		screenPoint.y = 1 - 2 * screenPoint.y;
+		screenPoint.z = 0; // TODO: ViewportToWorldPoint
+		if (this.viewProjMatrix === undefined) {
+			this.viewProjMatrix = new UnityEngine.Matrix4x4();
+			this.viewProjMatrix.MultiplyMatrices(this.worldToCameraMatrix, this.projectionMatrix);
+
+			this.invViewProjMatrix = new UnityEngine.Matrix4x4();
+			this.invViewProjMatrix.getInverse(this.viewProjMatrix);
+		}
+		return this.invViewProjMatrix.MultiplyPoint(screenPoint);
     },
 });
 
@@ -183,6 +210,9 @@ Mathf = UnityEngine.Mathf = {
 	Lerp: function(t, a, b) {
 		return a + t * (b - a);
 	},
+	Clamp: function(val, min, max) {
+		return Math.min(Math.max(min, val), max);
+	},
 	Clamp01: function(val) {
 		return Math.min(Math.max(0, val), 1);
 	}
@@ -209,6 +239,11 @@ UnityEngine.Matrix4x4.prototype = {
 		te[ 1 ] = n21; te[ 5 ] = n22; te[ 9 ] = n23; te[ 13 ] = n24;
 		te[ 2 ] = n31; te[ 6 ] = n32; te[ 10 ] = n33; te[ 14 ] = n34;
 		te[ 3 ] = n41; te[ 7 ] = n42; te[ 11 ] = n43; te[ 15 ] = n44;
+		return this;
+	},
+	clone: function () { return new THREE.Matrix4().fromArray( this.elements ); },
+	fromArray: function (array) {
+		this.elements.set(array);
 		return this;
 	},
 	identity: function () { return this.set(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); },
@@ -370,7 +405,44 @@ UnityEngine.Matrix4x4.prototype = {
 			e[ 1 ] * x + e[ 5 ] * y + e[ 9 ]  * z,
 			e[ 2 ] * x + e[ 6 ] * y + e[ 10 ] * z);
 	},
+	Frustum: function(left, right, bottom, top, near, far) {
+		var te = this.elements;
+		var x = 2 * near / ( right - left );
+		var y = 2 * near / ( top - bottom );
+		var a = ( right + left ) / ( right - left );
+		var b = ( top + bottom ) / ( top - bottom );
+		var c = - ( far + near ) / ( far - near );
+		var d = - 2 * far * near / ( far - near );
+		te[ 0 ] = x;	te[ 4 ] = 0;	te[ 8 ] = a;	te[ 12 ] = 0;
+		te[ 1 ] = 0;	te[ 5 ] = y;	te[ 9 ] = b;	te[ 13 ] = 0;
+		te[ 2 ] = 0;	te[ 6 ] = 0;	te[ 10 ] = c;	te[ 14 ] = d;
+		te[ 3 ] = 0;	te[ 7 ] = 0;	te[ 11 ] = - 1;	te[ 15 ] = 0;
+		return this;
+	},
+	Perspective: function(fov, aspect, near, far) {
+		var ymax = near * Math.tan( Mathf.Deg2Rad * fov * 0.5 );
+		var ymin = - ymax;
+		var xmin = ymin * aspect;
+		var xmax = ymax * aspect;
+		return this.Frustum( xmin, xmax, ymin, ymax, near, far );
+	},
+	Ortho: function(left, right, top, bottom, near, far) {
+		var te = this.elements;
+		var w = 1.0 / ( right - left );
+		var h = 1.0 / ( top - bottom );
+		var p = 1.0 / ( far - near );
+		var x = ( right + left ) * w;
+		var y = ( top + bottom ) * h;
+		var z = ( far + near ) * p;
+		te[ 0 ] = 2 * w;	te[ 4 ] = 0;	te[ 8 ] = 0;	te[ 12 ] = - x;
+		te[ 1 ] = 0;	te[ 5 ] = 2 * h;	te[ 9 ] = 0;	te[ 13 ] = - y;
+		te[ 2 ] = 0;	te[ 6 ] = 0;	te[ 10 ] = - 2 * p;	te[ 14 ] = - z;
+		te[ 3 ] = 0;	te[ 7 ] = 0;	te[ 11 ] = 0;	te[ 15 ] = 1;
+		return this;
+	},
 };
+
+UnityEngine.Matrix4x4.Temp = new UnityEngine.Matrix4x4();
 
 //
 // ..\src\gui\unity3d\Material.js
@@ -575,8 +647,32 @@ UnityEngine.Quaternion.prototype = {
 		this.w = c1 * c2 * c3 - s1 * s2 * s3;
 	},
 	eulerAngles: function() {
-		return new UnityEngine.Vector3();
-	}
+		var matrix = UnityEngine.Matrix4x4.Temp;
+		matrix.makeRotationFromQuaternion(this);
+		var te = matrix.elements;
+		var m11 = te[ 0 ], m12 = te[ 4 ], m13 = te[ 8 ];
+		var m21 = te[ 1 ], m22 = te[ 5 ], m23 = te[ 9 ];
+		var m31 = te[ 2 ], m32 = te[ 6 ], m33 = te[ 10 ];
+		var ret = new UnityEngine.Vector3();
+		ret.y = Math.asin(Mathf.Clamp( m13, -1, 1 ));
+		if (Math.abs( m13 ) < 0.99999) {
+			ret.x = Math.atan2( - m23, m33 );
+			ret.z = Math.atan2( - m12, m11 );
+		} else {
+			ret.x = Math.atan2( m32, m22 );
+			ret.z = 0;
+		}
+		return ret;
+	},
+	multiply: function(a, b) {
+		var qax = a.x, qay = a.y, qaz = a.z, qaw = a.w;
+		var qbx = b.x, qby = b.y, qbz = b.z, qbw = b.w;
+		this.x = qax * qbw + qaw * qbx + qay * qbz - qaz * qby;
+		this.y = qay * qbw + qaw * qby + qaz * qbx - qax * qbz;
+		this.z = qaz * qbw + qaw * qbz + qax * qby - qay * qbx;
+		this.w = qaw * qbw - qax * qbx - qay * qby - qaz * qbz;
+		return this;
+	},
 };
 
 //
@@ -894,8 +990,19 @@ Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, 
 		this.needUpdate = false;
 		var localMatrix = new UnityEngine.Matrix4();
 		localMatrix.SetTRS(this.localPosition, this.localRotation, this.localScale);
-		this.localToWorldMatrix.MultiplyMatrices(localMatrix, this.parent.localToWorldMatrix);
-		this.worldToLocalMatrix.getInverse(this.localToWorldMatrix);
+		if (this.parent === undefined) {
+			this.localToWorldMatrix = localMatrix;
+			this.worldToLocalMatrix.getInverse(this.localToWorldMatrix);
+			this.position = this.localPosition.clone();
+			this.rotation = this.localRotation.clone();
+			this.lossyScale = this.localScale.clone();
+		} else {
+			this.localToWorldMatrix.MultiplyMatrices(this.parent.localToWorldMatrix, localMatrix);
+			this.worldToLocalMatrix.getInverse(this.localToWorldMatrix);
+			this.position = this.parent.localToWorldMatrix.MultiplyPoint3x4(this.localPosition);
+			this.rotation.multiply(this.parent.rotation, this.localRotation);
+			this.lossyScale = this.parent.lossyScale.clone().multiply(this.localScale);
+		}
 		for (var i in this.children)
 			this.children[i].Update();
 	},
@@ -1682,6 +1789,9 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 			this.mColor.b * 255,
 			this.this.finalAlpha * 255); 
 	},
+	Load: function(json) {
+		NGUI.UIWidget.Load.call(this, json);
+	},
 	Fill: function(verts, uvs, cols, outer, inner) {
 		this.mOuterUV = outer;
 		this.mInnerUV = inner;
@@ -2330,30 +2440,27 @@ THREE.GUIPlugin = function(renderer, drawCalls) {
 //
 
 NGUI.UIAtlas = function(gameObject) {
-	UnityEngine.MonoBehaviour.call(gameObject);
-
-	this.material = new THREE.SpriteMaterial();
+	this.material = undefined;
 	this.mSprites = {}; // NGUI.UISpriteData
 }
 
-Object.assign(NGUI.UIAtlas.prototype, UnityEngine.MonoBehaviour.prototype, {
+NGUI.UIAtlas.prototype = {
 	constructor: NGUI.UIAtlas,
 	GetSprite: function(name) {
 		return this.mSprites[name];
 	},
 	Load: function(json) {
-		if (!(typeof json === 'object')) return;
-		//this.material = json.texture; // material
-		var sprites = json.mSprites; // sprites
-		if (typeof sprites === 'object') {
+		var sprites = json.sprites; // sprites
+		if (sprites !== undefined) {
 			for (var key in sprites) {
 				var sprite = new NGUI.UISpriteData();
 				sprite.Load(sprites[key]);
 				this.mSprites[sprite.name] = sprite;
 			}
 		}
+		this.material = json.mat; // just copy
 	}
-});
+};
 
 //
 // ..\src\gui\ui\UIPanel.js
@@ -2624,26 +2731,32 @@ Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
 		if (sp) return new UnityEngine.Vector4(sp.borderLeft, sp.borderBottom, sp.borderRight, sp.borderTop);
 		return new UnityEngine.Vector4(0, 0, 0, 0); 
 	},
+	Load: function(json) {
+		NGUI.UIBasicSprite.Load.call(this, json);
+		// json.atlas; // TODO: find atlas with name.
+		this.mSpriteName = this.sprite;
+	},
 	GetAtlasSprite: function() {
-		if (this.mAtlas && !this.mSprite) 
+		if (this.mAtlas !== undefined && this.mSprite === undefined) 
 			this.mSprite = this.mAtlas.GetSprite(this.mSpriteName);
 		return this.mSprite;
 	},
-	Load: function(json) {
-		// this.mAtlas, find atlas...
-	},
 	OnFill: function(verts, uvs, cols) {
-		var tex = this.mAtlas ? this.mAtlas.material.map : undefined;
-		if (!tex || !tex.image) return;
+		if (this.mAtlas === undefined) return;
+		var mat = this.mAtlas.material;
+		if (mat === undefined || mat.image === undefined) return;
 
 		var sprite = this.GetAtlasSprite();
+		if (sprite === undefined) return;
+
 		var outer = new NGUI.Rect(sprite.x, sprite.y, sprite.width, sprite.height);
 		var inner = new NGUI.Rect(sprite.x + sprite.borderLeft, sprite.y + sprite.borderTop,
 			sprite.width - sprite.borderLeft - sprite.borderRight,
 			sprite.height - sprite.borderBottom - sprite.borderTop);
 
-		outer = NGUIMath.ConvertToTexCoords(outer, tex.image.width, tex.image.height);
-		inner = NGUIMath.ConvertToTexCoords(inner, tex.image.width, tex.image.height);
+		var image = mat.image;
+		outer = NGUIMath.ConvertToTexCoords(outer, image.width, image.height);
+		inner = NGUIMath.ConvertToTexCoords(inner, image.width, image.height);
 		this.Fill(verts, uvs, cols, outer, inner);
 	},
 });
