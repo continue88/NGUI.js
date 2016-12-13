@@ -25,17 +25,21 @@ Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
 		return this.mSprite;
 	},
 	OnFill: function(verts, uvs, cols) {
-		var tex = this.mAtlas ? this.mAtlas.material.map : undefined;
-		if (tex === undefined || tex.image === undefined) return;
+		if (this.mAtlas === undefined) return;
+		var mat = this.mAtlas.material;
+		if (mat === undefined || mat.image === undefined) return;
 
 		var sprite = this.GetAtlasSprite();
+		if (sprite === undefined) return;
+
 		var outer = new NGUI.Rect(sprite.x, sprite.y, sprite.width, sprite.height);
 		var inner = new NGUI.Rect(sprite.x + sprite.borderLeft, sprite.y + sprite.borderTop,
 			sprite.width - sprite.borderLeft - sprite.borderRight,
 			sprite.height - sprite.borderBottom - sprite.borderTop);
 
-		outer = NGUIMath.ConvertToTexCoords(outer, tex.image.width, tex.image.height);
-		inner = NGUIMath.ConvertToTexCoords(inner, tex.image.width, tex.image.height);
+		var image = mat.image;
+		outer = NGUIMath.ConvertToTexCoords(outer, image.width, image.height);
+		inner = NGUIMath.ConvertToTexCoords(inner, image.width, image.height);
 		this.Fill(verts, uvs, cols, outer, inner);
 	},
 });
