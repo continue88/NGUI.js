@@ -1,7 +1,7 @@
 
 NGUI.UIDrawCall = function (name, panel, material) {
 
-	this.mClipCount = 0;
+	this.mClipCount = panel.clipCount();
 
 	this.widgetCount = 0;
 	this.depthStart = 2147483647; // MaxValue = 2147483647
@@ -12,11 +12,13 @@ NGUI.UIDrawCall = function (name, panel, material) {
 	this.renderQueue = panel.startingRenderQueue;
 	this.mSortingOrder = panel.mSortingOrder;
 	this.manager = panel;
-	this.panel = undefined; // NGUI.UIPanel
+	this.panel = panel; // NGUI.UIPanel
 	
 	this.verts = [];// Vector3
-	this.uvs = [];// Vector3
+	this.uvs = [];// Vector2
 	this.cols = [];// Vector3
+
+	this.mMesh = undefined;
 
 	this.ClipRange = []; // Vector4
 	this.ClipArgs = []; // Vector4
@@ -24,7 +26,13 @@ NGUI.UIDrawCall = function (name, panel, material) {
 
 NGUI.UIDrawCall.prototype = {
 	constructor: NGUI.UIDrawCall,
+	destroy: function() {
+	},
 	UpdateGeometry: function(count) {
+		this.mMesh = new UnityEngine.Mesh();
+		this.verts.length = 0;
+		this.uvs.length = 0;
+		this.cols.length = 0;
 	},
 	SetClipping: function(index, cr, soft, angle) {
 		angle *= -Mathf.Deg2Rad;

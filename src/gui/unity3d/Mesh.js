@@ -58,8 +58,14 @@ function CopyColorsArray(colors) {
 }
 function CopyColors32Array(colors32) {
     var offset = 0;
-    var array = new Uint32Array(vectors.length);
-    for (var i in colors32) array[offset++] = colors32[i];
+    var array = new Uint8ClampedArray(colors32.length * 4);
+    for (var i in colors32) {
+        var color32 = colors32[i];
+        array[offset++] = color32.r;
+        array[offset++] = color32.g;
+        array[offset++] = color32.b;
+        array[offset++] = color32.a;
+    }
     return array;
 }
 

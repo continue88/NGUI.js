@@ -6,7 +6,7 @@ NGUI.UIPanel = function(gameObject) {
 	this.mSortingOrder = 0;
 	this.mUpdateFrame = 0;
 	this.mUpdateScroll = false;
-	this.mRebuild = false;
+	this.mRebuild = true;
 	this.mForced = false;
 	this.mResized = false;
 	this.mClipOffset = new UnityEngine.Vector2();
@@ -77,6 +77,15 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 			return new UnityEngine.Vector4(this.mClipRange.x + this.mClipOffset.x, this.mClipRange.y + this.mClipOffset.y, size.x, size.y);
 		return new UnityEngine.Vector4(0, 0, size.x, size.y);
 	},
+	clipCount: function() {
+		var count = 0;
+		var p = this;
+		while (p !== undefined) {
+			if (p.mClipping === Clipping.SoftClip) ++count;
+			p = p.parentPanel;
+		}
+		return count;
+	},
 	Load: function(json) {
 		NGUI.UIRect.Load.call(this, json);
 		this.FindParent();
@@ -92,19 +101,17 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		if (this.mRebuild) {
 			this.mRebuild = false;
 			this.FillAllDrawCalls();
-		}
-		else {
+		} else {
 			for (var i = 0; i < this.drawCalls.length;) {
 				var dc = this.drawCalls[i];
 				if (dc.isDirty && !this.FillDrawCall(dc)) {
-					//UIDrawCall.Destroy(dc);
+					dc.destroy();
 					this.drawCalls.splice(i, 1);
 					continue;
 				}
 				++i;
 			}
 		}
-
 		if (this.mUpdateScroll) {
 			this.mUpdateScroll = false;
 			//UIScrollView sv = GetComponent<UIScrollView>();
@@ -208,9 +215,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 					dc = new NGUI.UIDrawCall("", this, mat);
 					dc.depthStart = w.mDepth;
 					dc.depthEnd = dc.depthStart;
-					dc.panel = this;
-				}
-				else {
+				} else {
 					var rd = w.depth;
 					if (rd < dc.depthStart) dc.depthStart = rd;
 					if (rd > dc.depthEnd) dc.depthEnd = rd;

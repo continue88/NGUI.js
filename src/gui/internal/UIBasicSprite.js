@@ -50,7 +50,13 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 			default: return new UnityEngine.Vector4(this.mOuterUV.xMin, this.mOuterUV.yMin, this.mOuterUV.xMax, this.mOuterUV.yMax);
 		}
 	},
-	drawingColor: function() { return new UnityEngine.Color(this.mColor.r, this.mColor.g, this.mColor.b, this.this.finalAlpha); },
+	drawingColor: function() { 
+		return new UnityEngine.Color32(
+			this.mColor.r * 255,
+			this.mColor.g * 255,
+			this.mColor.b * 255,
+			this.this.finalAlpha * 255); 
+	},
 	Fill: function(verts, uvs, cols, outer, inner) {
 		this.mOuterUV = outer;
 		this.mInnerUV = inner;
@@ -314,3 +320,70 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 		// not implemented...
 	}
 });
+
+
+NGUI.UIBasicSprite.RadialCut = function(xy, uv, fill, invert, corner) {
+	if (fill < 0.001) return false;
+	if ((corner & 1) == 1) invert = !invert;
+	if (!invert && fill > 0.999) return true;
+	
+	var angle = Mathf.Clamp01(fill);
+	if (invert) angle = 1 - angle;
+	angle *= 90 * Mathf.Deg2Rad;
+
+	var cos = Math.cos(angle);
+	var sin = Math.sin(angle);
+	NGUI.UIBasicSprite.RadialCut2(xy, cos, sin, invert, corner);
+	NGUI.UIBasicSprite.RadialCut2(uv, cos, sin, invert, corner);
+	return true;
+}
+
+NGUI.UIBasicSprite.RadialCut2 = function(xy, cos, sin, invert, corner) {
+	var i0 = corner;
+	var i1 = NGUIMath.RepeatIndex(corner + 1, 4);
+	var i2 = NGUIMath.RepeatIndex(corner + 2, 4);
+	var i3 = NGUIMath.RepeatIndex(corner + 3, 4);
+	if ((corner & 1) == 1) {
+		if (sin > cos) {
+			cos /= sin;
+			sin = 1;
+			if (invert) {
+				xy[i1].x = Mathf.Lerp(xy[i0].x, xy[i2].x, cos);
+				xy[i2].x = xy[i1].x;
+			}
+		} else if (cos > sin) {
+			sin /= cos;
+			cos = 1;
+			if (!invert) {
+				xy[i2].y = Mathf.Lerp(xy[i0].y, xy[i2].y, sin);
+				xy[i3].y = xy[i2].y;
+			}
+		} else {
+			cos = 1;
+			sin = 1;
+		}
+		if (!invert) xy[i3].x = Mathf.Lerp(xy[i0].x, xy[i2].x, cos);
+		else xy[i1].y = Mathf.Lerp(xy[i0].y, xy[i2].y, sin);
+	} else {
+		if (cos > sin) {
+			sin /= cos;
+			cos = 1;
+			if (!invert) {
+				xy[i1].y = Mathf.Lerp(xy[i0].y, xy[i2].y, sin);
+				xy[i2].y = xy[i1].y;
+			}
+		} else if (sin > cos) {
+			cos /= sin;
+			sin = 1;
+			if (invert) {
+				xy[i2].x = Mathf.Lerp(xy[i0].x, xy[i2].x, cos);
+				xy[i3].x = xy[i2].x;
+			}
+		} else {
+			cos = 1;
+			sin = 1;
+		}
+		if (invert) xy[i3].y = Mathf.Lerp(xy[i0].y, xy[i2].y, sin);
+		else xy[i1].x = Mathf.Lerp(xy[i0].x, xy[i2].x, cos);
+	}
+}
