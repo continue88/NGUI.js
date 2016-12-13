@@ -35,8 +35,19 @@ Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, 
 		this.needUpdate = false;
 		var localMatrix = new UnityEngine.Matrix4();
 		localMatrix.SetTRS(this.localPosition, this.localRotation, this.localScale);
-		this.localToWorldMatrix.MultiplyMatrices(localMatrix, this.parent.localToWorldMatrix);
-		this.worldToLocalMatrix.getInverse(this.localToWorldMatrix);
+		if (this.parent === undefined) {
+			this.localToWorldMatrix = localMatrix;
+			this.worldToLocalMatrix.getInverse(this.localToWorldMatrix);
+			this.position = this.localPosition.clone();
+			this.rotation = this.localRotation.clone();
+			this.lossyScale = this.localScale.clone();
+		} else {
+			this.localToWorldMatrix.MultiplyMatrices(this.parent.localToWorldMatrix, localMatrix);
+			this.worldToLocalMatrix.getInverse(this.localToWorldMatrix);
+			this.position = this.parent.localToWorldMatrix.MultiplyPoint3x4(this.localPosition);
+			this.rotation.multiply(this.parent.rotation, this.localRotation);
+			this.lossyScale = this.parent.lossyScale.clone().multiply(this.localScale);
+		}
 		for (var i in this.children)
 			this.children[i].Update();
 	},

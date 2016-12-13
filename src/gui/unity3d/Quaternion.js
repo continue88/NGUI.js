@@ -23,5 +23,14 @@ UnityEngine.Quaternion.prototype = {
 	},
 	eulerAngles: function() {
 		return new UnityEngine.Vector3();
-	}
+	},
+	multiply: function(a, b) {
+		var qax = a.x, qay = a.y, qaz = a.z, qaw = a.w;
+		var qbx = b.x, qby = b.y, qbz = b.z, qbw = b.w;
+		this.x = qax * qbw + qaw * qbx + qay * qbz - qaz * qby;
+		this.y = qay * qbw + qaw * qby + qaz * qbx - qax * qbz;
+		this.z = qaz * qbw + qaw * qbz + qax * qby - qay * qbx;
+		this.w = qaw * qbw - qax * qbx - qay * qby - qaz * qbz;
+		return this;
+	},
 };
