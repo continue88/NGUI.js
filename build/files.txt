@@ -11,8 +11,6 @@ unity3d\Mesh.js
 unity3d\MonoBehaviour.js
 unity3d\Quaternion.js
 unity3d\Rect.js
-unity3d\Shader.js
-unity3d\ShaderUniforms.js
 unity3d\Transform.js
 unity3d\Vector2.js
 unity3d\Vector3.js
