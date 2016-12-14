@@ -69,7 +69,7 @@ UnityEngine.Component.prototype = {
 //
 
 UnityEngine.Camera = function(gameObject) {
-	UnityEngine.Component.call(gameObject);
+	UnityEngine.Component.call(this, gameObject);
 
     this.isOrthoGraphic = false;
 	this.orthographicSize = 1;
@@ -612,7 +612,7 @@ UnityEngine.Mesh.prototype = {
 
 
 UnityEngine.MonoBehaviour = function(gameObject) {
-	UnityEngine.Component.call(gameObject);
+	UnityEngine.Component.call(this, gameObject);
 	this.enabled = true;
 };
 
@@ -699,13 +699,15 @@ UnityEngine.Rect.prototype = {
 //
 
 UnityEngine.Resources = {
-    LoadScript: function(url, type) {
+    LoadScript: function(url, onLoad) {
         var script = document.createElement('script');  
         script.type = 'text/javascript';
         script.onload = script.onreadystatechange = function() {  
             if (script.readyState && script.readyState != 'loaded' && script.readyState != 'complete')  
                 return; 
-            console.log(data);
+            // the script data file should always begin with: data={...}
+            if (onLoad) onLoad(data);
+            data = undefined;
         };  
         script.src = url;  
         document.getElementsByTagName('head')[0].appendChild(script);
@@ -721,14 +723,19 @@ UnityEngine.Resources = {
         document.getElementsByTagName('head')[0].appendChild(script);
         return script;  
     },
-
-    Load: function(url, type) {
-        if (url.endsWith('.js'))
-            return this.LoadScript(url, type);
-        
-        if (url.endsWith('.png'))
-            return this.LoadImage(url, type);
-    }
+    LoadInternal: function(url, onLoad) {
+        if (url.endsWith('.js')) return this.LoadScript(url, onLoad);
+        else if (url.endsWith('.png')) return this.LoadImage(url, onLoad);
+    },
+    Load: function(url, typeName) {
+        this.LoadInternal(url, function(data) {
+            var type = UnityEngine[typeName] || NGUI[typeName];
+            if (type !== undefined) {
+                var obj = new type();
+                obj.Load(data);
+            }
+        });
+    },
 };
 
 //
@@ -768,8 +775,9 @@ UnityEngine.Texture2D.prototype = {
 //
 
 UnityEngine.Transform = function(gameObject) {
-	UnityEngine.Component.call(gameObject);
+	UnityEngine.Component.call(this, gameObject);
 
+	this.transform = this;
 	this.position = new UnityEngine.Vector3(0, 0, 0);
 	this.rotation = new UnityEngine.Quaternion();
 	this.lossyScale = new UnityEngine.Vector3(1, 1, 1);
@@ -778,8 +786,8 @@ UnityEngine.Transform = function(gameObject) {
 	this.localRotation = new UnityEngine.Quaternion();
 	this.localScale = new UnityEngine.Vector3(1, 1, 1);
 
-	this.worldToLocalMatrix = new UnityEngine.Matrix4();
-	this.localToWorldMatrix = new UnityEngine.Matrix4();
+	this.worldToLocalMatrix = new UnityEngine.Matrix4x4();
+	this.localToWorldMatrix = new UnityEngine.Matrix4x4();
 
 	this.parent = undefined; // UnityEngine.Transform
 	this.children = [];
@@ -801,7 +809,7 @@ Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, 
 	Update: function() {
 		if (!this.needUpdate) return;
 		this.needUpdate = false;
-		var localMatrix = new UnityEngine.Matrix4();
+		var localMatrix = new UnityEngine.Matrix4x4();
 		localMatrix.SetTRS(this.localPosition, this.localRotation, this.localScale);
 		if (this.parent === undefined) {
 			this.localToWorldMatrix = localMatrix;
@@ -1260,7 +1268,7 @@ NGUI.UIGeometry.prototype = {
 //
 
 NGUI.UIRect = function(gameObject) {
-	UnityEngine.MonoBehaviour.call(gameObject);
+	UnityEngine.MonoBehaviour.call(this, gameObject);
 
 	this.leftAnchor = new NGUI.AnchorPoint();
 	this.rightAnchor = new NGUI.AnchorPoint();
@@ -1328,7 +1336,7 @@ Object.assign(NGUI.UIRect.prototype, UnityEngine.MonoBehaviour.prototype, {
 //
 
 NGUI.UIWidget = function(gameObject) {
-	NGUI.UIRect.call(gameObject);
+	NGUI.UIRect.call(this, gameObject);
 	
 	this.mColor = new UnityEngine.Color(1, 1, 1), // UnityEngine.ColorKeywords.white
 	this.mPivot = WidgetPivot.Center;
@@ -1545,7 +1553,7 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 //
 
 NGUI.UIBasicSprite = function(gameObject) {
-	NGUI.UIWidget.call(gameObject);
+	NGUI.UIWidget.call(this, gameObject);
 	this.mOuterUV = new UnityEngine.Rect(0, 0, 1, 1);
 	this.mInnerUV = new UnityEngine.Rect(0, 0, 1, 1);
 	this.mFillAmount = 1.0;
@@ -2280,7 +2288,7 @@ NGUI.UIAtlas.prototype = {
 //
 
 NGUI.UIPanel = function(gameObject) {
-	NGUI.UIRect.call(gameObject);
+	NGUI.UIRect.call(this, gameObject);
 
 	this.mDepth = 0;
 	this.mSortingOrder = 0;
@@ -2514,7 +2522,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 //
 
 NGUI.UIRoot = function(gameObject) {
-	UnityEngine.MonoBehaviour.call(gameObject);
+	UnityEngine.MonoBehaviour.call(this, gameObject);
 	
 };
 
@@ -2530,7 +2538,7 @@ Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
 //
 
 NGUI.UISprite = function() {
-	NGUI.UIBasicSprite.call();
+	NGUI.UIBasicSprite.call(this);
 	this.mAtlas = undefined;
 	this.mSpriteName = '';
 	this.mSprite = undefined; // refrence to UISpriteData
