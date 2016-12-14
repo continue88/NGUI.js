@@ -695,6 +695,75 @@ UnityEngine.Rect.prototype = {
 };
 
 //
+// ..\src\gui\unity3d\Resources.js
+//
+
+UnityEngine.Resources = {
+    LoadScript: function(url, type) {
+        var script = document.createElement('script');  
+        script.type = 'text/javascript';
+        script.onload = script.onreadystatechange = function() {  
+            if (script.readyState && script.readyState != 'loaded' && script.readyState != 'complete')  
+                return; 
+            console.log(data);
+        };  
+        script.src = url;  
+        document.getElementsByTagName('head')[0].appendChild(script);
+        return script;  
+    },
+    LoadImage: function(url, type) {
+        var script = document.createElement('img');
+        script.onload = script.onreadystatechange = function() {  
+            if (script.readyState && script.readyState != 'loaded' && script.readyState != 'complete')  
+                return; 
+        };  
+        script.src = url;  
+        document.getElementsByTagName('head')[0].appendChild(script);
+        return script;  
+    },
+
+    Load: function(url, type) {
+        if (url.endsWith('.js'))
+            return this.LoadScript(url, type);
+        
+        if (url.endsWith('.png'))
+            return this.LoadImage(url, type);
+    }
+};
+
+//
+// ..\src\gui\unity3d\Texture2D.js
+//
+
+UnityEngine.Texture2D = function(image) {
+    this.image = image;
+    this.glTexture = undefined;
+    this.glFormat = gl.RGBA;
+    this.glType = gl.UNSIGNED_BYTE;
+};
+
+UnityEngine.Texture2D.prototype = {
+    constructor: UnityEngine.Texture2D,
+    destroy: function() {
+        if (this.glTexture !== undefined) {
+            gl.deleteTexture(this.glTexture);
+            this.glTexture = undefined;
+        }
+    },
+    SetupTexture: function(gl, state, slot) {
+        if (this.glTexture === undefined) {
+            this.glTexture = gl.createTexture();
+            state.activeTexture(gl.TEXTURE0 + slot);
+            state.bindTexture(gl.TEXTURE_2D, this.glTexture);
+            state.texImage2D(gl.TEXTURE_2D, 0, this.glFormat, this.glFormat, this.glType, this.image);
+            return;
+        }
+        state.activeTexture(gl.TEXTURE0 + slot);
+        state.bindTexture(gl.TEXTURE_2D, this.glTexture);
+    }
+};
+
+//
 // ..\src\gui\unity3d\Transform.js
 //
 
@@ -724,9 +793,9 @@ Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, 
 		parent.children.push(this);
 	},
 	Load: function(json) {
-		if (json.t) this.localPosition.set(json.t.x, json.t.y, json.t.z);
-		if (json.r) this.localRotation.euler(json.r.x, json.r.y, json.r.z);
-		if (json.s) this.localScale.set(json.s.x, json.s.y, json.s.z);
+		if (json.t) this.localPosition.set(json.t.x | 0, json.t.y | 0, json.t.z | 0);
+		if (json.r) this.localRotation.euler(json.r.x | 0, json.r.y | 0, json.r.z | 0);
+		if (json.s) this.localScale.set(json.s.x | 1, json.s.y | 1, json.s.z | 1);
 		this.needUpdate = true;
 	},
 	Update: function() {
@@ -2531,7 +2600,19 @@ NGUI.UISpriteData = function() {
 NGUI.UISpriteData.prototype = {
 	constructor: NGUI.UISpriteData,
 	Load: function(json) {
-		Object.assign(this, json);
+		this.name = json.name;
+		this.x = json.x;
+		this.y = json.y;
+		this.width = json.w;
+		this.height = json.h;
+		this.borderLeft = json.bl | 0;
+		this.borderRight = json.br | 0;
+		this.borderTop = json.bt | 0;
+		this.borderBottom = json.bb | 0;
+		this.paddingLeft = json.pl | 0;
+		this.paddingRight = json.pr | 0;
+		this.paddingTop = json.pt | 0;
+		this.paddingBottom = json.pb | 0;
 		return this;
 	},
 };
