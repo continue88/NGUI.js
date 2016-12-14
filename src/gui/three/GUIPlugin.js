@@ -76,10 +76,10 @@ THREE.GUIPlugin = function(renderer, drawCalls) {
 
 	function createProgram(vertexShaderSrc, fragmentShaderSrc) {
 		var program = gl.createProgram();
-		var vertexShader = gl.createShader( gl.VERTEX_SHADER );
-		var fragmentShader = gl.createShader( gl.FRAGMENT_SHADER );
-		gl.shaderSource( vertexShader, vertexShaderSrc );
-		gl.shaderSource( fragmentShader,  );
+		var vertexShader = gl.createShader(gl.VERTEX_SHADER);
+		var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+		gl.shaderSource(vertexShader, vertexShaderSrc);
+		gl.shaderSource(fragmentShader,  fragmentShaderSrc);
 		gl.compileShader(vertexShader);
 		gl.compileShader(fragmentShader);
 		gl.attachShader(program, vertexShader);

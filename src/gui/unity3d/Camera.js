@@ -19,7 +19,7 @@ UnityEngine.Camera = function(gameObject) {
 	this.invViewProjMatrix = undefined; 
 };
 
-Object.assign(NGUI.Camera.prototype, UnityEngine.Component.prototype, {
+Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
     constructor: UnityEngine.Camera,
 	Load: function(json) {
 		this.isOrthoGraphic = json.orth;

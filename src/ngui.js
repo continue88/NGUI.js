@@ -14,6 +14,57 @@ NGUI={
 };
 
 //
+// ..\src\gui\unity3d\Color.js
+//
+
+UnityEngine.Color = function ( r, g, b, a ) {
+	this.r = r || 0;
+	this.g = g || 0;
+	this.b = b || 0;
+	this.a = a || 0;
+};
+
+UnityEngine.Color.prototype = {
+	constructor: UnityEngine.Color,
+	add: function(v) {
+		this.r += v.r;
+		this.g += v.g;
+		this.b += v.b;
+		this.a += v.a;
+	},
+	sub: function(v) {
+		this.r -= v.r;
+		this.g -= v.g;
+		this.b -= v.b;
+		this.a -= v.a;
+	},
+};
+
+//
+// ..\src\gui\unity3d\Color32.js
+//
+
+UnityEngine.Color32 = function(r, g, b, a) {
+    this.r = r || 0;
+    this.g = g || 0;
+    this.b = b || 0;
+    this.a = a || 255;
+};
+
+//
+// ..\src\gui\unity3d\Component.js
+//
+
+UnityEngine.Component = function(gameObject) {
+	this.gameObject = gameObject;
+	this.transform = gameObject.transform; // UnityEngine.Transform
+};
+
+UnityEngine.Component.prototype = {
+	constructor: UnityEngine.Component,
+};
+
+//
 // ..\src\gui\unity3d\Camera.js
 //
 
@@ -37,7 +88,7 @@ UnityEngine.Camera = function(gameObject) {
 	this.invViewProjMatrix = undefined; 
 };
 
-Object.assign(NGUI.Camera.prototype, UnityEngine.Component.prototype, {
+Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
     constructor: UnityEngine.Camera,
 	Load: function(json) {
 		this.isOrthoGraphic = json.orth;
@@ -101,57 +152,6 @@ Object.assign(NGUI.Camera.prototype, UnityEngine.Component.prototype, {
     },
 });
 
-
-//
-// ..\src\gui\unity3d\Color.js
-//
-
-UnityEngine.Color = function ( r, g, b, a ) {
-	this.r = r || 0;
-	this.g = g || 0;
-	this.b = b || 0;
-	this.a = a || 0;
-};
-
-UnityEngine.Color.prototype = {
-	constructor: UnityEngine.Color,
-	add: function(v) {
-		this.r += v.r;
-		this.g += v.g;
-		this.b += v.b;
-		this.a += v.a;
-	},
-	sub: function(v) {
-		this.r -= v.r;
-		this.g -= v.g;
-		this.b -= v.b;
-		this.a -= v.a;
-	},
-};
-
-//
-// ..\src\gui\unity3d\Color32.js
-//
-
-UnityEngine.Color32 = function(r, g, b, a) {
-    this.r = r || 0;
-    this.g = g || 0;
-    this.b = b || 0;
-    this.a = a || 255;
-};
-
-//
-// ..\src\gui\unity3d\Component.js
-//
-
-UnityEngine.Component = function(gameObject) {
-	this.gameObject = gameObject;
-	this.transform = gameObject.transform; // UnityEngine.Transform
-};
-
-UnityEngine.Component.prototype = {
-	constructor: UnityEngine.Component,
-};
 
 //
 // ..\src\gui\unity3d\GameObject.js
@@ -901,7 +901,7 @@ UnityEngine.ShaderUniforms = function(gl, program, renderer) {
     addUniform = function( container, uniformObject ) {
         container.seq.push( uniformObject );
         container.map[ uniformObject.id ] = uniformObject;
-    },
+    };
     parseUniform = function(activeInfo, addr, container) {
         var path = activeInfo.name,
             pathLength = path.length;
@@ -929,7 +929,7 @@ UnityEngine.ShaderUniforms = function(gl, program, renderer) {
                 container = next;
             }
         }
-    },
+    };
 
     // begin parse...
     var n = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
@@ -941,8 +941,8 @@ UnityEngine.ShaderUniforms = function(gl, program, renderer) {
     }
 };
 
-UnityEngine.WebGLUniforms.prototype = {
-    constructor: UnityEngine.WebGLUniforms,
+UnityEngine.ShaderUniforms.prototype = {
+    constructor: UnityEngine.ShaderUniforms,
     setValue: function(name, value) {
         var u = this.map[name];
         if (u !== undefined)
@@ -2238,10 +2238,10 @@ THREE.GUIPlugin = function(renderer, drawCalls) {
 
 	function createProgram(vertexShaderSrc, fragmentShaderSrc) {
 		var program = gl.createProgram();
-		var vertexShader = gl.createShader( gl.VERTEX_SHADER );
-		var fragmentShader = gl.createShader( gl.FRAGMENT_SHADER );
-		gl.shaderSource( vertexShader, vertexShaderSrc );
-		gl.shaderSource( fragmentShader,  );
+		var vertexShader = gl.createShader(gl.VERTEX_SHADER);
+		var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+		gl.shaderSource(vertexShader, vertexShaderSrc);
+		gl.shaderSource(fragmentShader,  fragmentShaderSrc);
 		gl.compileShader(vertexShader);
 		gl.compileShader(fragmentShader);
 		gl.attachShader(program, vertexShader);
@@ -2440,7 +2440,7 @@ THREE.GUIPlugin = function(renderer, drawCalls) {
 //
 
 NGUI.UIAtlas = function(gameObject) {
-	this.material = undefined;
+	this.material = undefined; // { image:{width:100, height:100}, tex: './tex/atlas.png' }
 	this.mSprites = {}; // NGUI.UISpriteData
 }
 

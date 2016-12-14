@@ -111,7 +111,7 @@ UnityEngine.ShaderUniforms = function(gl, program, renderer) {
     addUniform = function( container, uniformObject ) {
         container.seq.push( uniformObject );
         container.map[ uniformObject.id ] = uniformObject;
-    },
+    };
     parseUniform = function(activeInfo, addr, container) {
         var path = activeInfo.name,
             pathLength = path.length;
@@ -139,7 +139,7 @@ UnityEngine.ShaderUniforms = function(gl, program, renderer) {
                 container = next;
             }
         }
-    },
+    };
 
     // begin parse...
     var n = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
@@ -151,8 +151,8 @@ UnityEngine.ShaderUniforms = function(gl, program, renderer) {
     }
 };
 
-UnityEngine.WebGLUniforms.prototype = {
-    constructor: UnityEngine.WebGLUniforms,
+UnityEngine.ShaderUniforms.prototype = {
+    constructor: UnityEngine.ShaderUniforms,
     setValue: function(name, value) {
         var u = this.map[name];
         if (u !== undefined)
