@@ -20,6 +20,10 @@ body {
 <script src="./src/three.min.js"></script>
 <script src="./src/ngui.js"></script>
 <script>
+
+UnityEngine.Resources.Load('./res/atlas.js', 'UIAtlas');
+UnityEngine.Resources.Load('./res/atlas.png', 'UIImage');
+
 var renderer = new THREE.WebGLRenderer({antialias: true});
 renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
