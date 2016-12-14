@@ -1,6 +1,6 @@
 
-NGUI.UISprite = function() {
-	NGUI.UIBasicSprite.call(this);
+NGUI.UISprite = function(gameObject) {
+	NGUI.UIBasicSprite.call(this, gameObject);
 	this.mAtlas = undefined;
 	this.mSpriteName = '';
 	this.mSprite = undefined; // refrence to UISpriteData
@@ -15,9 +15,9 @@ Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
 		return new UnityEngine.Vector4(0, 0, 0, 0); 
 	},
 	Load: function(json) {
-		NGUI.UIBasicSprite.Load.call(this, json);
+		NGUI.UIBasicSprite.prototype.Load.call(this, json);
 		// json.atlas; // TODO: find atlas with name.
-		this.mSpriteName = this.sprite;
+		this.mSpriteName = json.sprite;
 	},
 	GetAtlasSprite: function() {
 		if (this.mAtlas !== undefined && this.mSprite === undefined) 

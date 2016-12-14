@@ -23,7 +23,7 @@ Object.assign(NGUI.UIRect.prototype, UnityEngine.MonoBehaviour.prototype, {
 		return (this.mCam.nearClipPlane + this.mCam.farClipPlane) * 0.5;
 	},
 	Load: function(json) {
-
+		//if (json)
 	},
 	GetSides: function(relativeTo) {
 		if (this.mCam !== undefined) return this.mCam.GetSides(this.cameraRayDistance(), relativeTo);

@@ -1,6 +1,7 @@
 
 UnityEngine.Resources = {
-    ResourcesList = {},
+    ResourcesList: {},
+    GetDataRoot: function() { return _data_; },
     LoadWithType: function(url, type, onLoad) {
         var isScript = (type === 'script'); 
         var element = document.createElement(type);  
@@ -10,9 +11,11 @@ UnityEngine.Resources = {
                 return; 
             
             if (isScript) {
-                // the script data file should always begin with: data={...}
-                if (onLoad) onLoad(data);
-                data = undefined;
+                // the script data file should always begin with: _data_={...}
+                var dataRoot = UnityEngine.Resources.GetDataRoot();
+                dataRoot._url_ = url; // marker the url.
+                if (onLoad) onLoad(dataRoot);
+                _data_ = undefined; // clear the data root.
             } else {
                 if (onLoad) onLoad(element);
             }

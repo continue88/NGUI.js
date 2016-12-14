@@ -24,8 +24,22 @@ UnityEngine.Color = function ( r, g, b, a ) {
 	this.a = a || 0;
 };
 
+const COLOR_FROM_32 = 1/255;
+
 UnityEngine.Color.prototype = {
 	constructor: UnityEngine.Color,
+	set: function(r, g, b, a) {
+		this.r = r;
+		this.g = g;
+		this.b = b;
+		this.a = a;
+	},
+	set32: function(r, g, b, a) {
+		this.r = r * COLOR_FROM_32;
+		this.g = g * COLOR_FROM_32;
+		this.b = b * COLOR_FROM_32;
+		this.a = a * COLOR_FROM_32;
+	},
 	add: function(v) {
 		this.r += v.r;
 		this.g += v.g;
@@ -699,7 +713,8 @@ UnityEngine.Rect.prototype = {
 //
 
 UnityEngine.Resources = {
-    ResourcesList = {},
+    ResourcesList: {},
+    GetDataRoot: function() { return _data_; },
     LoadWithType: function(url, type, onLoad) {
         var isScript = (type === 'script'); 
         var element = document.createElement(type);  
@@ -709,9 +724,11 @@ UnityEngine.Resources = {
                 return; 
             
             if (isScript) {
-                // the script data file should always begin with: data={...}
-                if (onLoad) onLoad(data);
-                data = undefined;
+                // the script data file should always begin with: _data_={...}
+                var dataRoot = UnityEngine.Resources.GetDataRoot();
+                dataRoot._url_ = url; // marker the url.
+                if (onLoad) onLoad(dataRoot);
+                _data_ = undefined; // clear the data root.
             } else {
                 if (onLoad) onLoad(element);
             }
@@ -1153,6 +1170,9 @@ NGUITools = {
 		}
 		return comp;
 	},
+	GetImageUrl: function(atlasUrl, imageName) {
+		return atlasUrl.substring(0, atlasUrl.lastIndexOf('/') + 1) + imageName;
+	},
 };
 
 //
@@ -1294,7 +1314,7 @@ Object.assign(NGUI.UIRect.prototype, UnityEngine.MonoBehaviour.prototype, {
 		return (this.mCam.nearClipPlane + this.mCam.farClipPlane) * 0.5;
 	},
 	Load: function(json) {
-
+		//if (json)
 	},
 	GetSides: function(relativeTo) {
 		if (this.mCam !== undefined) return this.mCam.GetSides(this.cameraRayDistance(), relativeTo);
@@ -1352,7 +1372,7 @@ NGUI.UIWidget = function(gameObject) {
 	this.mIsVisibleByAlpha = true;
 	this.mIsVisibleByPanel = true;
 	this.mDrawRegion = new UnityEngine.Vector4(0, 0, 1, 1);
-	this.mLocalToPanel = new UnityEngine.Matrix4();
+	this.mLocalToPanel = new UnityEngine.Matrix4x4();
 	this.mMatrixFrame = 1;
 
 	// public variables.
@@ -1405,7 +1425,15 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 			this.mDrawRegion.w == 1 ? y1 : Mathf.Lerp(y0, y1, this.mDrawRegion.w));
 	},
 	Load: function(json) {
-		NGUI.UIRect.Load.call(this, json);
+		NGUI.UIRect.prototype.Load.call(this, json);
+		if (json.c !== undefined)
+			this.mColor.set32(json.c.r | 0, json.c.g | 0, json.c.b | 0, json.c.a | 255);
+		this.mPivot = json.p | WidgetPivot.Center;
+		this.keepAspectRatio = json.k | AspectRatioSource.Free;
+		this.aspectRatio = json.a | 1;
+		this.mWidth = json.w | 100;
+		this.mHeight = json.h | 100;
+		this.mDepth = json.d | 0;
 	},
 	OnFill: function(verts, uvs, cols) { },
 	UpdateVisibility: function(visibleByAlpha, visibleByPanel) {
@@ -1557,13 +1585,14 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 
 NGUI.UIBasicSprite = function(gameObject) {
 	NGUI.UIWidget.call(this, gameObject);
-	this.mOuterUV = new UnityEngine.Rect(0, 0, 1, 1);
-	this.mInnerUV = new UnityEngine.Rect(0, 0, 1, 1);
 	this.mFillAmount = 1.0;
 	this.mInvert = false;
 	this.mType = SpriteType.Simple;
 	this.mFillDirection = FillDirection.Radial360;
 	this.mFlip = Flip.Nothing;
+	
+	this.mOuterUV = new UnityEngine.Rect(0, 0, 1, 1);
+	this.mInnerUV = new UnityEngine.Rect(0, 0, 1, 1);
 };
 
 SpriteType = {
@@ -1614,7 +1643,12 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 			this.this.finalAlpha * 255); 
 	},
 	Load: function(json) {
-		NGUI.UIWidget.Load.call(this, json);
+		NGUI.UIWidget.prototype.Load.call(this, json);
+		this.mType = json.t | SpriteType.Simple;
+		this.mFlip = json.f | Flip.Nothing;
+		this.mFillAmount = json.fa | 1;
+		this.mFillDirection = json.fd | FillDirection.Radial360;
+		this.invert = json.fi | false;
 	},
 	Fill: function(verts, uvs, cols, outer, inner) {
 		this.mOuterUV = outer;
@@ -1951,35 +1985,6 @@ NGUI.UIBasicSprite.RadialCut2 = function(xy, cos, sin, invert, corner) {
 // ..\src\gui\three\GUIRenderer.js
 //
 
-GUIRenderer = function (params) {
-};
-
-GUIRenderer.prototype = {
-	renderSingleObject: function(gl, mesh, material) {
-		var shader = material.shader;
-		var meshAttributes = mesh.attributes;
-		var shaderAttributes = shader.getAttributes();
-		for (var name in shaderAttributes) {
-			var shaderAttribute = shaderAttributes[name];
-			if (shaderAttribute > 0) {
-				var meshAttribute = meshAttributes[name];
-				if (meshAttribute !== undefined) {
-					var type = gl.FLOAT;
-					var array = meshAttribute.array;
-					var normalized = geometryAttribute.normalized;
-					gl.bindBuffer(gl.ARRAY_BUFFER, buffer );
-					gl.vertexAttribPointer(shaderAttribute, size, type, normalized, 0, startIndex * size * array.BYTES_PER_ELEMENT );
-				}
-			} else {
-
-			}
-		}
-	},
-	renderObjects: function() {
-	},
-	render: function() {
-	},
-};
 
 //
 // ..\src\gui\three\GUIPlugin.js
@@ -2282,7 +2287,15 @@ NGUI.UIAtlas.prototype = {
 				this.mSprites[sprite.name] = sprite;
 			}
 		}
-		this.material = json.mat; // just copy
+		this.pixelSize = json.pixelSize | 1;
+		this.image = json.image; // just copy
+
+		// load the image.
+		UnityEngine.Resources.LoadImage(
+			NGUITools.GetImageUrl(json._url_, json.image), 
+			function(image){
+			this.image = image; // here is a image...
+		});
 	}
 };
 
@@ -2540,8 +2553,8 @@ Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
 // ..\src\gui\ui\UISprite.js
 //
 
-NGUI.UISprite = function() {
-	NGUI.UIBasicSprite.call(this);
+NGUI.UISprite = function(gameObject) {
+	NGUI.UIBasicSprite.call(this, gameObject);
 	this.mAtlas = undefined;
 	this.mSpriteName = '';
 	this.mSprite = undefined; // refrence to UISpriteData
@@ -2556,9 +2569,9 @@ Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
 		return new UnityEngine.Vector4(0, 0, 0, 0); 
 	},
 	Load: function(json) {
-		NGUI.UIBasicSprite.Load.call(this, json);
+		NGUI.UIBasicSprite.prototype.Load.call(this, json);
 		// json.atlas; // TODO: find atlas with name.
-		this.mSpriteName = this.sprite;
+		this.mSpriteName = json.sprite;
 	},
 	GetAtlasSprite: function() {
 		if (this.mAtlas !== undefined && this.mSprite === undefined) 

@@ -1,13 +1,14 @@
 
 NGUI.UIBasicSprite = function(gameObject) {
 	NGUI.UIWidget.call(this, gameObject);
-	this.mOuterUV = new UnityEngine.Rect(0, 0, 1, 1);
-	this.mInnerUV = new UnityEngine.Rect(0, 0, 1, 1);
 	this.mFillAmount = 1.0;
 	this.mInvert = false;
 	this.mType = SpriteType.Simple;
 	this.mFillDirection = FillDirection.Radial360;
 	this.mFlip = Flip.Nothing;
+	
+	this.mOuterUV = new UnityEngine.Rect(0, 0, 1, 1);
+	this.mInnerUV = new UnityEngine.Rect(0, 0, 1, 1);
 };
 
 SpriteType = {
@@ -58,7 +59,12 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 			this.this.finalAlpha * 255); 
 	},
 	Load: function(json) {
-		NGUI.UIWidget.Load.call(this, json);
+		NGUI.UIWidget.prototype.Load.call(this, json);
+		this.mType = json.t | SpriteType.Simple;
+		this.mFlip = json.f | Flip.Nothing;
+		this.mFillAmount = json.fa | 1;
+		this.mFillDirection = json.fd | FillDirection.Radial360;
+		this.invert = json.fi | false;
 	},
 	Fill: function(verts, uvs, cols, outer, inner) {
 		this.mOuterUV = outer;

@@ -13,7 +13,7 @@ NGUI.UIWidget = function(gameObject) {
 	this.mIsVisibleByAlpha = true;
 	this.mIsVisibleByPanel = true;
 	this.mDrawRegion = new UnityEngine.Vector4(0, 0, 1, 1);
-	this.mLocalToPanel = new UnityEngine.Matrix4();
+	this.mLocalToPanel = new UnityEngine.Matrix4x4();
 	this.mMatrixFrame = 1;
 
 	// public variables.
@@ -66,7 +66,15 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 			this.mDrawRegion.w == 1 ? y1 : Mathf.Lerp(y0, y1, this.mDrawRegion.w));
 	},
 	Load: function(json) {
-		NGUI.UIRect.Load.call(this, json);
+		NGUI.UIRect.prototype.Load.call(this, json);
+		if (json.c !== undefined)
+			this.mColor.set32(json.c.r | 0, json.c.g | 0, json.c.b | 0, json.c.a | 255);
+		this.mPivot = json.p | WidgetPivot.Center;
+		this.keepAspectRatio = json.k | AspectRatioSource.Free;
+		this.aspectRatio = json.a | 1;
+		this.mWidth = json.w | 100;
+		this.mHeight = json.h | 100;
+		this.mDepth = json.d | 0;
 	},
 	OnFill: function(verts, uvs, cols) { },
 	UpdateVisibility: function(visibleByAlpha, visibleByPanel) {

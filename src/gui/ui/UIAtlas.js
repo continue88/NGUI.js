@@ -18,6 +18,14 @@ NGUI.UIAtlas.prototype = {
 				this.mSprites[sprite.name] = sprite;
 			}
 		}
-		this.material = json.mat; // just copy
+		this.pixelSize = json.pixelSize | 1;
+		this.image = json.image; // just copy
+
+		// load the image.
+		UnityEngine.Resources.LoadImage(
+			NGUITools.GetImageUrl(json._url_, json.image), 
+			function(image){
+			this.image = image; // here is a image...
+		});
 	}
 };

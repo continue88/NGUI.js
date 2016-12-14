@@ -5,8 +5,9 @@ using System.IO;
 
 public class NguiJS
 {
-    const string JsPrefix = "data=";
+    const string JsPrefix = "_data_=";
     static List<UIAtlas> mUsedAtlas = new List<UIAtlas>();
+    static List<string> mAtlasImages = new List<string>();
 
     [MenuItem("NGUI.js/Export")]
     public static void Export()
@@ -15,9 +16,12 @@ public class NguiJS
             throw new System.Exception("You must select at least one game object.");
 
         mUsedAtlas.Clear();
+        mAtlasImages.Clear();
+
         var gos = new List<GameObject>(Selection.gameObjects);
         gos.ForEach(go => File.WriteAllText(EditorUtility.SaveFilePanel("Save As", "", go.name, "js"), JsPrefix + Export(go).ToJson()));
         mUsedAtlas.ForEach(atlas => File.WriteAllText(EditorUtility.SaveFilePanel("Save As", "", atlas.name, "js"), JsPrefix + Export(atlas).ToJson()));
+        mAtlasImages.ForEach(path => File.Copy(path, EditorUtility.SaveFilePanel("Save As", "", Path.GetFileName(path), Path.GetExtension(path)), true));
     }
 
     public static LitJson.JsonData Export(GameObject go)
@@ -80,21 +84,38 @@ public class NguiJS
         var data = new LitJson.JsonData();
         data["atlas"] = sprite.atlas.name;
         data["sprite"] = sprite.spriteName;
-        data["type"] = (int)sprite.type;
-        data["flip"] = (int)sprite.flip;
-        //data["flip"] = sprite.fillCenter;
-        //data["color"] = sprite.color;
+        data["c"] = Export(sprite.color);
+        Export(data, "t", (int)sprite.type, (int)UIBasicSprite.Type.Simple);
+        Export(data, "f", (int)sprite.flip, (int)UIBasicSprite.Flip.Nothing);
+        Export(data, "fd", (int)sprite.fillDirection, (int)UIBasicSprite.FillDirection.Radial360);
+        Export(data, "fa", sprite.fillAmount, 1.0f);
+        Export(data, "fi", sprite.invert, false);
+        Export(data, "p", (int)sprite.pivot, (int)UIWidget.Pivot.Center);
+        Export(data, "k", (int)sprite.keepAspectRatio, (int)UIWidget.AspectRatioSource.Free);
+        Export(data, "a", sprite.aspectRatio, 1.0f);
+        Export(data, "w", sprite.width, 100);
+        Export(data, "h", sprite.height, 100);
+        Export(data, "d", sprite.depth, 0);
         return data;
     }
 
     public static LitJson.JsonData Export(UIAtlas atlas)
     {
-        var sprites = new LitJson.JsonData();
-        foreach (var sprite in atlas.spriteList)
-            sprites.Add(Export(sprite));
-
         var data = new LitJson.JsonData();
+
+        // iamge name.
+        var path = AssetDatabase.GetAssetPath(atlas.spriteMaterial.mainTexture);
+        if (!mAtlasImages.Contains(path)) mAtlasImages.Add(path);
+        data["image"] = Path.GetFileName(path);
+
+        // pixelSize
+        Export(data, "pixelSize", atlas.pixelSize, 1.0f);
+
+        // sprites.
+        var sprites = new LitJson.JsonData();
+        atlas.spriteList.ForEach(sprite => sprites.Add(Export(sprite)));
         data["sprites"] = sprites;
+
         return data;
     }
 
@@ -114,6 +135,22 @@ public class NguiJS
         Export(data, "pr", sprite.paddingRight, 0);
         Export(data, "pt", sprite.paddingTop, 0);
         Export(data, "pb", sprite.paddingBottom, 0);
+        return data;
+    }
+
+    public static LitJson.JsonData Export(Color v)
+    {
+        return Export((Color32)v);
+    }
+
+    public static LitJson.JsonData Export(Color32 color32)
+    {
+        var data = new LitJson.JsonData();
+        data.SetJsonType(LitJson.JsonType.Object);
+        Export(data, "r", color32.r, 0);
+        Export(data, "g", color32.g, 0);
+        Export(data, "b", color32.b, 0);
+        Export(data, "a", color32.a, 255);
         return data;
     }
 
@@ -163,13 +200,7 @@ public class NguiJS
         return data;
     }
     
-    public static void Export(LitJson.JsonData data, string name, int value, int def)
-    {
-        if (value != def) data[name] = value;
-    }
-    
-    public static void Export(LitJson.JsonData data, string name, float value, float def)
-    {
-        if (value != def) data[name] = value;
-    }
+    public static void Export(LitJson.JsonData data, string name, int value, int def) { if (value != def) data[name] = value; }
+    public static void Export(LitJson.JsonData data, string name, float value, float def) { if (value != def) data[name] = value; }
+    public static void Export(LitJson.JsonData data, string name, bool value, bool def) { if (value != def) data[name] = value; }
 }
