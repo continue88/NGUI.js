@@ -20,7 +20,19 @@ NGUI.UISpriteData = function() {
 NGUI.UISpriteData.prototype = {
 	constructor: NGUI.UISpriteData,
 	Load: function(json) {
-		Object.assign(this, json);
+		this.name = json.name;
+		this.x = json.x;
+		this.y = json.y;
+		this.width = json.w;
+		this.height = json.h;
+		this.borderLeft = json.bl | 0;
+		this.borderRight = json.br | 0;
+		this.borderTop = json.bt | 0;
+		this.borderBottom = json.bb | 0;
+		this.paddingLeft = json.pl | 0;
+		this.paddingRight = json.pr | 0;
+		this.paddingTop = json.pt | 0;
+		this.paddingBottom = json.pb | 0;
 		return this;
 	},
 };
