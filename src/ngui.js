@@ -166,7 +166,7 @@ UnityEngine.GameObject = function () {
 UnityEngine.GameObject.prototype = {
 	constructor: UnityEngine.GameObject,
 	GetComponent: function(typeName) {
-		var componentType = NGUI[componentTypeName] | UnityEngine[componentTypeName];
+		var componentType = NGUI[componentTypeName] || UnityEngine[componentTypeName];
 		for (var i in this.components) {
 			var comp = this.components[i];
 			if (comp instanceof componentType)
@@ -179,8 +179,8 @@ UnityEngine.GameObject.prototype = {
 		if (json.components) {
 			for (var i in json.components) {
 				var componentData = json.components[i];
-				var componentTypeName = componentData.typeName;
-				var componentType = NGUI[componentTypeName] | UnityEngine[componentTypeName];
+				var componentTypeName = componentData.meta_type;
+				var componentType = NGUI[componentTypeName] || UnityEngine[componentTypeName];
 				if (componentType) {
 					var component = new componentType(this);
 					component.Load(componentData);
@@ -699,41 +699,44 @@ UnityEngine.Rect.prototype = {
 //
 
 UnityEngine.Resources = {
-    LoadScript: function(url, onLoad) {
-        var script = document.createElement('script');  
-        script.type = 'text/javascript';
-        script.onload = script.onreadystatechange = function() {  
-            if (script.readyState && script.readyState != 'loaded' && script.readyState != 'complete')  
+    ResourcesList = {},
+    LoadWithType: function(url, type, onLoad) {
+        var isScript = (type === 'script'); 
+        var element = document.createElement(type);  
+        if (isScript) element.type = 'text/javascript';
+        element.onload = element.onreadystatechange = function() {  
+            if (element.readyState && element.readyState !== 'loaded' && element.readyState !== 'complete')  
                 return; 
-            // the script data file should always begin with: data={...}
-            if (onLoad) onLoad(data);
-            data = undefined;
+            
+            if (isScript) {
+                // the script data file should always begin with: data={...}
+                if (onLoad) onLoad(data);
+                data = undefined;
+            } else {
+                if (onLoad) onLoad(element);
+            }
         };  
-        script.src = url;  
-        document.getElementsByTagName('head')[0].appendChild(script);
-        return script;  
+        element.src = url;  
+        document.getElementsByTagName('head')[0].appendChild(element);
+        return element;  
     },
-    LoadImage: function(url, type) {
-        var script = document.createElement('img');
-        script.onload = script.onreadystatechange = function() {  
-            if (script.readyState && script.readyState != 'loaded' && script.readyState != 'complete')  
-                return; 
-        };  
-        script.src = url;  
-        document.getElementsByTagName('head')[0].appendChild(script);
-        return script;  
-    },
-    LoadInternal: function(url, onLoad) {
-        if (url.endsWith('.js')) return this.LoadScript(url, onLoad);
-        else if (url.endsWith('.png')) return this.LoadImage(url, onLoad);
-    },
-    Load: function(url, typeName) {
-        this.LoadInternal(url, function(data) {
+    Load: function(url, typeName, onLoad) {
+        // TODO: check cache.
+        this.LoadWithType(url, 'script', function(data) {
             var type = UnityEngine[typeName] || NGUI[typeName];
             if (type !== undefined) {
                 var obj = new type();
                 obj.Load(data);
+                if (onLoad) onLoad(obj);
+            } else {
+                console.error("Type not found:" + typeName);
             }
+        });
+    },
+    LoadImage: function(url, onLoad) {
+        // TODO: check cache.
+        this.LoadWithType(url, 'img', function(image) {
+            if (onLoad) onLoad(image);
         });
     },
 };

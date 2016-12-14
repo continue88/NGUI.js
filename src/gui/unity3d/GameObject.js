@@ -8,7 +8,7 @@ UnityEngine.GameObject = function () {
 UnityEngine.GameObject.prototype = {
 	constructor: UnityEngine.GameObject,
 	GetComponent: function(typeName) {
-		var componentType = NGUI[componentTypeName] | UnityEngine[componentTypeName];
+		var componentType = NGUI[componentTypeName] || UnityEngine[componentTypeName];
 		for (var i in this.components) {
 			var comp = this.components[i];
 			if (comp instanceof componentType)
@@ -21,8 +21,8 @@ UnityEngine.GameObject.prototype = {
 		if (json.components) {
 			for (var i in json.components) {
 				var componentData = json.components[i];
-				var componentTypeName = componentData.typeName;
-				var componentType = NGUI[componentTypeName] | UnityEngine[componentTypeName];
+				var componentTypeName = componentData.meta_type;
+				var componentType = NGUI[componentTypeName] || UnityEngine[componentTypeName];
 				if (componentType) {
 					var component = new componentType(this);
 					component.Load(componentData);

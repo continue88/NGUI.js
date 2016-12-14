@@ -78,6 +78,7 @@ public class NguiJS
             mUsedAtlas.Add(sprite.atlas);
 
         var data = new LitJson.JsonData();
+        data["atlas"] = sprite.atlas.name;
         data["sprite"] = sprite.spriteName;
         data["type"] = (int)sprite.type;
         data["flip"] = (int)sprite.flip;
