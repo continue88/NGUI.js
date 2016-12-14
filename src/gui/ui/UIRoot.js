@@ -1,6 +1,6 @@
 
 NGUI.UIRoot = function(gameObject) {
-	UnityEngine.MonoBehaviour.call(gameObject);
+	UnityEngine.MonoBehaviour.call(this, gameObject);
 	
 };
 

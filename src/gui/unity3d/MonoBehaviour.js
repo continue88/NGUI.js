@@ -1,7 +1,7 @@
 
 
 UnityEngine.MonoBehaviour = function(gameObject) {
-	UnityEngine.Component.call(gameObject);
+	UnityEngine.Component.call(this, gameObject);
 	this.enabled = true;
 };
 

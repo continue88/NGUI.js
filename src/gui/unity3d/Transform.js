@@ -1,7 +1,8 @@
 
 UnityEngine.Transform = function(gameObject) {
-	UnityEngine.Component.call(gameObject);
+	UnityEngine.Component.call(this, gameObject);
 
+	this.transform = this;
 	this.position = new UnityEngine.Vector3(0, 0, 0);
 	this.rotation = new UnityEngine.Quaternion();
 	this.lossyScale = new UnityEngine.Vector3(1, 1, 1);
@@ -10,8 +11,8 @@ UnityEngine.Transform = function(gameObject) {
 	this.localRotation = new UnityEngine.Quaternion();
 	this.localScale = new UnityEngine.Vector3(1, 1, 1);
 
-	this.worldToLocalMatrix = new UnityEngine.Matrix4();
-	this.localToWorldMatrix = new UnityEngine.Matrix4();
+	this.worldToLocalMatrix = new UnityEngine.Matrix4x4();
+	this.localToWorldMatrix = new UnityEngine.Matrix4x4();
 
 	this.parent = undefined; // UnityEngine.Transform
 	this.children = [];
@@ -33,7 +34,7 @@ Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, 
 	Update: function() {
 		if (!this.needUpdate) return;
 		this.needUpdate = false;
-		var localMatrix = new UnityEngine.Matrix4();
+		var localMatrix = new UnityEngine.Matrix4x4();
 		localMatrix.SetTRS(this.localPosition, this.localRotation, this.localScale);
 		if (this.parent === undefined) {
 			this.localToWorldMatrix = localMatrix;

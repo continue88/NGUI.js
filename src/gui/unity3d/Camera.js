@@ -1,6 +1,6 @@
 
 UnityEngine.Camera = function(gameObject) {
-	UnityEngine.Component.call(gameObject);
+	UnityEngine.Component.call(this, gameObject);
 
     this.isOrthoGraphic = false;
 	this.orthographicSize = 1;

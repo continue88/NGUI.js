@@ -1,6 +1,6 @@
 
 NGUI.UIRect = function(gameObject) {
-	UnityEngine.MonoBehaviour.call(gameObject);
+	UnityEngine.MonoBehaviour.call(this, gameObject);
 
 	this.leftAnchor = new NGUI.AnchorPoint();
 	this.rightAnchor = new NGUI.AnchorPoint();

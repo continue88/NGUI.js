@@ -1,6 +1,6 @@
 
 NGUI.UISprite = function() {
-	NGUI.UIBasicSprite.call();
+	NGUI.UIBasicSprite.call(this);
 	this.mAtlas = undefined;
 	this.mSpriteName = '';
 	this.mSprite = undefined; // refrence to UISpriteData
