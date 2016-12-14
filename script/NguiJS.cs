@@ -26,7 +26,9 @@ public class NguiJS
         data["name"] = go.name;
         data["transform"] = Export(go.transform);
         data["components"] = Export(go.GetComponents<Component>());
-        data["children"] = ExportChildren(go);
+
+        if (go.transform.childCount > 0)
+            data["children"] = ExportChildren(go);
         return data;
     }
 
