@@ -80,7 +80,6 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
 
     function createProgramInfos() {
         var program0 = createProgram([
-			'precision ' + renderer.getPrecision() + ' float;',
 			'uniform mat4 UNITY_MATRIX_MVP;',
 			'attribute vec3 vertex;',
 			'attribute vec2 uv;',
@@ -93,7 +92,6 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
 			'   gl_Position = UNITY_MATRIX_MVP * vec4(vertex, 1.0);',
 			'}'
 		].join('\n'), [
-			'precision ' + renderer.getPrecision() + ' float;',
 			'uniform sampler2D _MainTex;',
 			'varying vec2 vUV;',
             'varying vec3 vColor;',
@@ -103,7 +101,6 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
 		].join('\n'));
         
         var program1 = createProgram([
-			'precision ' + renderer.getPrecision() + ' float;',
 			'uniform mat4 UNITY_MATRIX_MVP;',
             'uniform vec4 _ClipRange0;',
 			'attribute vec3 vertex;',
@@ -119,7 +116,6 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
 			'   gl_Position = UNITY_MATRIX_MVP * vec4(vertex, 1.0);',
 			'}'
 		].join('\n'), [
-			'precision ' + renderer.getPrecision() + ' float;',
 			'uniform sampler2D _MainTex;',
             'uniform vec2 _ClipArgs0;',
 			'varying vec2 vUV;',
@@ -134,7 +130,6 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
 		].join('\n'));
         
         var program2 = createProgram([
-			'precision ' + renderer.getPrecision() + ' float;',
 			'uniform mat4 UNITY_MATRIX_MVP;',
             'uniform vec4 _ClipRange0;',
             'uniform vec4 _ClipRange1;',
@@ -159,7 +154,6 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
 			'   gl_Position = UNITY_MATRIX_MVP * vec4(vertex, 1.0);',
 			'}'
 		].join('\n'), [
-			'precision ' + renderer.getPrecision() + ' float;',
 			'uniform sampler2D _MainTex;',
             'uniform vec4 _ClipArgs0;',
             'uniform vec4 _ClipArgs1;',
@@ -178,7 +172,6 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
 		].join('\n'));
         
         var program3 = createProgram([
-			'precision ' + renderer.getPrecision() + ' float;',
 			'uniform mat4 UNITY_MATRIX_MVP;',
             'uniform vec4 _ClipRange0;',
             'uniform vec4 _ClipRange1;',
@@ -206,7 +199,6 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
 			'   gl_Position = UNITY_MATRIX_MVP * vec4(vertex, 1.0);',
 			'}'
 		].join('\n'), [
-			'precision ' + renderer.getPrecision() + ' float;',
 			'uniform sampler2D _MainTex;',
             'uniform vec4 _ClipArgs0;',
             'uniform vec4 _ClipArgs1;',

@@ -6,12 +6,12 @@ WebGL.Renderer = function (parameters) {
 	this.domElement = canvas; 
 	this.width = this.domElement.width,
 	this.height = this.domElement.height,
-    this.gl = TryGetGLContext(parameters, canvas);
+    this.gl = getGLContext(parameters, canvas);
     
     function onContextLost() {
     }
 
-    function TryGetGLContext(parameters, canvas) {
+    function getGLContext(parameters, canvas) {
         var glContext = undefined;
         try {
             var attributes = {
