@@ -21,9 +21,14 @@ UnityEngine.Transform = function(gameObject) {
 
 Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, {
 	constructor: UnityEngine.Transform,
+	exec: function(action, recursive) {
+		action(this); // do this action.
+		if (recursive) { for (var i in this.children) this.children[i].exec(action); }
+	},
 	setParent: function(parent) {
 		this.parent = parent;
 		parent.children.push(this);
+		this.exec(function(self) { self.needUpdate = true; }, true); // update all children.
 	},
 	Load: function(json) {
 		if (json.t) this.localPosition.set(json.t.x | 0, json.t.y | 0, json.t.z | 0);
