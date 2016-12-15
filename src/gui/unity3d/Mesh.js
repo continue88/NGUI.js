@@ -102,9 +102,7 @@ UnityEngine.Mesh.prototype = {
         }
     },
     UpdateBuffers: function(gl) {
-        if (this.vertices === undefined)
-            return; // skip update.
-
+        if (this.vertices === undefined) return; // skip update.
         if (this.vertices !== undefined) this.UpdateBuffer(gl, 'position', this.vertices, gl.ARRAY_BUFFER, true, 3, gl.FLOAT, false, 3 * 4, 0);
         if (this.uv !== undefined) this.UpdateBuffer(gl, 'uv', this.uv, gl.ARRAY_BUFFER, true, 2, gl.FLOAT, false, 2 * 4, 0);
         if (this.colors !== undefined) this.UpdateBuffer(gl, 'color', this.colors, gl.ARRAY_BUFFER, true, 4, gl.FLOAT, false, 4 * 4, 0);
@@ -124,6 +122,7 @@ UnityEngine.Mesh.prototype = {
         this.triangles = triangles;
     },
     SetupVertexAttrib: function(gl, vertexAttrib, programAttrib) {
+        gl.enableVertexAttribArray( programAttrib );
         gl.bindBuffer( gl.ARRAY_BUFFER, vertexAttrib.glBuffer );
         gl.vertexAttribPointer( programAttrib,
             vertexAttrib.size, 
@@ -133,7 +132,7 @@ UnityEngine.Mesh.prototype = {
             vertexAttrib.offset);
     },
     SetupVertexAttribs: function(gl, programAttributes) {
-        this.UpdateBuffers(gl);
+        if (this.vertices !== undefined) this.UpdateBuffers(gl);
         this.SetupVertexAttrib(gl, this.attributes.position, programAttributes.position);
         this.SetupVertexAttrib(gl, this.attributes.uv, programAttributes.uv);
         this.SetupVertexAttrib(gl, this.attributes.color, programAttributes.color);

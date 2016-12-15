@@ -1,17 +1,23 @@
 
 THREE.GUIPlugin = function(renderer, uiRoot) {
-	var gl = renderer.context;
-	var state = renderer.state;
+	var gl = renderer.gl;
 	var programInfos;
+	var maxVertexAttributes = gl.getParameter( gl.MAX_VERTEX_ATTRIBS );
 
-	this.render = function(scene, camera) {
+	this.render = function(camera) {
 		if (programInfos === undefined)
 			programInfos = createProgramInfos();
 
-		state.disable( gl.CULL_FACE );
-        state.setBlending( THREE.NormalBlending );
-        state.setDepthTest( false );
-        state.setDepthWrite( false );
+		gl.disable( gl.CULL_FACE );
+        gl.disable( gl.DEPTH_TEST );
+        gl.depthMask( false );
+        gl.enable( gl.BLEND );
+        gl.blendEquationSeparate( gl.FUNC_ADD, gl.FUNC_ADD );
+        gl.blendFuncSeparate( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA );
+
+        // disable all the vertex attributes.
+        for (var i = 0; i < maxVertexAttributes; i++)
+            gl.disableVertexAttribArray( i );
         
         var drawCalls = uiRoot.GetDrawCalls();
         for (var i in drawCalls) {
@@ -19,19 +25,11 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
             var mesh = drawCall.mMesh;
             var texture = drawCall.texture;
             var programInfo = programInfos[drawCall.mClipCount];
-            if (mesh === undefined ||
-                texture === undefined ||
-                programInfo === undefined)
-                
-            gl.useProgram( programInfo.program );
-            state.initAttributes();
-            state.enableAttribute( programInfo.attributes.position );
-            state.enableAttribute( programInfo.attributes.uv );
-            state.enableAttribute( programInfo.attributes.color );
-            state.disableUnusedAttributes();
+            if (mesh === undefined || texture === undefined || programInfo === undefined)
+                continue;
 
-            // vertex buffers.
-            mesh.SetupVertexAttribs(gl, programInfo.attributes);
+            gl.useProgram( programInfo.program ); // setup shader programs.
+            mesh.SetupVertexAttribs(gl, programInfo.attributes); // setup vertex data.
 
             // TODO: setup the UNITY_MATRIX_MVP (ModelViewProj)
             gl.uniformMatrix4fv( programInfo.uniforms.UNITY_MATRIX_MVP, false, camera.projectionMatrix.elements );
@@ -53,11 +51,7 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
                 gl.uniform4f(programInfo.uniforms._ClipRange2, clipRange.x, clipRange.y, clipRange.z, clipRange.w);
                 gl.uniform4f(programInfo.uniforms._ClipRange2, clipArgs.x, clipArgs.y, clipArgs.z, clipArgs.w);
             }
-
-            // setup texture. 
-            texture.SetupTexture(gl, state, 0);
-
-            // draw...
+            texture.SetupTexture(gl, 0); // setup texture.
             if (mesh.hasIndexBuffer())
 			    gl.drawElements(gl.TRIANGLES, mesh.triangleCount * 3, gl.UNSIGNED_SHORT, 0);
             else
@@ -65,7 +59,6 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
 		}
 
 		// restore gl
-		state.enable( gl.CULL_FACE );
 		renderer.resetGLState();
 	};
 

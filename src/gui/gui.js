@@ -6,3 +6,7 @@ UnityEngine={
 NGUI={
 
 };
+
+WebGL={
+
+};
