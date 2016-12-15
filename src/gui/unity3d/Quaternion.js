@@ -9,6 +9,7 @@ UnityEngine.Quaternion = function ( x, y, z, w ) {
 UnityEngine.Quaternion.prototype = {
 	constructor: UnityEngine.Quaternion,
 	set: function(x, y, z, w) { this.x = x; this.y = y; this.z = z; this.w = w; },
+	clone: function () { return new this.constructor( this.x, this.y, this.z, this.w ); },
 	euler: function(x, y, z) {
 		var c1 = Math.cos( x * 0.5 );
 		var c2 = Math.cos( y * 0.5 );

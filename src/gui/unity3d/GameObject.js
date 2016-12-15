@@ -37,6 +37,9 @@ UnityEngine.GameObject.prototype = {
 				go.Load(json.children[i]);
 			}
 		}
+		// update from the root.
+		if (this.transform.parent === undefined)
+			this.transform.Update();
 		return this;
 	},
 };

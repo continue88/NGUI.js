@@ -18,7 +18,7 @@ UnityEngine.Matrix4x4.prototype = {
 		te[ 3 ] = n41; te[ 7 ] = n42; te[ 11 ] = n43; te[ 15 ] = n44;
 		return this;
 	},
-	clone: function () { return new THREE.Matrix4().fromArray( this.elements ); },
+	clone: function () { return new UnityEngine.Matrix4x4().fromArray( this.elements ); },
 	fromArray: function (array) {
 		this.elements.set(array);
 		return this;
