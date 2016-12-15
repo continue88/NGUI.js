@@ -63,10 +63,10 @@ UnityEngine.Color.prototype = {
 //
 
 UnityEngine.Color32 = function(r, g, b, a) {
-    this.r = r || 0;
-    this.g = g || 0;
-    this.b = b || 0;
-    this.a = a || 255;
+	this.r = r || 0;
+	this.g = g || 0;
+	this.b = b || 0;
+	this.a = a || 255;
 };
 
 //
@@ -89,13 +89,13 @@ UnityEngine.Component.prototype = {
 UnityEngine.Camera = function(gameObject) {
 	UnityEngine.Component.call(this, gameObject);
 
-    this.isOrthoGraphic = false;
+	this.isOrthoGraphic = false;
 	this.orthographicSize = 1;
 	this.aspect = 1;
 	this.fieldOfView = 1;
-    this.nearClipPlane = 0.1;
-    this.farClipPlane = 1000;
-    this.rect = new UnityEngine.Rect();
+	this.nearClipPlane = 0.1;
+	this.farClipPlane = 1000;
+	this.rect = new UnityEngine.Rect();
 
 	this.projectionMatrix = new UnityEngine.Matrix4x4();
 	this.cameraToWorldMatrix = this.transform.localToWorldMatrix;
@@ -107,7 +107,7 @@ UnityEngine.Camera = function(gameObject) {
 };
 
 Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
-    constructor: UnityEngine.Camera,
+	constructor: UnityEngine.Camera,
 	Load: function(json) {
 		this.isOrthoGraphic = json.orth;
 		this.nearClipPlane = json.near;
@@ -119,14 +119,14 @@ Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
 		else
 			this.projectionMatrix.Perspective(this.fieldOfView, this.aspect, this.nearClipPlane, this.farClipPlane);
 	},
-    GetSides: function(depth, relativeTo) {
-        var mSides = [];
+	GetSides: function(depth, relativeTo) {
+		var mSides = [];
 		if (this.isOrthoGraphic) {
 			var os = this.orthographicSize;
-                x0 = -os;
-                x1 = os;
-                y0 = -os;
-                y1 = os;
+				x0 = -os;
+				x1 = os;
+				y0 = -os;
+				y1 = os;
 			var rect = this.rect;
 			var size = NGUITools.screenSize;
 			var aspect = size.x / size.y;
@@ -154,8 +154,8 @@ Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
 				mSides[i] = relativeTo.InverseTransformPoint(mSides[i]);
 		}
 		return mSides;
-    },
-    ViewportToWorldPoint: function(screenPoint) {
+	},
+	ViewportToWorldPoint: function(screenPoint) {
 		screenPoint.x = 2 * screenPoint.x - 1;
 		screenPoint.y = 1 - 2 * screenPoint.y;
 		screenPoint.z = 0; // TODO: ViewportToWorldPoint
@@ -167,7 +167,7 @@ Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
 			this.invViewProjMatrix.getInverse(this.viewProjMatrix);
 		}
 		return this.invViewProjMatrix.MultiplyPoint(screenPoint);
-    },
+	},
 });
 
 
@@ -470,145 +470,145 @@ UnityEngine.Matrix4x4.Temp = new UnityEngine.Matrix4x4();
 //
 
 UnityEngine.Mesh = function() {
-    this.vertices = undefined;
-    this.uv = undefined;
-    this.colors = undefined;
-    this.colors32 = undefined;
+	this.vertices = undefined;
+	this.uv = undefined;
+	this.colors = undefined;
+	this.colors32 = undefined;
 
-    this.triangles = undefined;
-    this.normals = undefined;
-    this.tangents = undefined;
+	this.triangles = undefined;
+	this.normals = undefined;
+	this.tangents = undefined;
 
-    this.vertexCount = 0;
-    this.triangleCount = 0;
-    this.attributes = {};
+	this.vertexCount = 0;
+	this.triangleCount = 0;
+	this.attributes = {};
 };
 
 function CopyVector3sArray(vectors) {
-    var offset = 0;
-    var array = new Float32Array(vectors.length * 3);
-    for (var i in vectors) {
-        var vector = vectors[i];
-        array[offset++] = vector.x;
-        array[offset++] = vector.y;
-        array[offset++] = vector.z;
-    }
-    return array;
+	var offset = 0;
+	var array = new Float32Array(vectors.length * 3);
+	for (var i in vectors) {
+		var vector = vectors[i];
+		array[offset++] = vector.x;
+		array[offset++] = vector.y;
+		array[offset++] = vector.z;
+	}
+	return array;
 }
 function CopyVector4sArray(vectors) {
-    var offset = 0;
-    var array = new Float32Array(vectors.length * 4);
-    for (var i in vectors) {
-        var vector = vectors[i];
-        array[offset++] = vector.x;
-        array[offset++] = vector.y;
-        array[offset++] = vector.z;
-        array[offset++] = vector.w;
-    }
-    return array;
+	var offset = 0;
+	var array = new Float32Array(vectors.length * 4);
+	for (var i in vectors) {
+		var vector = vectors[i];
+		array[offset++] = vector.x;
+		array[offset++] = vector.y;
+		array[offset++] = vector.z;
+		array[offset++] = vector.w;
+	}
+	return array;
 }
 function CopyVector2sArray(uv) {
-    var offset = 0;
-    var array = new Float32Array(vectors.length * 2);
-    for (var i in vectors) {
-        var vector = vectors[i];
-        array[offset++] = vector.x;
-        array[offset++] = vector.y;
-    }
-    return array;
+	var offset = 0;
+	var array = new Float32Array(vectors.length * 2);
+	for (var i in vectors) {
+		var vector = vectors[i];
+		array[offset++] = vector.x;
+		array[offset++] = vector.y;
+	}
+	return array;
 }
 function CopyColorsArray(colors) {
-    var offset = 0;
-    var array = new Float32Array(vectors.length * 4);
-    for (var i in colors) {
-        var color = colors[i];
-        array[offset++] = color.r;
-        array[offset++] = color.g;
-        array[offset++] = color.b;
-        array[offset++] = color.a;
-    }
-    return array;
+	var offset = 0;
+	var array = new Float32Array(vectors.length * 4);
+	for (var i in colors) {
+		var color = colors[i];
+		array[offset++] = color.r;
+		array[offset++] = color.g;
+		array[offset++] = color.b;
+		array[offset++] = color.a;
+	}
+	return array;
 }
 function CopyColors32Array(colors32) {
-    var offset = 0;
-    var array = new Uint8ClampedArray(colors32.length * 4);
-    for (var i in colors32) {
-        var color32 = colors32[i];
-        array[offset++] = color32.r;
-        array[offset++] = color32.g;
-        array[offset++] = color32.b;
-        array[offset++] = color32.a;
-    }
-    return array;
+	var offset = 0;
+	var array = new Uint8ClampedArray(colors32.length * 4);
+	for (var i in colors32) {
+		var color32 = colors32[i];
+		array[offset++] = color32.r;
+		array[offset++] = color32.g;
+		array[offset++] = color32.b;
+		array[offset++] = color32.a;
+	}
+	return array;
 }
 
 UnityEngine.Mesh.prototype = {
-    constructor: UnityEngine.Mesh,
-    destroy: function() {
-        for (var i in this.attributes) {
-            var attrib = this.attributes[i];
-            // TODO: destroy attrib.glBuffer
-            gl.deleteBuffer(attrib.glBuffer);
-        }
-    },
-    hasIndexBuffer: function() { return this.attributes.index !== undefined; },
-    UpdateBuffer: function(gl, name, dataArray, bufferType, dynamic, size, type, normalized, stride, offset) {
-        var attrib = this.attributes[name];
-        if (attrib === undefined) {
-            this.attributes[name] = attrib = {
-                glBuffer: gl.createBuffer(),
-                usage: dynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW,
-                size: size,
-                type: type,
-                normalized: normalized,
-                stride: stride,
-                offset: offset,
-            };
-            gl.bindBuffer(bufferType, attrib.glBuffer);
-            gl.bufferData(bufferType, dataArray, attrib.usage);
-        } else {
-            gl.bindBuffer(bufferType, attrib.glBuffer);
-            gl.bufferSubData(bufferType, 0, dataArray);
-        }
-    },
-    UpdateBuffers: function(gl) {
-        if (this.vertices === undefined) return; // skip update.
-        if (this.vertices !== undefined) this.UpdateBuffer(gl, 'position', this.vertices, gl.ARRAY_BUFFER, true, 3, gl.FLOAT, false, 3 * 4, 0);
-        if (this.uv !== undefined) this.UpdateBuffer(gl, 'uv', this.uv, gl.ARRAY_BUFFER, true, 2, gl.FLOAT, false, 2 * 4, 0);
-        if (this.colors !== undefined) this.UpdateBuffer(gl, 'color', this.colors, gl.ARRAY_BUFFER, true, 4, gl.FLOAT, false, 4 * 4, 0);
-        if (this.colors32 !== undefined) this.UpdateBuffer(gl, 'color', this.colors32, gl.ARRAY_BUFFER, true, 4, gl.GL_UNSIGNED_BYTE, false, 4 * 1, 0);
-        if (this.triangles !== undefined) this.UpdateBuffer(gl, 'index', this.triangles, gl.ELEMENT_ARRAY_BUFFER, false, 1, gl.UNSIGNED_SHORT, false, 1 * 2, 0);
-        this.vertices = undefined;
-        this.uv = undefined;
-        this.colors = undefined;
-        this.colors32 = undefined;
-    },
-    CopyVertexData: function(verts, uvs, colors32, triangles) {
-        this.vertexCount = verts.length;
-        this.triangleCount = (triangles !== undefined) ? triangles.length / 3 : verts.length / 3;
-        this.vertices = CopyVector3sArray(verts);
-        this.uv = CopyVector2sArray(uvs);
-        this.colors32 = CopyColors32Array(colors32);
-        this.triangles = triangles;
-    },
-    SetupVertexAttrib: function(gl, vertexAttrib, programAttrib) {
-        gl.enableVertexAttribArray( programAttrib ); // TODO: check do we need enable again???
-        gl.bindBuffer( gl.ARRAY_BUFFER, vertexAttrib.glBuffer );
-        gl.vertexAttribPointer( programAttrib,
-            vertexAttrib.size, 
-            vertexAttrib.type, 
-            vertexAttrib.normalized, 
-            vertexAttrib.stride,
-            vertexAttrib.offset);
-    },
-    SetupVertexAttribs: function(gl, programAttributes) {
-        if (this.vertices !== undefined) this.UpdateBuffers(gl);
-        this.SetupVertexAttrib(gl, this.attributes.position, programAttributes.position);
-        this.SetupVertexAttrib(gl, this.attributes.uv, programAttributes.uv);
-        this.SetupVertexAttrib(gl, this.attributes.color, programAttributes.color);
-        if (this.attributes.index !== undefined) // setup index buffer.
-            gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, this.attributes.index.glBuffer);
-    },
+	constructor: UnityEngine.Mesh,
+	destroy: function() {
+		for (var i in this.attributes) {
+			var attrib = this.attributes[i];
+			// TODO: destroy attrib.glBuffer
+			gl.deleteBuffer(attrib.glBuffer);
+		}
+	},
+	hasIndexBuffer: function() { return this.attributes.index !== undefined; },
+	UpdateBuffer: function(gl, name, dataArray, bufferType, dynamic, size, type, normalized, stride, offset) {
+		var attrib = this.attributes[name];
+		if (attrib === undefined) {
+			this.attributes[name] = attrib = {
+				glBuffer: gl.createBuffer(),
+				usage: dynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW,
+				size: size,
+				type: type,
+				normalized: normalized,
+				stride: stride,
+				offset: offset,
+			};
+			gl.bindBuffer(bufferType, attrib.glBuffer);
+			gl.bufferData(bufferType, dataArray, attrib.usage);
+		} else {
+			gl.bindBuffer(bufferType, attrib.glBuffer);
+			gl.bufferSubData(bufferType, 0, dataArray);
+		}
+	},
+	UpdateBuffers: function(gl) {
+		if (this.vertices === undefined) return; // skip update.
+		if (this.vertices !== undefined) this.UpdateBuffer(gl, 'position', this.vertices, gl.ARRAY_BUFFER, true, 3, gl.FLOAT, false, 3 * 4, 0);
+		if (this.uv !== undefined) this.UpdateBuffer(gl, 'uv', this.uv, gl.ARRAY_BUFFER, true, 2, gl.FLOAT, false, 2 * 4, 0);
+		if (this.colors !== undefined) this.UpdateBuffer(gl, 'color', this.colors, gl.ARRAY_BUFFER, true, 4, gl.FLOAT, false, 4 * 4, 0);
+		if (this.colors32 !== undefined) this.UpdateBuffer(gl, 'color', this.colors32, gl.ARRAY_BUFFER, true, 4, gl.GL_UNSIGNED_BYTE, false, 4 * 1, 0);
+		if (this.triangles !== undefined) this.UpdateBuffer(gl, 'index', this.triangles, gl.ELEMENT_ARRAY_BUFFER, false, 1, gl.UNSIGNED_SHORT, false, 1 * 2, 0);
+		this.vertices = undefined;
+		this.uv = undefined;
+		this.colors = undefined;
+		this.colors32 = undefined;
+	},
+	CopyVertexData: function(verts, uvs, colors32, triangles) {
+		this.vertexCount = verts.length;
+		this.triangleCount = (triangles !== undefined) ? triangles.length / 3 : verts.length / 3;
+		this.vertices = CopyVector3sArray(verts);
+		this.uv = CopyVector2sArray(uvs);
+		this.colors32 = CopyColors32Array(colors32);
+		this.triangles = triangles;
+	},
+	SetupVertexAttrib: function(gl, vertexAttrib, programAttrib) {
+		gl.enableVertexAttribArray( programAttrib ); // TODO: check do we need enable again???
+		gl.bindBuffer( gl.ARRAY_BUFFER, vertexAttrib.glBuffer );
+		gl.vertexAttribPointer( programAttrib,
+			vertexAttrib.size, 
+			vertexAttrib.type, 
+			vertexAttrib.normalized, 
+			vertexAttrib.stride,
+			vertexAttrib.offset);
+	},
+	SetupVertexAttribs: function(gl, programAttributes) {
+		if (this.vertices !== undefined) this.UpdateBuffers(gl);
+		this.SetupVertexAttrib(gl, this.attributes.position, programAttributes.position);
+		this.SetupVertexAttrib(gl, this.attributes.uv, programAttributes.uv);
+		this.SetupVertexAttrib(gl, this.attributes.color, programAttributes.color);
+		if (this.attributes.index !== undefined) // setup index buffer.
+			gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, this.attributes.index.glBuffer);
+	},
 }
 
 //
@@ -705,49 +705,49 @@ UnityEngine.Rect.prototype = {
 //
 
 UnityEngine.Resources = {
-    ResourcesList: {},
-    GetDataRoot: function() { return _data_; },
-    LoadWithType: function(url, type, onLoad) {
-        var isScript = (type === 'script'); 
-        var element = document.createElement(type);  
-        if (isScript) element.type = 'text/javascript';
-        element.onload = element.onreadystatechange = function() {  
-            if (element.readyState && element.readyState !== 'loaded' && element.readyState !== 'complete')  
-                return; 
-            
-            if (isScript) {
-                // the script data file should always begin with: _data_={...}
-                var dataRoot = UnityEngine.Resources.GetDataRoot();
-                dataRoot._url_ = url; // marker the url.
-                if (onLoad) onLoad(dataRoot);
-                _data_ = undefined; // clear the data root.
-            } else {
-                if (onLoad) onLoad(element);
-            }
-        };  
-        element.src = url;  
-        document.getElementsByTagName('head')[0].appendChild(element);
-        return element;  
-    },
-    Load: function(url, typeName, onLoad) {
-        // TODO: check cache.
-        this.LoadWithType(url, 'script', function(data) {
-            var type = UnityEngine[typeName] || NGUI[typeName];
-            if (type !== undefined) {
-                var obj = new type();
-                obj.Load(data);
-                if (onLoad) onLoad(obj);
-            } else {
-                console.error("Type not found:" + typeName);
-            }
-        });
-    },
-    LoadImage: function(url, onLoad) {
-        // TODO: check cache.
-        this.LoadWithType(url, 'img', function(image) {
-            if (onLoad) onLoad(image);
-        });
-    },
+	ResourcesList: {},
+	GetDataRoot: function() { return _data_; },
+	LoadWithType: function(url, type, onLoad) {
+		var isScript = (type === 'script'); 
+		var element = document.createElement(type);  
+		if (isScript) element.type = 'text/javascript';
+		element.onload = element.onreadystatechange = function() {  
+			if (element.readyState && element.readyState !== 'loaded' && element.readyState !== 'complete')  
+				return; 
+			
+			if (isScript) {
+				// the script data file should always begin with: _data_={...}
+				var dataRoot = UnityEngine.Resources.GetDataRoot();
+				dataRoot._url_ = url; // marker the url.
+				if (onLoad) onLoad(dataRoot);
+				_data_ = undefined; // clear the data root.
+			} else {
+				if (onLoad) onLoad(element);
+			}
+		};  
+		element.src = url;  
+		document.getElementsByTagName('head')[0].appendChild(element);
+		return element;  
+	},
+	Load: function(url, typeName, onLoad) {
+		// TODO: check cache.
+		this.LoadWithType(url, 'script', function(data) {
+			var type = UnityEngine[typeName] || NGUI[typeName];
+			if (type !== undefined) {
+				var obj = new type();
+				obj.Load(data);
+				if (onLoad) onLoad(obj);
+			} else {
+				console.error("Type not found:" + typeName);
+			}
+		});
+	},
+	LoadImage: function(url, onLoad) {
+		// TODO: check cache.
+		this.LoadWithType(url, 'img', function(image) {
+			if (onLoad) onLoad(image);
+		});
+	},
 };
 
 //
@@ -755,36 +755,36 @@ UnityEngine.Resources = {
 //
 
 UnityEngine.Texture2D = function(width, height, image) {
-    this.width = width;
-    this.height = height;
-    this.image = image;
-    this.glTexture = undefined;
-    this.glFormat = undefined;// gl.RGBA;
-    this.glType = undefined;//gl.UNSIGNED_BYTE;
+	this.width = width;
+	this.height = height;
+	this.image = image;
+	this.glTexture = undefined;
+	this.glFormat = undefined;// gl.RGBA;
+	this.glType = undefined;//gl.UNSIGNED_BYTE;
 };
 
 UnityEngine.Texture2D.prototype = {
-    constructor: UnityEngine.Texture2D,
-    destroy: function() {
-        if (this.glTexture !== undefined) {
-            gl.deleteTexture(this.glTexture);
-            this.glTexture = undefined;
-        }
-    },
-    SetupTexture: function(gl, slot) {
-        if (this.glTexture === undefined) {
-            if (this.image === undefined) return; // texture not ready.
-            this.glTexture = gl.createTexture();
-            gl.activeTexture(gl.TEXTURE0 + slot);
-            gl.bindTexture(gl.TEXTURE_2D, this.glTexture);
-            gl.texParameteri( type, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
-            gl.texParameteri( type, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
-            gl.texImage2D(gl.TEXTURE_2D, 0, this.glFormat, this.glFormat | gl.RGBA, this.glType | gl.UNSIGNED_BYTE, this.image);
-            return;
-        }
-        gl.activeTexture(gl.TEXTURE0 + slot);
-        gl.bindTexture(gl.TEXTURE_2D, this.glTexture);
-    }
+	constructor: UnityEngine.Texture2D,
+	destroy: function() {
+		if (this.glTexture !== undefined) {
+			gl.deleteTexture(this.glTexture);
+			this.glTexture = undefined;
+		}
+	},
+	SetupTexture: function(gl, slot) {
+		if (this.glTexture === undefined) {
+			if (this.image === undefined) return; // texture not ready.
+			this.glTexture = gl.createTexture();
+			gl.activeTexture(gl.TEXTURE0 + slot);
+			gl.bindTexture(gl.TEXTURE_2D, this.glTexture);
+			gl.texParameteri( type, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
+			gl.texParameteri( type, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
+			gl.texImage2D(gl.TEXTURE_2D, 0, this.glFormat, this.glFormat | gl.RGBA, this.glType | gl.UNSIGNED_BYTE, this.image);
+			return;
+		}
+		gl.activeTexture(gl.TEXTURE0 + slot);
+		gl.bindTexture(gl.TEXTURE_2D, this.glTexture);
+	}
 };
 
 //
@@ -870,10 +870,10 @@ UnityEngine.Vector2.prototype = {
 	constructor: UnityEngine.Vector2,
 	set: function(x, y) { this.x = x; this.y = y; },
 	clone: function () { return new this.constructor( this.x, this.y ); },
-    add: function(v) {
+	add: function(v) {
 		this.x += v.x;
 		this.y += v.y;
-    },
+	},
 	sub: function(v) {
 		this.x -= v.x;
 		this.y -= v.y;
@@ -1057,62 +1057,62 @@ UnityEngine.Vector4.prototype = {
 //
 
 NGUI.AnchorPoint = function(relative) {
-    this.target = undefined; // UnityEngine.Transform
-    this.relative = relative | 0;
-    this.absolute = 0;
-    this.rect = undefined; // NGUI.UIRect
-    this.targetCam = undefined; // NGUI.UICamera
+	this.target = undefined; // UnityEngine.Transform
+	this.relative = relative | 0;
+	this.absolute = 0;
+	this.rect = undefined; // NGUI.UIRect
+	this.targetCam = undefined; // NGUI.UICamera
 };
 
 NGUI.AnchorPoint.prototype = {
-    constructor: NGUI.AnchorPoint,
-    Set: function(target, relative, absolute) {
-        if (target instanceof UnityEngine.Transform) {
-            this.target = target;
-        } else {
-            absolute = relative;
-            relative = target;
-        }
-        this.relative = relative;
-        this.absolute = Math.floor(absolute + 0.5);
-    },
-    SetToNearest: function(abs0, abs1, abs2, rel0, rel1, rel2) {
-        var a0 = Math.abs(abs0);
-        var a1 = Math.abs(abs1);
-        var a2 = Math.abs(abs2);
-        if (a0 < a1 && a0 < a2) this.Set(rel0 | 0, abs0);
-        else if (a1 < a0 && a1 < a2) this.Set(rel1 | 0.5, abs1);
-        else this.Set(rel2 | 1, abs2);
-    },
-    SetHorizontal: function(parent, localPos) {
-        if (this.rect) {
-            var sides = this.rect.GetSides(parent);
-            var targetPos = Mathf.Lerp(sides[0].x, sides[2].x, relative);
-            this.absolute = Mathf.FloorToInt(localPos - targetPos + 0.5);
-        } else {
-            var targetPos = target.position;
-            if (parent !== undefined) targetPos = parent.InverseTransformPoint(targetPos);
-            this.absolute = Mathf.FloorToInt(localPos - targetPos.x + 0.5);
-        }
-    },
-    SetVertical: function(parent, localPos) {
-        if (this.rect) {
-            var sides = this.rect.GetSides(parent);
-            var targetPos = Mathf.Lerp(sides[3].y, sides[1].y, relative);
-            this.absolute = Mathf.FloorToInt(localPos - targetPos + 0.5);
-        } else {
-            var targetPos = target.position;
-            if (parent !== undefined) targetPos = parent.InverseTransformPoint(targetPos);
-            this.absolute = Mathf.FloorToInt(localPos - targetPos.y + 0.5);
-        }
-    },
-    GetSides: function(relativeTo) {
-        if (this.target !== undefined) {
-            if (this.rect !== undefined) return this.rect.GetSides(relativeTo);
-            if (this.target.camera !== undefined) return this.target.camera.GetSides(relativeTo);
-        }
-        return undefined;
-    }
+	constructor: NGUI.AnchorPoint,
+	Set: function(target, relative, absolute) {
+		if (target instanceof UnityEngine.Transform) {
+			this.target = target;
+		} else {
+			absolute = relative;
+			relative = target;
+		}
+		this.relative = relative;
+		this.absolute = Math.floor(absolute + 0.5);
+	},
+	SetToNearest: function(abs0, abs1, abs2, rel0, rel1, rel2) {
+		var a0 = Math.abs(abs0);
+		var a1 = Math.abs(abs1);
+		var a2 = Math.abs(abs2);
+		if (a0 < a1 && a0 < a2) this.Set(rel0 | 0, abs0);
+		else if (a1 < a0 && a1 < a2) this.Set(rel1 | 0.5, abs1);
+		else this.Set(rel2 | 1, abs2);
+	},
+	SetHorizontal: function(parent, localPos) {
+		if (this.rect) {
+			var sides = this.rect.GetSides(parent);
+			var targetPos = Mathf.Lerp(sides[0].x, sides[2].x, relative);
+			this.absolute = Mathf.FloorToInt(localPos - targetPos + 0.5);
+		} else {
+			var targetPos = target.position;
+			if (parent !== undefined) targetPos = parent.InverseTransformPoint(targetPos);
+			this.absolute = Mathf.FloorToInt(localPos - targetPos.x + 0.5);
+		}
+	},
+	SetVertical: function(parent, localPos) {
+		if (this.rect) {
+			var sides = this.rect.GetSides(parent);
+			var targetPos = Mathf.Lerp(sides[3].y, sides[1].y, relative);
+			this.absolute = Mathf.FloorToInt(localPos - targetPos + 0.5);
+		} else {
+			var targetPos = target.position;
+			if (parent !== undefined) targetPos = parent.InverseTransformPoint(targetPos);
+			this.absolute = Mathf.FloorToInt(localPos - targetPos.y + 0.5);
+		}
+	},
+	GetSides: function(relativeTo) {
+		if (this.target !== undefined) {
+			if (this.rect !== undefined) return this.rect.GetSides(relativeTo);
+			if (this.target.camera !== undefined) return this.target.camera.GetSides(relativeTo);
+		}
+		return undefined;
+	}
 };
 
 //

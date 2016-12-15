@@ -8,10 +8,10 @@ UnityEngine.Vector2.prototype = {
 	constructor: UnityEngine.Vector2,
 	set: function(x, y) { this.x = x; this.y = y; },
 	clone: function () { return new this.constructor( this.x, this.y ); },
-    add: function(v) {
+	add: function(v) {
 		this.x += v.x;
 		this.y += v.y;
-    },
+	},
 	sub: function(v) {
 		this.x -= v.x;
 		this.y -= v.y;

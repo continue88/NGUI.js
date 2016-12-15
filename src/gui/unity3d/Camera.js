@@ -2,13 +2,13 @@
 UnityEngine.Camera = function(gameObject) {
 	UnityEngine.Component.call(this, gameObject);
 
-    this.isOrthoGraphic = false;
+	this.isOrthoGraphic = false;
 	this.orthographicSize = 1;
 	this.aspect = 1;
 	this.fieldOfView = 1;
-    this.nearClipPlane = 0.1;
-    this.farClipPlane = 1000;
-    this.rect = new UnityEngine.Rect();
+	this.nearClipPlane = 0.1;
+	this.farClipPlane = 1000;
+	this.rect = new UnityEngine.Rect();
 
 	this.projectionMatrix = new UnityEngine.Matrix4x4();
 	this.cameraToWorldMatrix = this.transform.localToWorldMatrix;
@@ -20,7 +20,7 @@ UnityEngine.Camera = function(gameObject) {
 };
 
 Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
-    constructor: UnityEngine.Camera,
+	constructor: UnityEngine.Camera,
 	Load: function(json) {
 		this.isOrthoGraphic = json.orth;
 		this.nearClipPlane = json.near;
@@ -32,14 +32,14 @@ Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
 		else
 			this.projectionMatrix.Perspective(this.fieldOfView, this.aspect, this.nearClipPlane, this.farClipPlane);
 	},
-    GetSides: function(depth, relativeTo) {
-        var mSides = [];
+	GetSides: function(depth, relativeTo) {
+		var mSides = [];
 		if (this.isOrthoGraphic) {
 			var os = this.orthographicSize;
-                x0 = -os;
-                x1 = os;
-                y0 = -os;
-                y1 = os;
+				x0 = -os;
+				x1 = os;
+				y0 = -os;
+				y1 = os;
 			var rect = this.rect;
 			var size = NGUITools.screenSize;
 			var aspect = size.x / size.y;
@@ -67,8 +67,8 @@ Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
 				mSides[i] = relativeTo.InverseTransformPoint(mSides[i]);
 		}
 		return mSides;
-    },
-    ViewportToWorldPoint: function(screenPoint) {
+	},
+	ViewportToWorldPoint: function(screenPoint) {
 		screenPoint.x = 2 * screenPoint.x - 1;
 		screenPoint.y = 1 - 2 * screenPoint.y;
 		screenPoint.z = 0; // TODO: ViewportToWorldPoint
@@ -80,5 +80,5 @@ Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
 			this.invViewProjMatrix.getInverse(this.viewProjMatrix);
 		}
 		return this.invViewProjMatrix.MultiplyPoint(screenPoint);
-    },
+	},
 });
