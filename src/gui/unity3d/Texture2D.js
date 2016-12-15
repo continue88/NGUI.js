@@ -2,8 +2,8 @@
 UnityEngine.Texture2D = function(image) {
     this.image = image;
     this.glTexture = undefined;
-    this.glFormat = gl.RGBA;
-    this.glType = gl.UNSIGNED_BYTE;
+    this.glFormat = undefined;// gl.RGBA;
+    this.glType = undefined;//gl.UNSIGNED_BYTE;
 };
 
 UnityEngine.Texture2D.prototype = {
@@ -16,10 +16,11 @@ UnityEngine.Texture2D.prototype = {
     },
     SetupTexture: function(gl, state, slot) {
         if (this.glTexture === undefined) {
+            if (this.image === undefined) return;
             this.glTexture = gl.createTexture();
             state.activeTexture(gl.TEXTURE0 + slot);
             state.bindTexture(gl.TEXTURE_2D, this.glTexture);
-            state.texImage2D(gl.TEXTURE_2D, 0, this.glFormat, this.glFormat, this.glType, this.image);
+            state.texImage2D(gl.TEXTURE_2D, 0, this.glFormat, this.glFormat | gl.RGBA, this.glType | gl.UNSIGNED_BYTE, this.image);
             return;
         }
         state.activeTexture(gl.TEXTURE0 + slot);

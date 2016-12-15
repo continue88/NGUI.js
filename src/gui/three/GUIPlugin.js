@@ -1,17 +1,10 @@
 
-THREE.GUIPlugin = function(renderer, drawCalls) {
+THREE.GUIPlugin = function(renderer, uiRoot) {
 	var gl = renderer.context;
 	var state = renderer.state;
-	var vertexBuffer, elementBuffer;
 	var programInfos;
-	var texture;
 
-	// decompose matrixWorld
-	var spritePosition = new THREE.Vector3();
-	var spriteRotation = new THREE.Quaternion();
-	var spriteScale = new THREE.Vector3();
-
-	this.render = function ( scene, camera ) {
+	this.render = function(scene, camera) {
 		if (programInfos === undefined)
 			programInfos = createProgramInfos();
 
@@ -20,10 +13,15 @@ THREE.GUIPlugin = function(renderer, drawCalls) {
         state.setDepthTest( false );
         state.setDepthWrite( false );
         
+        var drawCalls = uiRoot.GetDrawCalls();
         for (var i in drawCalls) {
             var drawCall = drawCalls[i];
             var mesh = drawCall.mMesh;
+            var texture = drawCall.texture;
             var programInfo = programInfos[drawCall.mClipCount];
+            if (mesh === undefined ||
+                texture === undefined ||
+                programInfo === undefined)
                 
             gl.useProgram( programInfo.program );
             state.initAttributes();
@@ -57,16 +55,13 @@ THREE.GUIPlugin = function(renderer, drawCalls) {
             }
 
             // setup texture. 
-            state.activeTexture( gl.TEXTURE0 );
-            gl.uniform1i( uniforms.map, 0 );
-            
-			if (material.map) {
-				renderer.setTexture2D( material.map, 0 );
-			} else {
-				renderer.setTexture2D( texture, 0 );
-			}
+            texture.SetupTexture(gl, state, 0);
 
-			gl.drawElements( gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0 );
+            // draw...
+            if (mesh.hasIndexBuffer())
+			    gl.drawElements(gl.TRIANGLES, mesh.triangleCount * 3, gl.UNSIGNED_SHORT, 0);
+            else
+                gl.drawArrays(gl.TRIANGLES, 0, mesh.vertexCount);
 		}
 
 		// restore gl
@@ -253,6 +248,7 @@ THREE.GUIPlugin = function(renderer, drawCalls) {
                 },
                 uniforms: {
                     UNITY_MATRIX_MVP: gl.getUniformLocation( program, 'UNITY_MATRIX_MVP'),
+                    _MainTex: gl.getUniformLocation( program, '_MainTex'),
                 },
             }
             if (i >= 1) {

@@ -49,7 +49,7 @@ AspectRatioSource = {
 Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 	constructor: NGUI.UIWidget,
 	get pivotOffset() { return NGUIMath.GetPivotOffset(this.mPivot); },
-	get material() { return undefined; },
+	get texture() { return undefined; },
 	isVisible: function() { return this.mIsVisibleByAlpha && this.mIsVisibleByPanel && this.mIsInFront && this.finalAlpha > 0.001; },
 	hasVertices: function() { return this.geometry.hasVertices(); },
 	border: function() { return new UnityEngine.Vector4(0, 0, 0, 0); },

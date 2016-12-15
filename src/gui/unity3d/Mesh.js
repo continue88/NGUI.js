@@ -9,6 +9,8 @@ UnityEngine.Mesh = function() {
     this.normals = undefined;
     this.tangents = undefined;
 
+    this.vertexCount = 0;
+    this.triangleCount = 0;
     this.attributes = {};
 };
 
@@ -79,6 +81,7 @@ UnityEngine.Mesh.prototype = {
             gl.deleteBuffer(attrib.glBuffer);
         }
     },
+    hasIndexBuffer: function() { return this.attributes.index !== undefined; },
     UpdateBuffer: function(gl, name, dataArray, bufferType, dynamic, size, type, normalized, stride, offset) {
         var attrib = this.attributes[name];
         if (attrib === undefined) {
@@ -106,15 +109,19 @@ UnityEngine.Mesh.prototype = {
         if (this.uv !== undefined) this.UpdateBuffer(gl, 'uv', this.uv, gl.ARRAY_BUFFER, true, 2, gl.FLOAT, false, 2 * 4, 0);
         if (this.colors !== undefined) this.UpdateBuffer(gl, 'color', this.colors, gl.ARRAY_BUFFER, true, 4, gl.FLOAT, false, 4 * 4, 0);
         if (this.colors32 !== undefined) this.UpdateBuffer(gl, 'color', this.colors32, gl.ARRAY_BUFFER, true, 4, gl.GL_UNSIGNED_BYTE, false, 4 * 1, 0);
+        if (this.triangles !== undefined) this.UpdateBuffer(gl, 'index', this.triangles, gl.ELEMENT_ARRAY_BUFFER, false, 1, gl.UNSIGNED_SHORT, false, 1 * 2, 0);
         this.vertices = undefined;
         this.uv = undefined;
         this.colors = undefined;
         this.colors32 = undefined;
     },
-    CopyVertexData: function(verts, uvs, colors32) {
-        this.vertices = CopyVector3sArray(vertices);
+    CopyVertexData: function(verts, uvs, colors32, triangles) {
+        this.vertexCount = verts.length;
+        this.triangleCount = (triangles !== undefined) ? triangles.length / 3 : verts.length / 3;
+        this.vertices = CopyVector3sArray(verts);
         this.uv = CopyVector2sArray(uvs);
         this.colors32 = CopyColors32Array(colors32);
+        this.triangles = triangles;
     },
     SetupVertexAttrib: function(gl, vertexAttrib, programAttrib) {
         gl.bindBuffer( gl.ARRAY_BUFFER, vertexAttrib.glBuffer );
@@ -130,5 +137,8 @@ UnityEngine.Mesh.prototype = {
         this.SetupVertexAttrib(gl, this.attributes.position, programAttributes.position);
         this.SetupVertexAttrib(gl, this.attributes.uv, programAttributes.uv);
         this.SetupVertexAttrib(gl, this.attributes.color, programAttributes.color);
+        // setup index buffer.
+        if (this.attributes.index !== undefined)
+            gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, this.attributes.index.glBuffer);
     },
 }

@@ -1,5 +1,5 @@
 
-NGUI.UIDrawCall = function (name, panel, material) {
+NGUI.UIDrawCall = function (name, panel, texture) {
 
 	this.mClipCount = panel.clipCount();
 
@@ -8,7 +8,7 @@ NGUI.UIDrawCall = function (name, panel, material) {
 	this.depthEnd = -2147483648; // int.MinValue = -2147483648;
 	this.isDirty = false;
 
-	this.baseMaterial = material;
+	this.texture = texture;
 	this.renderQueue = panel.startingRenderQueue;
 	this.mSortingOrder = panel.mSortingOrder;
 	this.manager = panel;
@@ -32,9 +32,23 @@ NGUI.UIDrawCall.prototype = {
 			this.mMesh = undefined;
 		}
 	},
+	BuildTriangles: function(vertexCount) {
+		var index = 0;
+		var indexCount = vertexCount / 4 * 6;
+		var indexBuffer = new Uint16Array(indexCount);
+		for (var i = 0; i < vertexCount; i += 4) {
+			indexBuffer[index++] = i;
+			indexBuffer[index++] = i + 1;
+			indexBuffer[index++] = i + 2;
+			indexBuffer[index++] = i + 2;
+			indexBuffer[index++] = i + 3;
+			indexBuffer[index++] = i;
+		}
+	},
 	UpdateGeometry: function(count) {
 		this.mMesh = new UnityEngine.Mesh();
-		this.mMesh.CopyVertexData(this.verts, this.uvs, this.cols);
+		this.mMesh.CopyVertexData(this.verts, this.uvs, this.cols, this.BuildTriangles(this.verts.length));
+		// clean.
 		this.verts.length = 0;
 		this.uvs.length = 0;
 		this.cols.length = 0;

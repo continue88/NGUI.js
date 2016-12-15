@@ -1,14 +1,13 @@
 
 NGUI.UIAtlas = function(gameObject) {
-	this.material = undefined; // { image:{width:100, height:100}, tex: './tex/atlas.png' }
 	this.mSprites = {}; // NGUI.UISpriteData
+	this.mTexture = new UnityEngine.Texture2D(); // UnityEngine.Texture2D
 }
 
 NGUI.UIAtlas.prototype = {
 	constructor: NGUI.UIAtlas,
-	GetSprite: function(name) {
-		return this.mSprites[name];
-	},
+	get texture() { return this.mTexture; },
+	GetSprite: function(name) { return this.mSprites[name]; },
 	Load: function(json) {
 		var sprites = json.sprites; // sprites
 		if (sprites !== undefined) {
@@ -19,13 +18,14 @@ NGUI.UIAtlas.prototype = {
 			}
 		}
 		this.pixelSize = json.pixelSize | 1;
-		this.image = json.image; // just copy
+		this.mTexture.width = json.width;
+		this.mTexture.height = json.height;
 
-		// load the image.
+		var tex = this.mTexture;
 		UnityEngine.Resources.LoadImage(
 			NGUITools.GetImageUrl(json._url_, json.image), 
 			function(image){
-			this.image = image; // here is a image...
+			tex.image = image; // here is a image...
 		});
 	}
 };

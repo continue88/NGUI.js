@@ -462,30 +462,6 @@ UnityEngine.Matrix4x4.prototype = {
 UnityEngine.Matrix4x4.Temp = new UnityEngine.Matrix4x4();
 
 //
-// ..\src\gui\unity3d\Material.js
-//
-
-UnityEngine.Material = function() {
-	this.shader = undefined; // UnityEngine.Shader
-};
-
-UnityEngine.Material.prototype = {
-	constructor: UnityEngine.Material,
-	Load: function(json) {
-	},
-	setValue: function(name, value) { this.shader.cachedUniforms.setValue(name, value); },
-	//SetColor: function(name, color) { this.setValue(name, color); },
-	//SetColorArray: function(name, colorArray) { this.setValue(name, colorArray); },
-	//SetFloat: function(name, value) { this.setValue(name, value); },
-	//SetFloatArray: function(name, valueArray) { this.setValue(name, valueArray); },
-	//SetVector: function(name, vector) { this.setValue(name, vector); },
-	//SetVectorArray: function(name, vectorArray) { this.setValue(name, vectorArray); },
-	//SetMatrix: function(name, matrix) { this.setValue(name, matrix); },
-	//SetMatrixArray: function(name, matrixArray) { this.setValue(name, matrixArray); },
-	//SetTexture: function(name, texture) { this.setValue(name, texture); },
-};
-
-//
 // ..\src\gui\unity3d\Mesh.js
 //
 
@@ -499,6 +475,8 @@ UnityEngine.Mesh = function() {
     this.normals = undefined;
     this.tangents = undefined;
 
+    this.vertexCount = 0;
+    this.triangleCount = 0;
     this.attributes = {};
 };
 
@@ -569,6 +547,7 @@ UnityEngine.Mesh.prototype = {
             gl.deleteBuffer(attrib.glBuffer);
         }
     },
+    hasIndexBuffer: function() { return this.attributes.index !== undefined; },
     UpdateBuffer: function(gl, name, dataArray, bufferType, dynamic, size, type, normalized, stride, offset) {
         var attrib = this.attributes[name];
         if (attrib === undefined) {
@@ -596,15 +575,19 @@ UnityEngine.Mesh.prototype = {
         if (this.uv !== undefined) this.UpdateBuffer(gl, 'uv', this.uv, gl.ARRAY_BUFFER, true, 2, gl.FLOAT, false, 2 * 4, 0);
         if (this.colors !== undefined) this.UpdateBuffer(gl, 'color', this.colors, gl.ARRAY_BUFFER, true, 4, gl.FLOAT, false, 4 * 4, 0);
         if (this.colors32 !== undefined) this.UpdateBuffer(gl, 'color', this.colors32, gl.ARRAY_BUFFER, true, 4, gl.GL_UNSIGNED_BYTE, false, 4 * 1, 0);
+        if (this.triangles !== undefined) this.UpdateBuffer(gl, 'index', this.triangles, gl.ELEMENT_ARRAY_BUFFER, false, 1, gl.UNSIGNED_SHORT, false, 1 * 2, 0);
         this.vertices = undefined;
         this.uv = undefined;
         this.colors = undefined;
         this.colors32 = undefined;
     },
-    CopyVertexData: function(verts, uvs, colors32) {
-        this.vertices = CopyVector3sArray(vertices);
+    CopyVertexData: function(verts, uvs, colors32, triangles) {
+        this.vertexCount = verts.length;
+        this.triangleCount = (triangles !== undefined) ? triangles.length / 3 : verts.length / 3;
+        this.vertices = CopyVector3sArray(verts);
         this.uv = CopyVector2sArray(uvs);
         this.colors32 = CopyColors32Array(colors32);
+        this.triangles = triangles;
     },
     SetupVertexAttrib: function(gl, vertexAttrib, programAttrib) {
         gl.bindBuffer( gl.ARRAY_BUFFER, vertexAttrib.glBuffer );
@@ -620,6 +603,9 @@ UnityEngine.Mesh.prototype = {
         this.SetupVertexAttrib(gl, this.attributes.position, programAttributes.position);
         this.SetupVertexAttrib(gl, this.attributes.uv, programAttributes.uv);
         this.SetupVertexAttrib(gl, this.attributes.color, programAttributes.color);
+        // setup index buffer.
+        if (this.attributes.index !== undefined)
+            gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, this.attributes.index.glBuffer);
     },
 }
 
@@ -769,8 +755,8 @@ UnityEngine.Resources = {
 UnityEngine.Texture2D = function(image) {
     this.image = image;
     this.glTexture = undefined;
-    this.glFormat = gl.RGBA;
-    this.glType = gl.UNSIGNED_BYTE;
+    this.glFormat = undefined;// gl.RGBA;
+    this.glType = undefined;//gl.UNSIGNED_BYTE;
 };
 
 UnityEngine.Texture2D.prototype = {
@@ -783,10 +769,11 @@ UnityEngine.Texture2D.prototype = {
     },
     SetupTexture: function(gl, state, slot) {
         if (this.glTexture === undefined) {
+            if (this.image === undefined) return;
             this.glTexture = gl.createTexture();
             state.activeTexture(gl.TEXTURE0 + slot);
             state.bindTexture(gl.TEXTURE_2D, this.glTexture);
-            state.texImage2D(gl.TEXTURE_2D, 0, this.glFormat, this.glFormat, this.glType, this.image);
+            state.texImage2D(gl.TEXTURE_2D, 0, this.glFormat, this.glFormat | gl.RGBA, this.glType | gl.UNSIGNED_BYTE, this.image);
             return;
         }
         state.activeTexture(gl.TEXTURE0 + slot);
@@ -1183,7 +1170,7 @@ NGUITools = {
 // ..\src\gui\internal\UIDrawCall.js
 //
 
-NGUI.UIDrawCall = function (name, panel, material) {
+NGUI.UIDrawCall = function (name, panel, texture) {
 
 	this.mClipCount = panel.clipCount();
 
@@ -1192,7 +1179,7 @@ NGUI.UIDrawCall = function (name, panel, material) {
 	this.depthEnd = -2147483648; // int.MinValue = -2147483648;
 	this.isDirty = false;
 
-	this.baseMaterial = material;
+	this.texture = texture;
 	this.renderQueue = panel.startingRenderQueue;
 	this.mSortingOrder = panel.mSortingOrder;
 	this.manager = panel;
@@ -1216,9 +1203,23 @@ NGUI.UIDrawCall.prototype = {
 			this.mMesh = undefined;
 		}
 	},
+	BuildTriangles: function(vertexCount) {
+		var index = 0;
+		var indexCount = vertexCount / 4 * 6;
+		var indexBuffer = new Uint16Array(indexCount);
+		for (var i = 0; i < vertexCount; i += 4) {
+			indexBuffer[index++] = i;
+			indexBuffer[index++] = i + 1;
+			indexBuffer[index++] = i + 2;
+			indexBuffer[index++] = i + 2;
+			indexBuffer[index++] = i + 3;
+			indexBuffer[index++] = i;
+		}
+	},
 	UpdateGeometry: function(count) {
 		this.mMesh = new UnityEngine.Mesh();
-		this.mMesh.CopyVertexData(this.verts, this.uvs, this.cols);
+		this.mMesh.CopyVertexData(this.verts, this.uvs, this.cols, this.BuildTriangles(this.verts.length));
+		// clean.
 		this.verts.length = 0;
 		this.uvs.length = 0;
 		this.cols.length = 0;
@@ -1412,7 +1413,7 @@ AspectRatioSource = {
 Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 	constructor: NGUI.UIWidget,
 	get pivotOffset() { return NGUIMath.GetPivotOffset(this.mPivot); },
-	get material() { return undefined; },
+	get texture() { return undefined; },
 	isVisible: function() { return this.mIsVisibleByAlpha && this.mIsVisibleByPanel && this.mIsInFront && this.finalAlpha > 0.001; },
 	hasVertices: function() { return this.geometry.hasVertices(); },
 	border: function() { return new UnityEngine.Vector4(0, 0, 0, 0); },
@@ -1994,19 +1995,12 @@ NGUI.UIBasicSprite.RadialCut2 = function(xy, cos, sin, invert, corner) {
 // ..\src\gui\three\GUIPlugin.js
 //
 
-THREE.GUIPlugin = function(renderer, drawCalls) {
+THREE.GUIPlugin = function(renderer, uiRoot) {
 	var gl = renderer.context;
 	var state = renderer.state;
-	var vertexBuffer, elementBuffer;
 	var programInfos;
-	var texture;
 
-	// decompose matrixWorld
-	var spritePosition = new THREE.Vector3();
-	var spriteRotation = new THREE.Quaternion();
-	var spriteScale = new THREE.Vector3();
-
-	this.render = function ( scene, camera ) {
+	this.render = function(scene, camera) {
 		if (programInfos === undefined)
 			programInfos = createProgramInfos();
 
@@ -2015,10 +2009,15 @@ THREE.GUIPlugin = function(renderer, drawCalls) {
         state.setDepthTest( false );
         state.setDepthWrite( false );
         
+        var drawCalls = uiRoot.GetDrawCalls();
         for (var i in drawCalls) {
             var drawCall = drawCalls[i];
             var mesh = drawCall.mMesh;
+            var texture = drawCall.texture;
             var programInfo = programInfos[drawCall.mClipCount];
+            if (mesh === undefined ||
+                texture === undefined ||
+                programInfo === undefined)
                 
             gl.useProgram( programInfo.program );
             state.initAttributes();
@@ -2052,16 +2051,13 @@ THREE.GUIPlugin = function(renderer, drawCalls) {
             }
 
             // setup texture. 
-            state.activeTexture( gl.TEXTURE0 );
-            gl.uniform1i( uniforms.map, 0 );
-            
-			if (material.map) {
-				renderer.setTexture2D( material.map, 0 );
-			} else {
-				renderer.setTexture2D( texture, 0 );
-			}
+            texture.SetupTexture(gl, state, 0);
 
-			gl.drawElements( gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0 );
+            // draw...
+            if (mesh.hasIndexBuffer())
+			    gl.drawElements(gl.TRIANGLES, mesh.triangleCount * 3, gl.UNSIGNED_SHORT, 0);
+            else
+                gl.drawArrays(gl.TRIANGLES, 0, mesh.vertexCount);
 		}
 
 		// restore gl
@@ -2248,6 +2244,7 @@ THREE.GUIPlugin = function(renderer, drawCalls) {
                 },
                 uniforms: {
                     UNITY_MATRIX_MVP: gl.getUniformLocation( program, 'UNITY_MATRIX_MVP'),
+                    _MainTex: gl.getUniformLocation( program, '_MainTex'),
                 },
             }
             if (i >= 1) {
@@ -2273,15 +2270,14 @@ THREE.GUIPlugin = function(renderer, drawCalls) {
 //
 
 NGUI.UIAtlas = function(gameObject) {
-	this.material = undefined; // { image:{width:100, height:100}, tex: './tex/atlas.png' }
 	this.mSprites = {}; // NGUI.UISpriteData
+	this.mTexture = new UnityEngine.Texture2D(); // UnityEngine.Texture2D
 }
 
 NGUI.UIAtlas.prototype = {
 	constructor: NGUI.UIAtlas,
-	GetSprite: function(name) {
-		return this.mSprites[name];
-	},
+	get texture() { return this.mTexture; },
+	GetSprite: function(name) { return this.mSprites[name]; },
 	Load: function(json) {
 		var sprites = json.sprites; // sprites
 		if (sprites !== undefined) {
@@ -2292,13 +2288,14 @@ NGUI.UIAtlas.prototype = {
 			}
 		}
 		this.pixelSize = json.pixelSize | 1;
-		this.image = json.image; // just copy
+		this.mTexture.width = json.width;
+		this.mTexture.height = json.height;
 
-		// load the image.
+		var tex = this.mTexture;
 		UnityEngine.Resources.LoadImage(
 			NGUITools.GetImageUrl(json._url_, json.image), 
 			function(image){
-			this.image = image; // here is a image...
+			tex.image = image; // here is a image...
 		});
 	}
 };
@@ -2498,7 +2495,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		if (this.drawCall.length > 0)
 			this.drawCall.length = 0; // clear drawCalls
 
-		var mat = undefined;
+		var texture = undefined;
 		var dc = undefined;
 		var count = 0;
 		for (var i in this.widgets) {
@@ -2507,20 +2504,20 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 				w.drawCall = undefined;
 				continue;
 			}
-			var mt = w.material;
-			if (mat != mt) {
+			var mt = w.texture;
+			if (texture != mt) {
 				if (dc !== undefined && dc.verts.length != 0) {
 					this.drawCalls.push(dc);
 					dc.UpdateGeometry(count);
 					count = 0;
 					dc = undefined;
 				}
-				mat = mt;
+				texture = mt;
 			}
 
-			if (mat !== undefined) {
+			if (texture !== undefined) {
 				if (dc === undefined) {
-					dc = new NGUI.UIDrawCall("", this, mat);
+					dc = new NGUI.UIDrawCall("", this, texture);
 					dc.depthStart = w.mDepth;
 					dc.depthEnd = dc.depthStart;
 				} else {
@@ -2566,7 +2563,7 @@ NGUI.UISprite = function(gameObject) {
 
 Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
 	constructor: NGUI.UISprite,
-	get material() { return this.mAtlas ? this.mAtlas.material : undefined; },
+	get texture() { return this.mAtlas ? this.mAtlas.texture : undefined; },
 	border: function() {
 		var sp = this.GetAtlasSprite();
 		if (sp) return new UnityEngine.Vector4(sp.borderLeft, sp.borderBottom, sp.borderRight, sp.borderTop);
@@ -2584,8 +2581,8 @@ Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
 	},
 	OnFill: function(verts, uvs, cols) {
 		if (this.mAtlas === undefined) return;
-		var mat = this.mAtlas.material;
-		if (mat === undefined || mat.image === undefined) return;
+		var texture = this.mAtlas.texture;
+		if (texture === undefined) return;
 
 		var sprite = this.GetAtlasSprite();
 		if (sprite === undefined) return;
@@ -2594,10 +2591,8 @@ Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
 		var inner = new NGUI.Rect(sprite.x + sprite.borderLeft, sprite.y + sprite.borderTop,
 			sprite.width - sprite.borderLeft - sprite.borderRight,
 			sprite.height - sprite.borderBottom - sprite.borderTop);
-
-		var image = mat.image;
-		outer = NGUIMath.ConvertToTexCoords(outer, image.width, image.height);
-		inner = NGUIMath.ConvertToTexCoords(inner, image.width, image.height);
+		outer = NGUIMath.ConvertToTexCoords(outer, texture.width, texture.height);
+		inner = NGUIMath.ConvertToTexCoords(inner, texture.width, texture.height);
 		this.Fill(verts, uvs, cols, outer, inner);
 	},
 });

@@ -6,7 +6,6 @@ unity3d\Camera.js
 unity3d\GameObject.js
 unity3d\Mathf.js
 unity3d\Matrix4x4.js
-unity3d\Material.js
 unity3d\Mesh.js
 unity3d\MonoBehaviour.js
 unity3d\Quaternion.js

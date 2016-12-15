@@ -190,7 +190,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		if (this.drawCall.length > 0)
 			this.drawCall.length = 0; // clear drawCalls
 
-		var mat = undefined;
+		var texture = undefined;
 		var dc = undefined;
 		var count = 0;
 		for (var i in this.widgets) {
@@ -199,20 +199,20 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 				w.drawCall = undefined;
 				continue;
 			}
-			var mt = w.material;
-			if (mat != mt) {
+			var mt = w.texture;
+			if (texture != mt) {
 				if (dc !== undefined && dc.verts.length != 0) {
 					this.drawCalls.push(dc);
 					dc.UpdateGeometry(count);
 					count = 0;
 					dc = undefined;
 				}
-				mat = mt;
+				texture = mt;
 			}
 
-			if (mat !== undefined) {
+			if (texture !== undefined) {
 				if (dc === undefined) {
-					dc = new NGUI.UIDrawCall("", this, mat);
+					dc = new NGUI.UIDrawCall("", this, texture);
 					dc.depthStart = w.mDepth;
 					dc.depthEnd = dc.depthStart;
 				} else {

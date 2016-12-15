@@ -20,16 +20,14 @@ body {
 <script src="./src/three.min.js"></script>
 <script src="./src/ngui.js"></script>
 <script>
-
 UnityEngine.Resources.Load('./res/test1/Wooden Atlas.js', 'UIAtlas');
 UnityEngine.Resources.Load('./res/test1/Controls.js', 'GameObject');
-//UnityEngine.Resources.Load('./res/atlas.png', 'UIImage');
 
 var renderer = new THREE.WebGLRenderer({antialias: true});
 renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 var scene = new THREE.Scene();
-var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+var camera = new THREE.PerspectiveCamera(75, window.innerHeight / window.innerWidth, 0.1, 10000);
 
 var geometry = new THREE.BoxGeometry( 1, 1, 1 );
 var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );

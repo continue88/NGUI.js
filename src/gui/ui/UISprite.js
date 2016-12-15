@@ -8,7 +8,7 @@ NGUI.UISprite = function(gameObject) {
 
 Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
 	constructor: NGUI.UISprite,
-	get material() { return this.mAtlas ? this.mAtlas.material : undefined; },
+	get texture() { return this.mAtlas ? this.mAtlas.texture : undefined; },
 	border: function() {
 		var sp = this.GetAtlasSprite();
 		if (sp) return new UnityEngine.Vector4(sp.borderLeft, sp.borderBottom, sp.borderRight, sp.borderTop);
@@ -26,8 +26,8 @@ Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
 	},
 	OnFill: function(verts, uvs, cols) {
 		if (this.mAtlas === undefined) return;
-		var mat = this.mAtlas.material;
-		if (mat === undefined || mat.image === undefined) return;
+		var texture = this.mAtlas.texture;
+		if (texture === undefined) return;
 
 		var sprite = this.GetAtlasSprite();
 		if (sprite === undefined) return;
@@ -36,10 +36,8 @@ Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
 		var inner = new NGUI.Rect(sprite.x + sprite.borderLeft, sprite.y + sprite.borderTop,
 			sprite.width - sprite.borderLeft - sprite.borderRight,
 			sprite.height - sprite.borderBottom - sprite.borderTop);
-
-		var image = mat.image;
-		outer = NGUIMath.ConvertToTexCoords(outer, image.width, image.height);
-		inner = NGUIMath.ConvertToTexCoords(inner, image.width, image.height);
+		outer = NGUIMath.ConvertToTexCoords(outer, texture.width, texture.height);
+		inner = NGUIMath.ConvertToTexCoords(inner, texture.width, texture.height);
 		this.Fill(verts, uvs, cols, outer, inner);
 	},
 });
