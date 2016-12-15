@@ -4,7 +4,7 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
 	var programInfos;
 	var maxVertexAttributes = gl.getParameter( gl.MAX_VERTEX_ATTRIBS );
 
-	this.render = function(camera) {
+	this.render = function() {
 		if (programInfos === undefined)
 			programInfos = createProgramInfos();
 
@@ -20,6 +20,7 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
             gl.disableVertexAttribArray( i );
         
         var drawCalls = uiRoot.GetDrawCalls();
+        var camera = uiRoot.GetCamera();
         for (var i in drawCalls) {
             var drawCall = drawCalls[i];
             var mesh = drawCall.mMesh;
@@ -31,21 +32,22 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
             gl.useProgram( programInfo.program ); // setup shader programs.
             mesh.SetupVertexAttribs(gl, programInfo.attributes); // setup vertex data.
 
-            // TODO: setup the UNITY_MATRIX_MVP (ModelViewProj)
-            gl.uniformMatrix4fv( programInfo.uniforms.UNITY_MATRIX_MVP, false, camera.projectionMatrix.elements );
-            if (programInfo.uniforms._ClipRange0 >= 0) {
+            var mvp = UnityEngine.Matrix4x4.Temp;// TODO: setup the UNITY_MATRIX_MVP (ModelViewProj)
+            mvp.MultiplyMatrices(this.worldToCameraMatrix, camera.projectionMatrix);
+            gl.uniformMatrix4fv(programInfo.uniforms.UNITY_MATRIX_MVP, false, mvp.elements);
+            if (programInfo.uniforms._ClipRange0 !== undefined) {
                 var clipRange = drawCall.ClipRange[0],
                     clipArgs = drawCall.ClipArgs[0];
                 gl.uniform4f(programInfo.uniforms._ClipRange0, clipRange.x, clipRange.y, clipRange.z, clipRange.w);
                 gl.uniform4f(programInfo.uniforms._ClipArgs0, clipArgs.x, clipArgs.y, clipArgs.z, clipArgs.w);
             }
-            if (programInfo.uniforms._ClipRange1 >= 0) {
+            if (programInfo.uniforms._ClipRange1 !== undefined) {
                 var clipRange = drawCall.ClipRange[1],
                     clipArgs = drawCall.ClipArgs[1];
                 gl.uniform4f(programInfo.uniforms._ClipRange1, clipRange.x, clipRange.y, clipRange.z, clipRange.w);
                 gl.uniform4f(programInfo.uniforms._ClipRange1, clipArgs.x, clipArgs.y, clipArgs.z, clipArgs.w);
             }
-            if (programInfo.uniforms._ClipRange2 >= 0) {
+            if (programInfo.uniforms._ClipRange2 !== undefined) {
                 var clipRange = drawCall.ClipRange[2],
                     clipArgs = drawCall.ClipArgs[2];
                 gl.uniform4f(programInfo.uniforms._ClipRange2, clipRange.x, clipRange.y, clipRange.z, clipRange.w);

@@ -592,7 +592,7 @@ UnityEngine.Mesh.prototype = {
         this.triangles = triangles;
     },
     SetupVertexAttrib: function(gl, vertexAttrib, programAttrib) {
-        gl.enableVertexAttribArray( programAttrib );
+        gl.enableVertexAttribArray( programAttrib ); // TODO: check do we need enable again???
         gl.bindBuffer( gl.ARRAY_BUFFER, vertexAttrib.glBuffer );
         gl.vertexAttribPointer( programAttrib,
             vertexAttrib.size, 
@@ -606,8 +606,7 @@ UnityEngine.Mesh.prototype = {
         this.SetupVertexAttrib(gl, this.attributes.position, programAttributes.position);
         this.SetupVertexAttrib(gl, this.attributes.uv, programAttributes.uv);
         this.SetupVertexAttrib(gl, this.attributes.color, programAttributes.color);
-        // setup index buffer.
-        if (this.attributes.index !== undefined)
+        if (this.attributes.index !== undefined) // setup index buffer.
             gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, this.attributes.index.glBuffer);
     },
 }
