@@ -752,7 +752,9 @@ UnityEngine.Resources = {
 // ..\src\gui\unity3d\Texture2D.js
 //
 
-UnityEngine.Texture2D = function(image) {
+UnityEngine.Texture2D = function(width, height, image) {
+    this.width = width;
+    this.height = height;
     this.image = image;
     this.glTexture = undefined;
     this.glFormat = undefined;// gl.RGBA;
@@ -2288,14 +2290,16 @@ NGUI.UIAtlas.prototype = {
 			}
 		}
 		this.pixelSize = json.pixelSize | 1;
-		this.mTexture.width = json.width;
-		this.mTexture.height = json.height;
+		this.mTexture.width = json.width | 0;
+		this.mTexture.height = json.height | 0;
 
 		var tex = this.mTexture;
 		UnityEngine.Resources.LoadImage(
 			NGUITools.GetImageUrl(json._url_, json.image), 
 			function(image){
 			tex.image = image; // here is a image...
+			tex.width = image.width;
+			tex.height = image.height;
 		});
 	}
 };

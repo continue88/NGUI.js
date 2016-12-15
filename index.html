@@ -20,8 +20,12 @@ body {
 <script src="./src/three.min.js"></script>
 <script src="./src/ngui.js"></script>
 <script>
-UnityEngine.Resources.Load('./res/test1/Wooden Atlas.js', 'UIAtlas');
-UnityEngine.Resources.Load('./res/test1/Controls.js', 'GameObject');
+
+//UnityEngine.Resources.Load('./res/test1/Wooden Atlas.js', 'UIAtlas');
+//UnityEngine.Resources.Load('./res/test1/Controls.js', 'GameObject');
+
+UnityEngine.Resources.Load('./res/test2/UI_Atlas_Login.js', 'UIAtlas');
+UnityEngine.Resources.Load('./res/test2/NoticeWnd.js', 'GameObject');
 
 var renderer = new THREE.WebGLRenderer({antialias: true});
 renderer.setPixelRatio(window.devicePixelRatio);

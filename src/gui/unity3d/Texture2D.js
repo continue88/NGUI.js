@@ -1,5 +1,7 @@
 
-UnityEngine.Texture2D = function(image) {
+UnityEngine.Texture2D = function(width, height, image) {
+    this.width = width;
+    this.height = height;
     this.image = image;
     this.glTexture = undefined;
     this.glFormat = undefined;// gl.RGBA;
