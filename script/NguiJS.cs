@@ -9,6 +9,14 @@ public class NguiJS
     static List<UIAtlas> mUsedAtlas = new List<UIAtlas>();
     static List<string> mAtlasImages = new List<string>();
 
+
+    [MenuItem("NGUI.js/Test")]
+    public static void Test()
+    {
+        Debug.Log(1.23456.ToString("0.##"));
+        Debug.Log(123456.ToString("0.##"));
+    }
+
     [MenuItem("NGUI.js/Export")]
     public static void Export()
     {
@@ -104,9 +112,12 @@ public class NguiJS
         var data = new LitJson.JsonData();
 
         // iamge name.
-        var path = AssetDatabase.GetAssetPath(atlas.spriteMaterial.mainTexture);
+        var tex = atlas.spriteMaterial.mainTexture;
+        var path = AssetDatabase.GetAssetPath(tex);
         if (!mAtlasImages.Contains(path)) mAtlasImages.Add(path);
         data["image"] = Path.GetFileName(path);
+        data["width"] = tex.width;
+        data["height"] = tex.height;
 
         // pixelSize
         Export(data, "pixelSize", atlas.pixelSize, 1.0f);
@@ -201,6 +212,6 @@ public class NguiJS
     }
     
     public static void Export(LitJson.JsonData data, string name, int value, int def) { if (value != def) data[name] = value; }
-    public static void Export(LitJson.JsonData data, string name, float value, float def) { if (value != def) data[name] = value; }
+    public static void Export(LitJson.JsonData data, string name, float value, float def) { if (value != def) data[name] = value.ToString("0.##"); }
     public static void Export(LitJson.JsonData data, string name, bool value, bool def) { if (value != def) data[name] = value; }
 }
