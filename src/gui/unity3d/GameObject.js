@@ -15,6 +15,44 @@ UnityEngine.GameObject.prototype = {
 				return comp;
 		}
 	},
+	GetComponentInChildren: function(typeName) {
+		var testList = [this.transform];
+		var switchList = [];
+		while (true) {
+			switchList.length = 0;
+			for (var i in testList) {
+				var transform = testList[i]; 
+				var comp = transform.gameObject.GetComponent(typeName);
+				if (comp !== undefined) return comp;
+				for (var c in transform.children)
+					switchList.push(transform.children[c]);
+			}
+			if (switchList.length === 0) break;
+			var tmp = testList;
+			testList = switchList;
+			switchList = tmp;
+		}
+	},
+	GetComponentsInChildren: function(typeName) {
+		var foundList = [];
+		var testList = [this.transform];
+		var switchList = [];
+		while (true) {
+			switchList.length = 0;
+			for (var i in testList) {
+				var transform = testList[i]; 
+				var comp = transform.gameObject.GetComponent(typeName);
+				if (comp !== undefined) foundList.push(comp);
+				for (var c in transform.children)
+					switchList.push(transform.children[c]);
+			}
+			if (switchList.length === 0) break;
+			var tmp = testList;
+			testList = switchList;
+			switchList = tmp;
+		}
+		return foundList;
+	},
 	LoadInternal: function(datas, onCreate, onLoad) {
 		if (datas === undefined) return;
 		var createList = [];
