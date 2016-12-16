@@ -83,6 +83,7 @@ public class NguiJS
         if (comp is UISprite) return Export((UISprite)comp);
         else if (comp is Camera) return Export((Camera)comp);
         else if (comp is UICamera) return Export((UICamera)comp);
+        else if (comp is UIPanel) return Export((UIPanel)comp);
         return null;
     }
 
