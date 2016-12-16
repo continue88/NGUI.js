@@ -84,6 +84,7 @@ public class NguiJS
         else if (comp is Camera) return Export((Camera)comp);
         else if (comp is UICamera) return Export((UICamera)comp);
         else if (comp is UIPanel) return Export((UIPanel)comp);
+        else if (comp is UIRoot) return Export((UIRoot)comp);
         return null;
     }
 
@@ -118,6 +119,20 @@ public class NguiJS
         Export(data, "far", camera.farClipPlane, 0);
         Export(data, "aspect", camera.aspect, 0);
         Export(data, "fov", camera.fieldOfView, 0);
+        return data;
+    }
+
+    public static LitJson.JsonData Export(UIRoot root)
+    {
+        var data = new LitJson.JsonData();
+        Export(data, "manualWidth", root.manualWidth, 1280);
+        Export(data, "manualHeight", root.manualHeight, 720);
+        Export(data, "minimumHeight", root.minimumHeight, 320);
+        Export(data, "maximumHeight", root.maximumHeight, 1536);
+        Export(data, "shrinkPortraitUI", root.shrinkPortraitUI, false);
+        Export(data, "fitWidth", root.fitWidth, false);
+        Export(data, "fitHeight", root.fitHeight, false);
+        Export(data, "scalingStyle", (int)root.scalingStyle, (int)UIRoot.Scaling.Flexible);
         return data;
     }
 
