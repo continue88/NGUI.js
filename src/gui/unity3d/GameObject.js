@@ -8,38 +8,56 @@ UnityEngine.GameObject = function () {
 UnityEngine.GameObject.prototype = {
 	constructor: UnityEngine.GameObject,
 	GetComponent: function(typeName) {
-		var componentType = NGUI[typeName] || UnityEngine[typeName];
+		var componentType = UnityEngine.GetType(typeName);
 		for (var i in this.components) {
 			var comp = this.components[i];
 			if (comp instanceof componentType)
 				return comp;
 		}
 	},
+	LoadInternal: function(datas, onCreate, onLoad) {
+		if (datas === undefined) return;
+		var createList = [];
+		for (var i in datas) {
+			var data = datas[i];
+			var obj = onCreate(data);
+			if (obj !== undefined) {
+				obj._data_ = data;
+				createList.push(obj);
+			}
+		}
+		for (var i in createList) {
+			var obj = createList[i];
+			onLoad(obj, obj._data_);
+			obj._data_ = undefined;
+		}
+	},
 	Load: function(json) {
-		this.name = json.n;
+		var self = this;
 		var trans = json.t;
 		var comps = json.c;
 		var child = json.q;
-		if (trans !== undefined) this.transform.Load(trans);
-		if (comps !== undefined) {
-			for (var i in comps) {
-				var componentData = comps[i];
-				var componentTypeName = componentData.meta_type;
-				var componentType = NGUI[componentTypeName] || UnityEngine[componentTypeName];
-				if (componentType) {
-					var component = new componentType(this);
-					component.Load(componentData);
-					this.components.push(component);
-				}
+		self.name = json.n;
+		if (trans !== undefined) self.transform.Load(trans);
+		this.LoadInternal(comps, function(data) {
+			var typeName = data.meta_type;
+			var componentType = UnityEngine.GetType(typeName);
+			if (componentType !== undefined) {
+				var component = new componentType(self);
+				self.components.push(component);
+				return component;
 			}
-		}
-		if (child !== undefined) {
-			for (var i in child) {
-				var go = new UnityEngine.GameObject();
-				go.transform.setParent(this.transform);
-				go.Load(child[i]);
-			}
-		}
+		}, function(component, data) {
+			component.Load(data);
+		});
+		this.LoadInternal(child, function(data) {
+			var go = new UnityEngine.GameObject();
+			go.transform.setParent(self.transform);
+			return go;
+		}, function(go, data) {
+			go.Load(data);
+		});
+		
 		// update from the root.
 		if (this.transform.parent === undefined)
 			this.transform.Update();

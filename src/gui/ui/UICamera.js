@@ -6,7 +6,10 @@ NGUI.UICamera = function(gameObject) {
 Object.assign(NGUI.UICamera.prototype, UnityEngine.MonoBehaviour.prototype, {
 	constructor: NGUI.UICamera,
     Load: function(json) {
-        var uiRoot = NGUITools.FindInParents(this.gameObject, 'UIRoot');
-        if (uiRoot !== undefined) uiRoot.camera = this;
+        var camera = this.gameObject.GetComponent('Camera');
+        if (camera !== undefined) {
+            var uiRoot = NGUITools.FindInParents(this.gameObject, 'UIRoot');
+            if (uiRoot !== undefined) uiRoot.camera = camera;
+        }
     },
 });

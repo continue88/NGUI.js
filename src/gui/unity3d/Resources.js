@@ -46,16 +46,12 @@ UnityEngine.Resources = {
 			if (element.readyState && element.readyState !== 'loaded' && element.readyState !== 'complete')  
 				return; 
 			
-			try {
-				if (isScript) {
-					var dataRoot = UnityEngine.Resources.getDataRoot();
-					dataRoot._url_ = url; // marker the url.
-					if (onLoad) onLoad(dataRoot);
-				} else {
-					if (onLoad) onLoad(element);
-				}
-			} catch (err) {
-				console.error('LoadException:' + err);
+			if (isScript) {
+				var dataRoot = UnityEngine.Resources.getDataRoot();
+				dataRoot._url_ = url; // marker the url.
+				if (onLoad) onLoad(dataRoot);
+			} else {
+				if (onLoad) onLoad(element);
 			}
 			_data_ = undefined; // clear the data root.
 			UnityEngine.Resources.onLoadFinishedInternal(url);
@@ -70,7 +66,7 @@ UnityEngine.Resources = {
 		var cacheObj = this.getFromCache(this.getUrlName(url), typeName);
 		if (cacheObj !== undefined) return cacheObj;
 		this.LoadWithType(url, 'script', function(data) {
-			var type = UnityEngine[typeName] || NGUI[typeName];
+			var type = UnityEngine.GetType(typeName);
 			if (type !== undefined) {
 				var obj = new type();
 				obj.Load(data);

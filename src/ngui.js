@@ -6,7 +6,10 @@
 //
 
 UnityEngine={
-
+    GetType: function(typeName) { 
+        var type = NGUI[typeName] || UnityEngine[typeName];
+        if (typeof(type) === 'function') return type;
+    }
 };
 
 NGUI={
@@ -228,38 +231,56 @@ UnityEngine.GameObject = function () {
 UnityEngine.GameObject.prototype = {
 	constructor: UnityEngine.GameObject,
 	GetComponent: function(typeName) {
-		var componentType = NGUI[typeName] || UnityEngine[typeName];
+		var componentType = UnityEngine.GetType(typeName);
 		for (var i in this.components) {
 			var comp = this.components[i];
 			if (comp instanceof componentType)
 				return comp;
 		}
 	},
+	LoadInternal: function(datas, onCreate, onLoad) {
+		if (datas === undefined) return;
+		var createList = [];
+		for (var i in datas) {
+			var data = datas[i];
+			var obj = onCreate(data);
+			if (obj !== undefined) {
+				obj._data_ = data;
+				createList.push(obj);
+			}
+		}
+		for (var i in createList) {
+			var obj = createList[i];
+			onLoad(obj, obj._data_);
+			obj._data_ = undefined;
+		}
+	},
 	Load: function(json) {
-		this.name = json.n;
+		var self = this;
 		var trans = json.t;
 		var comps = json.c;
 		var child = json.q;
-		if (trans !== undefined) this.transform.Load(trans);
-		if (comps !== undefined) {
-			for (var i in comps) {
-				var componentData = comps[i];
-				var componentTypeName = componentData.meta_type;
-				var componentType = NGUI[componentTypeName] || UnityEngine[componentTypeName];
-				if (componentType) {
-					var component = new componentType(this);
-					component.Load(componentData);
-					this.components.push(component);
-				}
+		self.name = json.n;
+		if (trans !== undefined) self.transform.Load(trans);
+		this.LoadInternal(comps, function(data) {
+			var typeName = data.meta_type;
+			var componentType = UnityEngine.GetType(typeName);
+			if (componentType !== undefined) {
+				var component = new componentType(self);
+				self.components.push(component);
+				return component;
 			}
-		}
-		if (child !== undefined) {
-			for (var i in child) {
-				var go = new UnityEngine.GameObject();
-				go.transform.setParent(this.transform);
-				go.Load(child[i]);
-			}
-		}
+		}, function(component, data) {
+			component.Load(data);
+		});
+		this.LoadInternal(child, function(data) {
+			var go = new UnityEngine.GameObject();
+			go.transform.setParent(self.transform);
+			return go;
+		}, function(go, data) {
+			go.Load(data);
+		});
+		
 		// update from the root.
 		if (this.transform.parent === undefined)
 			this.transform.Update();
@@ -799,16 +820,12 @@ UnityEngine.Resources = {
 			if (element.readyState && element.readyState !== 'loaded' && element.readyState !== 'complete')  
 				return; 
 			
-			try {
-				if (isScript) {
-					var dataRoot = UnityEngine.Resources.getDataRoot();
-					dataRoot._url_ = url; // marker the url.
-					if (onLoad) onLoad(dataRoot);
-				} else {
-					if (onLoad) onLoad(element);
-				}
-			} catch (err) {
-				console.error('LoadException:' + err);
+			if (isScript) {
+				var dataRoot = UnityEngine.Resources.getDataRoot();
+				dataRoot._url_ = url; // marker the url.
+				if (onLoad) onLoad(dataRoot);
+			} else {
+				if (onLoad) onLoad(element);
 			}
 			_data_ = undefined; // clear the data root.
 			UnityEngine.Resources.onLoadFinishedInternal(url);
@@ -823,7 +840,7 @@ UnityEngine.Resources = {
 		var cacheObj = this.getFromCache(this.getUrlName(url), typeName);
 		if (cacheObj !== undefined) return cacheObj;
 		this.LoadWithType(url, 'script', function(data) {
-			var type = UnityEngine[typeName] || NGUI[typeName];
+			var type = UnityEngine.GetType(typeName);
 			if (type !== undefined) {
 				var obj = new type();
 				obj.Load(data);
@@ -2152,8 +2169,11 @@ NGUI.UICamera = function(gameObject) {
 Object.assign(NGUI.UICamera.prototype, UnityEngine.MonoBehaviour.prototype, {
 	constructor: NGUI.UICamera,
     Load: function(json) {
-        var uiRoot = NGUITools.FindInParents(this.gameObject, 'UIRoot');
-        if (uiRoot !== undefined) uiRoot.camera = this;
+        var camera = this.gameObject.GetComponent('Camera');
+        if (camera !== undefined) {
+            var uiRoot = NGUITools.FindInParents(this.gameObject, 'UIRoot');
+            if (uiRoot !== undefined) uiRoot.camera = camera;
+        }
     },
 });
 
