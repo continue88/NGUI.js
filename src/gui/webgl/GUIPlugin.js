@@ -1,8 +1,10 @@
 
-THREE.GUIPlugin = function(renderer, uiRoot) {
+WebGL.GUIPlugin = function(renderer, uiRoot) {
 	var gl = renderer.gl;
 	var programInfos;
 	var maxVertexAttributes = gl.getParameter( gl.MAX_VERTEX_ATTRIBS );
+
+	const shaderPrefix = 'precision highp float;\n';
 
 	this.render = function() {
 		if (programInfos === undefined)
@@ -33,7 +35,8 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
 			mesh.SetupVertexAttribs(gl, programInfo.attributes); // setup vertex data.
 
 			var mvp = UnityEngine.Matrix4x4.Temp;// TODO: setup the UNITY_MATRIX_MVP (ModelViewProj)
-			mvp.MultiplyMatrices(this.worldToCameraMatrix, camera.projectionMatrix);
+			mvp.MultiplyMatrices(camera.worldToCameraMatrix, drawCall.localToWorldMatrix);
+			mvp.MultiplyMatrices(camera.projectionMatrix, mvp);
 			gl.uniformMatrix4fv(programInfo.uniforms.UNITY_MATRIX_MVP, false, mvp.elements);
 			if (programInfo.uniforms._ClipRange0 !== undefined) {
 				var clipRange = drawCall.ClipRange[0],
@@ -66,12 +69,21 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
 
 	function createProgram(vertexShaderSrc, fragmentShaderSrc) {
 		var program = gl.createProgram();
+
 		var vertexShader = gl.createShader(gl.VERTEX_SHADER);
-		var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-		gl.shaderSource(vertexShader, vertexShaderSrc);
-		gl.shaderSource(fragmentShader,  fragmentShaderSrc);
+		gl.shaderSource(vertexShader, shaderPrefix + vertexShaderSrc);
 		gl.compileShader(vertexShader);
+		if (gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS) === false) {
+			throw gl.getShaderInfoLog(vertexShader);
+		}
+
+		var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+		gl.shaderSource(fragmentShader,  shaderPrefix + fragmentShaderSrc);
 		gl.compileShader(fragmentShader);
+		if (gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS) === false) {
+			throw gl.getShaderInfoLog(fragmentShader);
+		}
+
 		gl.attachShader(program, vertexShader);
 		gl.attachShader(program, fragmentShader);
 		gl.linkProgram(program );
@@ -89,8 +101,8 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
 			'varying vec2 vUV;',
 			'varying vec3 vColor;',
 			'void main() {',
-			'   vUV = uv',
-			'   vColor = color',
+			'   vUV = uv;',
+			'   vColor = color;',
 			'   gl_Position = UNITY_MATRIX_MVP * vec4(vertex, 1.0);',
 			'}'
 		].join('\n'), [
@@ -112,9 +124,9 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
 			'varying vec3 vColor;',
 			'varying vec2 vWorldPos;',
 			'void main() {',
-			'   vUV = uv',
-			'   vColor = color',
-			'   vWorldPos = vertex * _ClipRange0.zw + _ClipRange0.xy;',
+			'   vUV = uv;',
+			'   vColor = color;',
+			'   vWorldPos = vertex.xy * _ClipRange0.zw + _ClipRange0.xy;',
 			'   gl_Position = UNITY_MATRIX_MVP * vec4(vertex, 1.0);',
 			'}'
 		].join('\n'), [
@@ -149,9 +161,9 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
 			'	return ret;',
 			'}',
 			'void main() {',
-			'   vUV = uv',
-			'   vColor = color',
-			'   vWorldPos.xy = vertex * _ClipRange0.zw + _ClipRange0.xy;',
+			'   vUV = uv;',
+			'   vColor = color;',
+			'   vWorldPos.xy = vertex.xy * _ClipRange0.zw + _ClipRange0.xy;',
 			'   vWorldPos.zw = Rotate(vertex.xy, _ClipArgs1.zw) * _ClipRange1.zw + _ClipRange1.xy;',
 			'   gl_Position = UNITY_MATRIX_MVP * vec4(vertex, 1.0);',
 			'}'
@@ -177,6 +189,7 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
 			'uniform mat4 UNITY_MATRIX_MVP;',
 			'uniform vec4 _ClipRange0;',
 			'uniform vec4 _ClipRange1;',
+			'uniform vec4 _ClipRange2;',
 			'uniform vec4 _ClipArgs1;',
 			'uniform vec4 _ClipArgs2;',
 			'attribute vec3 vertex;',
@@ -193,9 +206,9 @@ THREE.GUIPlugin = function(renderer, uiRoot) {
 			'	return ret;',
 			'}',
 			'void main() {',
-			'   vUV = uv',
-			'   vColor = color',
-			'   vWorldPos.xy = vertex * _ClipRange0.zw + _ClipRange0.xy;',
+			'   vUV = uv;',
+			'   vColor = color;',
+			'   vWorldPos.xy = vertex.xy * _ClipRange0.zw + _ClipRange0.xy;',
 			'   vWorldPos.zw = Rotate(vertex.xy, _ClipArgs1.zw) * _ClipRange1.zw + _ClipRange1.xy;',
 			'   vWorldPos2 = Rotate(vertex.xy, _ClipArgs2.zw) * _ClipRange2.zw + _ClipRange2.xy;',
 			'   gl_Position = UNITY_MATRIX_MVP * vec4(vertex, 1.0);',

@@ -187,19 +187,16 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		// Legacy functionality
 		if (this.drawCallClipRange.z == 0) this.drawCallClipRange.z = NGUITools.screenSize.x * 0.5;
 		if (this.drawCallClipRange.w == 0) this.drawCallClipRange.w = NGUITools.screenSize.y * 0.5;
-		var pos = this.transform.localPosition;
-		var parent = this.transform.parent;
+		var pos = trans.localPosition;
+		var parent = trans.parent;
 		if (parent !== undefined)
 			pos = parent.TransformPoint(pos);
 
-		var rot = this.transform.rotation;
-		var scale = this.transform.lossyScale;
+		var rot = trans.rotation;
+		var scale = trans.lossyScale;
 		for (var i in this.drawCalls) {
 			var dc = this.drawCalls[i];
-			var t = dc.transform;
-			t.position = pos;
-			t.rotation = rot;
-			t.localScale = scale;
+			dc.localToWorldMatrix.SetTRS(pos, rot, scale);
 			dc.renderQueue = (this.renderQueue == RenderQueue.Explicit) ? this.startingRenderQueue : this.startingRenderQueue + i;
 			dc.sortingOrder = this.mSortingOrder;
 		}

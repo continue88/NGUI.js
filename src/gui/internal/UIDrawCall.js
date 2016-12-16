@@ -1,8 +1,5 @@
 
 NGUI.UIDrawCall = function (name, panel, texture) {
-
-	this.mClipCount = panel.clipCount();
-
 	this.widgetCount = 0;
 	this.depthStart = 2147483647; // MaxValue = 2147483647
 	this.depthEnd = -2147483648; // int.MinValue = -2147483648;
@@ -10,7 +7,6 @@ NGUI.UIDrawCall = function (name, panel, texture) {
 
 	this.texture = texture;
 	this.renderQueue = panel.startingRenderQueue;
-	this.mSortingOrder = panel.mSortingOrder;
 	this.manager = panel;
 	this.panel = panel; // NGUI.UIPanel
 	
@@ -19,7 +15,10 @@ NGUI.UIDrawCall = function (name, panel, texture) {
 	this.cols = [];// Vector3
 
 	this.mMesh = undefined;
+	this.mSortingOrder = panel.mSortingOrder;
+	this.mClipCount = panel.clipCount();
 
+	this.localToWorldMatrix = new UnityEngine.Matrix4x4();
 	this.ClipRange = []; // Vector4
 	this.ClipArgs = []; // Vector4
 };

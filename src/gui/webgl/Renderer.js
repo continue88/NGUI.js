@@ -41,7 +41,7 @@ WebGL.Renderer = function (parameters) {
 		}
 		return glContext;
 	}
-}
+};
 
 WebGL.Renderer.prototype = {
 	constructor: WebGL.Renderer,
