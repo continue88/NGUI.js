@@ -72,14 +72,14 @@ Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
 		}
 	},
 	Load: function(json) {
-		this.manualWidth = json.manualWidth | this.manualWidth;
-		this.manualHeight = json.manualHeight | this.manualHeight;
-		this.minimumHeight = json.minimumHeight | this.minimumHeight;
-		this.maximumHeight = json.maximumHeight | this.maximumHeight;
-		this.shrinkPortraitUI = json.shrinkPortraitUI | this.shrinkPortraitUI;
-		this.fitWidth = json.fitWidth | this.manuafitWidthlWidth;
-		this.fitHeight = json.fitHeight | this.fitHeight;
-		this.scalingStyle = json.scalingStyle | this.scalingStyle;
+		this.manualWidth = json.manualWidth | 1280;
+		this.manualHeight = json.manualHeight | 720;
+		this.minimumHeight = json.minimumHeight | 320;
+		this.maximumHeight = json.maximumHeight | 1536;
+		this.shrinkPortraitUI = json.shrinkPortraitUI | false;
+		this.fitWidth = json.fitWidth | false;
+		this.fitHeight = json.fitHeight | false;
+		this.scalingStyle = json.scalingStyle | NGUI.Scaling.Flexible;
 	},
 	Update: function() {
 		var calcActiveHeight = this.activeHeight();

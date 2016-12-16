@@ -68,13 +68,13 @@ NGUI.UIPanel.UpdateAll = function(frame) {
 Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 	constructor: NGUI.UIPanel,
 	get hasClipping() { return this.mClipping === Clipping.SoftClip;  },
-	GetViewSize: function() {
+	getViewSize: function() {
 		if (this.mClipping != Clipping.None)
 			return new UnityEngine.Vector2(this.mClipRange.z, this.mClipRange.w);
 		return NGUITools.screenSize;
 	},
 	finalClipRegion: function() {
-		var size = this.GetViewSize();
+		var size = this.getViewSize();
 		if (this.mClipping != Clipping.None)
 			return new UnityEngine.Vector4(this.mClipRange.x + this.mClipOffset.x, this.mClipRange.y + this.mClipOffset.y, size.x, size.y);
 		return new UnityEngine.Vector4(0, 0, size.x, size.y);
@@ -131,7 +131,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 	},
 	UpdateTransformMatrix: function(frame) {
 		this.worldToLocal = this.transform.worldToLocalMatrix;
-		var size = this.GetViewSize().multiplyScalar(0.5);
+		var size = this.getViewSize().multiplyScalar(0.5);
 		var x = this.mClipOffset.x + this.mClipRange.x;
 		var y = this.mClipOffset.y + this.mClipRange.y;
 		this.mMin.x = x - size.x;

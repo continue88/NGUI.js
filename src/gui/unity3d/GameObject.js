@@ -8,7 +8,7 @@ UnityEngine.GameObject = function () {
 UnityEngine.GameObject.prototype = {
 	constructor: UnityEngine.GameObject,
 	GetComponent: function(typeName) {
-		var componentType = NGUI[componentTypeName] || UnityEngine[componentTypeName];
+		var componentType = NGUI[typeName] || UnityEngine[typeName];
 		for (var i in this.components) {
 			var comp = this.components[i];
 			if (comp instanceof componentType)

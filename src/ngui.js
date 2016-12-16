@@ -228,7 +228,7 @@ UnityEngine.GameObject = function () {
 UnityEngine.GameObject.prototype = {
 	constructor: UnityEngine.GameObject,
 	GetComponent: function(typeName) {
-		var componentType = NGUI[componentTypeName] || UnityEngine[componentTypeName];
+		var componentType = NGUI[typeName] || UnityEngine[typeName];
 		for (var i in this.components) {
 			var comp = this.components[i];
 			if (comp instanceof componentType)
@@ -777,7 +777,8 @@ UnityEngine.Resources = {
 		try {
 			this.objectLoading ++;
 			if (this.loadStart !== undefined) this.loadStart(url);
-		} catch (exception) {
+		} catch (err) {
+			console.error('LoadException:' + err);
 		}
 	},
 	onLoadFinishedInternal: function(url) {
@@ -786,7 +787,8 @@ UnityEngine.Resources = {
 			if (this.loadFinish !== undefined) this.loadFinish(url);
 			if (this.objectLoading <= 0)
 				if (this.loadAllFinish !== undefined) this.loadAllFinish();
-		} catch (exception) {
+		} catch (err) {
+			console.error('LoadException:' + err);
 		}
 	},
 	LoadWithType: function(url, type, onLoad) {
@@ -805,7 +807,8 @@ UnityEngine.Resources = {
 				} else {
 					if (onLoad) onLoad(element);
 				}
-			} catch (exception) {
+			} catch (err) {
+				console.error('LoadException:' + err);
 			}
 			_data_ = undefined; // clear the data root.
 			UnityEngine.Resources.onLoadFinishedInternal(url);
@@ -2149,7 +2152,8 @@ NGUI.UICamera = function(gameObject) {
 Object.assign(NGUI.UICamera.prototype, UnityEngine.MonoBehaviour.prototype, {
 	constructor: NGUI.UICamera,
     Load: function(json) {
-        // load json.
+        var uiRoot = NGUITools.FindInParents(this.gameObject, 'UIRoot');
+        if (uiRoot !== undefined) uiRoot.camera = this;
     },
 });
 
@@ -2226,13 +2230,13 @@ NGUI.UIPanel.UpdateAll = function(frame) {
 Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 	constructor: NGUI.UIPanel,
 	get hasClipping() { return this.mClipping === Clipping.SoftClip;  },
-	GetViewSize: function() {
+	getViewSize: function() {
 		if (this.mClipping != Clipping.None)
 			return new UnityEngine.Vector2(this.mClipRange.z, this.mClipRange.w);
 		return NGUITools.screenSize;
 	},
 	finalClipRegion: function() {
-		var size = this.GetViewSize();
+		var size = this.getViewSize();
 		if (this.mClipping != Clipping.None)
 			return new UnityEngine.Vector4(this.mClipRange.x + this.mClipOffset.x, this.mClipRange.y + this.mClipOffset.y, size.x, size.y);
 		return new UnityEngine.Vector4(0, 0, size.x, size.y);
@@ -2253,7 +2257,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		this.mClipping = json.clipping | Clipping.None;
 		this.mClipOffset.set(json.clipOffset.x | 0, json.clipOffset.y | 0);
 		this.mClipRange.set(json.clipRange.x | 0, json.clipRange.y | 0, json.clipRange.z | 0, json.clipRange.w | 0);
-		this.mClipSoftness.set(json.clipOffset.x | 0, json.clipOffset.y | 0);
+		this.mClipSoftness.set(json.clipSoftness.x | 0, json.clipSoftness.y | 0);
 		this.mSortingOrder = json.sort | 0;
 		this.renderQueue = json.renderQueue | RenderQueue.Automatic;
 		this.startingRenderQueue = json.startingRenderQueue | 3000;
@@ -2289,7 +2293,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 	},
 	UpdateTransformMatrix: function(frame) {
 		this.worldToLocal = this.transform.worldToLocalMatrix;
-		var size = this.GetViewSize().multiplyScalar(0.5);
+		var size = this.getViewSize().multiplyScalar(0.5);
 		var x = this.mClipOffset.x + this.mClipRange.x;
 		var y = this.mClipOffset.y + this.mClipRange.y;
 		this.mMin.x = x - size.x;
@@ -2475,14 +2479,14 @@ Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
 		}
 	},
 	Load: function(json) {
-		this.manualWidth = json.manualWidth | this.manualWidth;
-		this.manualHeight = json.manualHeight | this.manualHeight;
-		this.minimumHeight = json.minimumHeight | this.minimumHeight;
-		this.maximumHeight = json.maximumHeight | this.maximumHeight;
-		this.shrinkPortraitUI = json.shrinkPortraitUI | this.shrinkPortraitUI;
-		this.fitWidth = json.fitWidth | this.manuafitWidthlWidth;
-		this.fitHeight = json.fitHeight | this.fitHeight;
-		this.scalingStyle = json.scalingStyle | this.scalingStyle;
+		this.manualWidth = json.manualWidth | 1280;
+		this.manualHeight = json.manualHeight | 720;
+		this.minimumHeight = json.minimumHeight | 320;
+		this.maximumHeight = json.maximumHeight | 1536;
+		this.shrinkPortraitUI = json.shrinkPortraitUI | false;
+		this.fitWidth = json.fitWidth | false;
+		this.fitHeight = json.fitHeight | false;
+		this.scalingStyle = json.scalingStyle | NGUI.Scaling.Flexible;
 	},
 	Update: function() {
 		var calcActiveHeight = this.activeHeight();

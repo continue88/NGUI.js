@@ -24,7 +24,8 @@ UnityEngine.Resources = {
 		try {
 			this.objectLoading ++;
 			if (this.loadStart !== undefined) this.loadStart(url);
-		} catch (exception) {
+		} catch (err) {
+			console.error('LoadException:' + err);
 		}
 	},
 	onLoadFinishedInternal: function(url) {
@@ -33,7 +34,8 @@ UnityEngine.Resources = {
 			if (this.loadFinish !== undefined) this.loadFinish(url);
 			if (this.objectLoading <= 0)
 				if (this.loadAllFinish !== undefined) this.loadAllFinish();
-		} catch (exception) {
+		} catch (err) {
+			console.error('LoadException:' + err);
 		}
 	},
 	LoadWithType: function(url, type, onLoad) {
@@ -52,7 +54,8 @@ UnityEngine.Resources = {
 				} else {
 					if (onLoad) onLoad(element);
 				}
-			} catch (exception) {
+			} catch (err) {
+				console.error('LoadException:' + err);
 			}
 			_data_ = undefined; // clear the data root.
 			UnityEngine.Resources.onLoadFinishedInternal(url);
