@@ -71,6 +71,16 @@ Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
 			return manualHeight;
 		}
 	},
+	Load: function(json) {
+		this.manualWidth = json.manualWidth | this.manualWidth;
+		this.manualHeight = json.manualHeight | this.manualHeight;
+		this.minimumHeight = json.minimumHeight | this.minimumHeight;
+		this.maximumHeight = json.maximumHeight | this.maximumHeight;
+		this.shrinkPortraitUI = json.shrinkPortraitUI | this.shrinkPortraitUI;
+		this.fitWidth = json.fitWidth | this.manuafitWidthlWidth;
+		this.fitHeight = json.fitHeight | this.fitHeight;
+		this.scalingStyle = json.scalingStyle | this.scalingStyle;
+	},
 	Update: function() {
 		var calcActiveHeight = this.activeHeight;
 		var floatEpsilon = 0.00001; 
@@ -84,9 +94,6 @@ Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
 				this.transform.setNeedUpdate(true);
 			}
 		}
-	},
-	Load: function(json) {
-		// load ...
 	},
 	GetDrawCalls: function() {
 		return this.drawCalls;

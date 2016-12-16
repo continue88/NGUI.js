@@ -108,16 +108,20 @@ UnityEngine.Camera = function(gameObject) {
 
 Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
 	constructor: UnityEngine.Camera,
+	setPerspective(fov, aspect, near, far) {
+		this.isOrthoGraphic = true;
+		this.nearClipPlane = near;
+		this.farClipPlane = far;
+		this.aspect = aspect;
+		this.fieldOfView = fov;
+		this.projectionMatrix.Perspective(this.fieldOfView, this.aspect, this.nearClipPlane, this.farClipPlane);
+	},
 	Load: function(json) {
 		this.isOrthoGraphic = json.orth;
-		this.nearClipPlane = json.near;
-		this.farClipPlane = json.far;
-		this.aspect = json.aspect;
-		this.fieldOfView = json.fov;
-		if (this.isOrthoGraphic)
+		if (!this.isOrthoGraphic)
 			this.projectionMatrix.Ortho(); // TODO: build ortho data.
 		else
-			this.projectionMatrix.Perspective(this.fieldOfView, this.aspect, this.nearClipPlane, this.farClipPlane);
+			this.setPerspective(json.fov, json.aspect, json.near, json.far);
 	},
 	GetSides: function(depth, relativeTo) {
 		var mSides = [];
@@ -228,6 +232,7 @@ Mathf = UnityEngine.Mathf = {
 	Deg2Rad: 0.0174532924,
 	Rad2Deg: 57.29578,
 	FloorToInt: function(v) { return Math.floor(v); },
+	RoundToInt: function(v) { return Math.floor(v + 0.5); },
 	Lerp: function(t, a, b) {
 		return a + t * (b - a);
 	},
@@ -820,6 +825,9 @@ Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, 
 	setParent: function(parent) {
 		this.parent = parent;
 		parent.children.push(this);
+		this.setNeedUpdate(true); // update all children.
+	},
+	setNeedUpdate(recursive) {
 		this.exec(function(self) { self.needUpdate = true; }, true); // update all children.
 	},
 	Load: function(json) {
@@ -2045,12 +2053,28 @@ NGUI.UIAtlas.prototype = {
 };
 
 //
+// ..\src\gui\ui\UICamera.js
+//
+
+NGUI.UICamera = function(gameObject) {
+	NGUI.MonoBehaviour.call(this, gameObject);
+};
+
+Object.assign(NGUI.UICamera.prototype, NGUI.MonoBehaviour.prototype, {
+	constructor: NGUI.UICamera,
+    Load: function(json) {
+        // load json.
+    },
+});
+
+//
 // ..\src\gui\ui\UIPanel.js
 //
 
 NGUI.UIPanel = function(gameObject) {
 	NGUI.UIRect.call(this, gameObject);
 
+	this.mAlpha = 1;
 	this.mDepth = 0;
 	this.mSortingOrder = 0;
 	this.mUpdateFrame = 0;
@@ -2060,6 +2084,7 @@ NGUI.UIPanel = function(gameObject) {
 	this.mResized = false;
 	this.mClipOffset = new UnityEngine.Vector2();
 	this.mClipRange = new UnityEngine.Vector4();
+	this.mClipSoftness = new UnityEngine.Vector4();
 	this.mMin = new UnityEngine.Vector2();
 	this.mMax = new UnityEngine.Vector2();
 	this.mClipping = Clipping.None;
@@ -2137,6 +2162,15 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 	},
 	Load: function(json) {
 		NGUI.UIRect.Load.call(this, json);
+		this.mAlpha = json.alpha | 1;
+		this.mDepth = json.depth | 0;
+		this.mClipping = json.clipping | Clipping.None;
+		this.mClipOffset.set(json.clipOffset.x | 0, json.clipOffset.y | 0);
+		this.mClipRange.set(json.clipRange.x | 0, json.clipRange.y | 0, json.clipRange.z | 0, json.clipRange.w | 0);
+		this.mClipSoftness.set(json.clipOffset.x | 0, json.clipOffset.y | 0);
+		this.mSortingOrder = json.sort | 0;
+		this.renderQueue = json.renderQueue | RenderQueue.Automatic;
+		this.startingRenderQueue = json.startingRenderQueue | 3000;
 		this.FindParent();
 	},
 	FindParent: function() {
@@ -2286,12 +2320,97 @@ NGUI.UIRoot = function(gameObject) {
 	UnityEngine.MonoBehaviour.call(this, gameObject);
 	this.camera = undefined;
 	this.drawCalls = [];
+
+	this.manualWidth = 1280;
+	this.manualHeight = 1280;
+	this.minimumHeight = 320;
+	this.maximumHeight = 1536;
+	this.shrinkPortraitUI = false;
+	this.fitWidth = false;
+	this.fitHeight = false;
+	this.scalingStyle = NGUI.Scaling.Flexible;
+};
+
+NGUI.Scaling = {
+	Flexible: 0,
+	Constrained: 1,
+	ConstrainedOnMobiles: 2,
+};
+
+NGUI.Constraint = {
+	Fit: 0,
+	Fill: 1,
+	FitWidth: 2,
+	FitHeight: 3,
 };
 
 Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
 	constructor: NGUI.UIRoot,
+	get constraint() {
+		if (this.fitWidth)
+			return this.fitHeight ? NGUI.Constraint.Fit : NGUI.Constraint.FitWidth;
+		return this.fitHeight ? NGUI.Constraint.FitHeight : NGUI.Constraint.Fill;
+	},
+	get activeScaling() {
+		if (this.scalingStyle === NGUI.Scaling.ConstrainedOnMobiles)
+			return NGUI.Scaling.Constrained;
+		return this.scalingStyle;
+	},
+	get activeHeight() {
+		var scaling = this.activeScaling;
+		if (scaling === NGUI.Scaling.Flexible) {
+			var screen = NGUITools.screenSize.clone();
+			var aspect = screen.x / screen.y;
+			if (screen.y < this.minimumHeight) {
+				screen.y = this.minimumHeight;
+				screen.x = screen.y * aspect;
+			} else if (screen.y > this.maximumHeight) {
+				screen.y = this.maximumHeight;
+				screen.x = screen.y * aspect;
+			}
+			var height = Mathf.RoundToInt((this.shrinkPortraitUI && screen.y > screen.x) ? screen.y / aspect : screen.y);
+			return height;
+		} else {
+			var cons = this.constraint;
+			if (cons === NGUI.Constraint.FitHeight)
+				return this.manualHeight;
+			var screen = NGUITools.screenSize.clone();
+			var aspect = screen.x / screen.y;
+			var initialAspect = this.manualWidth / this.manualHeight;
+			switch (cons) {
+			case NGUI.Constraint.FitWidth:
+				return Mathf.RoundToInt(manualWidth / aspect);
+			case NGUI.Constraint.Fit:
+				return (initialAspect > aspect) ? Mathf.RoundToInt(this.manualWidth / aspect) : manualHeight;
+			case NGUI.Constraint.Fill:
+				return (initialAspect < aspect) ? Mathf.RoundToInt(manualWidth / aspect) : manualHeight;
+			}
+			return manualHeight;
+		}
+	},
 	Load: function(json) {
-		// load ...
+		this.manualWidth = json.manualWidth | this.manualWidth;
+		this.manualHeight = json.manualHeight | this.manualHeight;
+		this.minimumHeight = json.minimumHeight | this.minimumHeight;
+		this.maximumHeight = json.maximumHeight | this.maximumHeight;
+		this.shrinkPortraitUI = json.shrinkPortraitUI | this.shrinkPortraitUI;
+		this.fitWidth = json.fitWidth | this.manuafitWidthlWidth;
+		this.fitHeight = json.fitHeight | this.fitHeight;
+		this.scalingStyle = json.scalingStyle | this.scalingStyle;
+	},
+	Update: function() {
+		var calcActiveHeight = this.activeHeight;
+		var floatEpsilon = 0.00001; 
+		if (calcActiveHeight > 0) {
+			var size = 2 / calcActiveHeight;
+			var ls = this.transform.localScale;
+			if (!(Math.abs(ls.x - size) <= floatEpsilon) ||
+				!(Math.abs(ls.y - size) <= floatEpsilon) ||
+				!(Math.abs(ls.z - size) <= floatEpsilon)) {
+				this.transform.localScale.set(size, size, size);
+				this.transform.setNeedUpdate(true);
+			}
+		}
 	},
 	GetDrawCalls: function() {
 		return this.drawCalls;

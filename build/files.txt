@@ -27,6 +27,7 @@ internal\UIBasicSprite.js
 three\GUIRenderer.js
 three\GUIPlugin.js
 ui\UIAtlas.js
+ui\UICamera.js
 ui\UIPanel.js
 ui\UIRoot.js
 ui\UISprite.js
