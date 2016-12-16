@@ -23,6 +23,9 @@ NGUI.UIPanel = function(gameObject) {
 	this.widgets = []; // NGUI.UIWidget list
 	this.drawCalls = []; // NGUI.UIDrawCall
 	this.parentPanel = undefined;
+	this.worldToLocal = undefined;
+
+	NGUI.UIPanel.list.push(this);
 };
 
 RenderQueue = {
@@ -47,19 +50,19 @@ NGUI.UIPanel.UpdateAll = function(frame) {
 	var rq = 3000;
 	for (var i in list) {
 		var p = list[i];
-		if (p.renderQueue == RenderQueue.Automatic) {
+		if (p.renderQueue === RenderQueue.Automatic) {
 			p.startingRenderQueue = rq;
 			p.UpdateDrawCalls();
 			rq += p.drawCalls.length + 2;
 		}
-		else if (p.renderQueue == RenderQueue.StartAt) {
+		else if (p.renderQueue === RenderQueue.StartAt) {
 			p.UpdateDrawCalls();
 			if (p.drawCalls.length != 0)
 				rq = Math.max(rq, p.startingRenderQueue + p.drawCalls.length);
 		}
 		else { // Explicit
 			p.UpdateDrawCalls();
-			if (p.drawCalls.Count != 0)
+			if (p.drawCalls.length !== 0)
 				rq = Math.max(rq, p.startingRenderQueue + 1);
 		}
 	}
@@ -67,7 +70,7 @@ NGUI.UIPanel.UpdateAll = function(frame) {
 
 Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 	constructor: NGUI.UIPanel,
-	get hasClipping() { return this.mClipping === Clipping.SoftClip;  },
+	hasClipping: function() { return this.mClipping === Clipping.SoftClip;  },
 	getViewSize: function() {
 		if (this.mClipping != Clipping.None)
 			return new UnityEngine.Vector2(this.mClipRange.z, this.mClipRange.w);
@@ -99,7 +102,11 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		this.mSortingOrder = json.sort | 0;
 		this.renderQueue = json.renderQueue | RenderQueue.Automatic;
 		this.startingRenderQueue = json.startingRenderQueue | 3000;
+		this.mRebuild = true;
 		this.FindParent();
+	},
+	AddWidget: function(w) {
+		this.widgets.push(w);
 	},
 	FindParent: function() {
 		var parent = this.transform.parent;
@@ -109,7 +116,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		this.UpdateTransformMatrix(frame);
 		this.UpdateLayers(frame);
 		this.UpdateWidgets(frame);
-		if (this.mRebuild) {
+		if (this.mRebuild === true) {
 			this.mRebuild = false;
 			this.FillAllDrawCalls();
 		} else {
@@ -158,7 +165,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 			// Update the widget's geometry if necessary
 			if (w.UpdateGeometry(frame)) {
 				changed = true;
-				if (!this.mRebuild) {
+				if (this.mRebuild !== true) {
 					if (w.drawCall !== undefined)
 						w.drawCall.isDirty = true;
 					else
@@ -198,8 +205,8 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		}
 	},
 	FillAllDrawCalls: function() {
-		if (this.drawCall.length > 0)
-			this.drawCall.length = 0; // clear drawCalls
+		if (this.drawCalls.length > 0)
+			this.drawCalls.length = 0; // clear drawCalls
 
 		var texture = undefined;
 		var dc = undefined;
@@ -236,6 +243,11 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 				++count;
 				w.WriteToBuffers(dc.verts, dc.uvs, dc.cols);
 			}
+		}
+
+		if (dc !== undefined && dc.verts.length !== 0) {
+			this.drawCalls.push(dc);
+			dc.UpdateGeometry(count);
 		}
 	},
 });

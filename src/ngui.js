@@ -243,6 +243,7 @@ UnityEngine.GameObject.prototype = {
 		var type = UnityEngine.GetType(typeName);
 		var comp = this.GetComponent(type);
 		if (comp !== undefined) return comp;
+		
 		var switchList = [];
 		var testList = [this.transform];
 		while (true) {
@@ -268,9 +269,9 @@ UnityEngine.GameObject.prototype = {
 		var type = UnityEngine.GetType(typeName);
 		var comp = this.GetComponent(type);
 		if (comp !== undefined) foundList.push(comp);
+
 		var switchList = [];
 		var testList = [this.transform];
-		var type = UnityEngine.GetType(typeName);
 		while (true) {
 			switchList.length = 0;
 			for (var i in testList) {
@@ -628,11 +629,11 @@ function CopyVector4sArray(vectors) {
 	}
 	return array;
 }
-function CopyVector2sArray(uv) {
+function CopyVector2sArray(uvs) {
 	var offset = 0;
-	var array = new Float32Array(vectors.length * 2);
-	for (var i in vectors) {
-		var vector = vectors[i];
+	var array = new Float32Array(uvs.length * 2);
+	for (var i in uvs) {
+		var vector = uvs[i];
 		array[offset++] = vector.x;
 		array[offset++] = vector.y;
 	}
@@ -972,6 +973,7 @@ UnityEngine.Transform = function(gameObject) {
 	this.parent = undefined; // UnityEngine.Transform
 	this.children = [];
 	this.needUpdate = false;
+	this.hasChanged = false;
 };
 
 Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, {
@@ -1412,7 +1414,7 @@ NGUI.UIDrawCall.prototype = {
 	OnWillRenderObject: function() {
 		var currentPanel = this.panel;
 		for (var i = 0; currentPanel !== undefined; ) {
-			if (currentPanel.hasClipping) {
+			if (currentPanel.hasClipping()) {
 				var angle = 0;
 				var cr = currentPanel.drawCallClipRange.clone();
 				if (currentPanel != this.panel) {
@@ -1448,7 +1450,7 @@ NGUI.UIGeometry = function() {
 NGUI.UIGeometry.prototype = {
 	constructor: NGUI.UIGeometry,
 	hasVertices: function() { return this.verts.length > 0; },
-	clear: function() {
+	Clear: function() {
 		this.verts.length = 0;
 		this.uvs.length = 0;
 		this.cols.length = 0;
@@ -1461,9 +1463,9 @@ NGUI.UIGeometry.prototype = {
 	},
 	WriteToBuffers: function(v, u, c) {
 		for (var i in this.mRtpVerts) {
-			v.push(this.mRtpVerts.buffer[i]);
-			u.push(this.uvs.buffer[i]);
-			c.push(this.cols.buffer[i]);
+			v.push(this.mRtpVerts[i]);
+			u.push(this.uvs[i]);
+			c.push(this.cols[i]);
 		}
 	},
 }
@@ -1555,7 +1557,6 @@ NGUI.UIWidget = function(gameObject) {
 	this.mIsVisibleByPanel = true;
 	this.mDrawRegion = new UnityEngine.Vector4(0, 0, 1, 1);
 	this.mLocalToPanel = new UnityEngine.Matrix4x4();
-	this.mMatrixFrame = 1;
 
 	// public variables.
 	this.minWidth = 2;
@@ -1589,13 +1590,13 @@ AspectRatioSource = {
 
 Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 	constructor: NGUI.UIWidget,
-	get pivotOffset() { return NGUIMath.GetPivotOffset(this.mPivot); },
-	get texture() { return undefined; },
+	pivotOffset: function() { return NGUIMath.GetPivotOffset(this.mPivot); },
+	texture: function() { return undefined; },
 	isVisible: function() { return this.mIsVisibleByAlpha && this.mIsVisibleByPanel && this.mIsInFront && this.finalAlpha > 0.001; },
 	hasVertices: function() { return this.geometry.hasVertices(); },
 	border: function() { return new UnityEngine.Vector4(0, 0, 0, 0); },
 	drawingDimensions: function() {
-		var offset = this.pivotOffset;
+		var offset = this.pivotOffset();
 		var x0 = -offset.x * this.mWidth;
 		var y0 = -offset.y * this.mHeight;
 		var x1 = x0 + this.mWidth;
@@ -1606,6 +1607,7 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 			this.mDrawRegion.z == 1 ? x1 : Mathf.Lerp(x0, x1, this.mDrawRegion.z),
 			this.mDrawRegion.w == 1 ? y1 : Mathf.Lerp(y0, y1, this.mDrawRegion.w));
 	},
+	OnFill: function(verts, uvs, cols) { },
 	Load: function(json) {
 		NGUI.UIRect.prototype.Load.call(this, json);
 		if (json.c !== undefined)
@@ -1616,8 +1618,39 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 		this.mWidth = json.w | 100;
 		this.mHeight = json.h | 100;
 		this.mDepth = json.d | 0;
+		this.mChanged = true;
+		this.CreatePanel(); // ensure we have a parent panel.
 	},
-	OnFill: function(verts, uvs, cols) { },
+	CreatePanel: function() {
+		if (this.panel === undefined) {
+			this.panel = NGUITools.FindInParents(this.gameObject, 'UIPanel');
+			this.panel.AddWidget(this);
+		}
+		return this.panel;
+	},
+	UpdateTransform: function() {
+		var trans = this.transform;
+		if (this.mMoved !== true && trans.hasChanged) {
+			trans.hasChanged = false;
+			this.mLocalToPanel.MultiplyMatrices(this.panel.worldToLocal, trans.localToWorldMatrix);
+			var offset = this.pivotOffset();
+			var x0 = -offset.x * this.mWidth;
+			var y0 = -offset.y * this.mHeight;
+			var x1 = x0 + this.mWidth;
+			var y1 = y0 + this.mHeight;
+			var wt = this.transform;
+			var v0 = wt.TransformPoint(new UnityEngine.Vector3(x0, y0, 0));
+			var v1 = wt.TransformPoint(new UnityEngine.Vector3(x1, y1, 0));
+			v0 = this.panel.worldToLocal.MultiplyPoint3x4(v0);
+			v1 = this.panel.worldToLocal.MultiplyPoint3x4(v1);
+			if (UnityEngine.Vector3.SqrMagnitude(this.mOldV0, v0) > 0.000001 ||
+				UnityEngine.Vector3.SqrMagnitude(this.mOldV1, v1) > 0.000001) {
+				this.mMoved = true;
+				this.mOldV0 = v0;
+				this.mOldV1 = v1;
+			}
+		}
+	},
 	UpdateVisibility: function(visibleByAlpha, visibleByPanel) {
 		if (this.mIsVisibleByAlpha != visibleByAlpha || this.mIsVisibleByPanel != visibleByPanel) {
 			this.mChanged = true;
@@ -1632,7 +1665,7 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 		var trans = this.transform;
 		var parent = trans.parent;
 		var pos = trans.localPosition;
-		var pvt = this.pivotOffset;
+		var pvt = this.pivotOffset();
 
 		// Attempt to fast-path if all anchors match
 		if (this.leftAnchor.target === this.bottomAnchor.target &&
@@ -1721,34 +1754,28 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 		}
 	},
 	UpdateGeometry: function(frame) {
-		if (this.mChanged) {
+		if (this.mChanged === true) {
 			this.mChanged = false;
-			if (this.mIsVisibleByAlpha && this.finalAlpha > 0.001) {
-				var hadVertices = this.geometry.hasVertices;
-				if (this.fillGeometry) {
+			if (this.mIsVisibleByAlpha === true && this.finalAlpha > 0.001) {
+				var hadVertices = this.geometry.hasVertices();
+				if (this.fillGeometry === true) {
 					this.geometry.Clear();
 					this.OnFill(this.geometry.verts, this.geometry.uvs, this.geometry.cols);
 				}
-				if (geometry.hasVertices) {
-					if (this.mMatrixFrame != frame) {
-						this.mLocalToPanel = this.panel.worldToLocal * this.transform.localToWorldMatrix;
-						this.mMatrixFrame = frame;
-					}
+				if (this.geometry.hasVertices() === true) {
+					this.mLocalToPanel.MultiplyMatrices(this.panel.worldToLocal, this.transform.localToWorldMatrix);
 					this.geometry.ApplyTransform(this.mLocalToPanel);
 					this.mMoved = false;
 					return true;
 				}
 			}
 			
-			if (this.fillGeometry) this.geometry.Clear();
+			if (this.fillGeometry === true) this.geometry.Clear();
 			this.mMoved = false;
 			return true;
 		}
-		else if (this.mMoved && this.geometry.hasVertices()) {
-			if (this.mMatrixFrame != frame) {
-				this.mLocalToPanel = this.panel.worldToLocal * this.transform.localToWorldMatrix;
-				this.mMatrixFrame = frame;
-			}
+		else if (this.mMoved === true && this.geometry.hasVertices() === true) {
+			this.mLocalToPanel = this.panel.worldToLocal * this.transform.localToWorldMatrix;
 			this.geometry.ApplyTransform(this.mLocalToPanel);
 			this.mMoved = false;
 			return true;
@@ -1808,7 +1835,8 @@ gTempUVs = [new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngin
 
 Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 	constructor: NGUI.UIBasicSprite,
-	get pixelSize() { return 1; },
+	pixelSize: function() { return 1; },
+	texture: function() { return undefined; },
 	drawingUVs: function() {
 		switch (this.mFlip) {
 			case Flip.Horizontally: return new UnityEngine.Vector4(this.mOuterUV.xMax, this.mOuterUV.yMin, this.mOuterUV.xMin, this.mOuterUV.yMax);
@@ -1822,7 +1850,7 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 			this.mColor.r * 255,
 			this.mColor.g * 255,
 			this.mColor.b * 255,
-			this.this.finalAlpha * 255); 
+			this.finalAlpha * 255); 
 	},
 	Load: function(json) {
 		NGUI.UIWidget.prototype.Load.call(this, json);
@@ -1871,8 +1899,8 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 		cols.push(c);
 	},
 	SlicedFill: function(verts, uvs, cols) {
-		var br = this.border() * pixelSize;
-		if (br.x == 0 && br.y == 0 && br.z == 0 && br.w == 0)
+		var br = this.border().multiplyScalar(this.pixelSize());
+		if (br.x === 0 && br.y === 0 && br.z === 0 && br.w === 0)
 			return this.SimpleFill(verts, uvs, cols);
 
 		var c = this.drawingColor();
@@ -1922,7 +1950,7 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 		for (var x = 0; x < 3; ++x) {
 			var x2 = x + 1;
 			for (var y = 0; y < 3; ++y) {
-				if (centerType == AdvancedType.Invisible && x == 1 && y == 1)
+				if (this.centerType == AdvancedType.Invisible && x == 1 && y == 1)
 					continue;
 				var y2 = y + 1;
 				verts.push(new UnityEngine.Vector3(gTempPos[x].x, gTempPos[y].y));
@@ -2091,6 +2119,68 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 			cols.push(c);
 		}
 	},
+	TiledFill: function(verts, uvs, cols) {
+		var tex = this.texture();
+		if (tex === undefined) return;
+
+		var size = new UnityEngine.Vector2(this.mInnerUV.width * tex.width, this.mInnerUV.height * tex.height);
+		size.multiplyScalar(this.pixelSize());
+		if (size.x < 2 || size.y < 2) return;
+
+		var c = this.drawingColor();
+		var v = this.drawingDimensions();
+		var u = new UnityEngine.Vector2();
+		if (this.mFlip === Flip.Horizontally || this.mFlip === Flip.Both) {
+			u.x = this.mInnerUV.xMax;
+			u.z = this.mInnerUV.xMin;
+		} else {
+			u.x = this.mInnerUV.xMin;
+			u.z = this.mInnerUV.xMax;
+		}
+		if (this.mFlip === Flip.Vertically || this.mFlip === Flip.Both) {
+			u.y = this.mInnerUV.yMax;
+			u.w = this.mInnerUV.yMin;
+		} else {
+			u.y = this.mInnerUV.yMin;
+			u.w = this.mInnerUV.yMax;
+		}
+
+		var x0 = v.x;
+		var y0 = v.y;
+		var u0 = u.x;
+		var v0 = u.y;
+		while (y0 < v.w) {
+			x0 = v.x;
+			var y1 = y0 + size.y;
+			var v1 = u.w;
+			if (y1 > v.w) {
+				v1 = Mathf.Lerp(u.y, u.w, (v.w - y0) / size.y);
+				y1 = v.w;
+			}
+			while (x0 < v.z){
+				var x1 = x0 + size.x;
+				var u1 = u.z;
+				if (x1 > v.z){
+					u1 = Mathf.Lerp(u.x, u.z, (v.z - x0) / size.x);
+					x1 = v.z;
+				}
+				verts.push(new UnityEngine.Vector3(x0, y0));
+				verts.push(new UnityEngine.Vector3(x0, y1));
+				verts.push(new UnityEngine.Vector3(x1, y1));
+				verts.push(new UnityEngine.Vector3(x1, y0));
+				uvs.push(new UnityEngine.Vector2(u0, v0));
+				uvs.push(new UnityEngine.Vector2(u0, v1));
+				uvs.push(new UnityEngine.Vector2(u1, v1));
+				uvs.push(new UnityEngine.Vector2(u1, v0));
+				cols.push(c);
+				cols.push(c);
+				cols.push(c);
+				cols.push(c);
+				x0 += size.x;
+			}
+			y0 += size.y;
+		}
+	},
 	AdvancedFill: function(verts, uvs, cols) {
 		// not implemented...
 	}
@@ -2257,6 +2347,9 @@ NGUI.UIPanel = function(gameObject) {
 	this.widgets = []; // NGUI.UIWidget list
 	this.drawCalls = []; // NGUI.UIDrawCall
 	this.parentPanel = undefined;
+	this.worldToLocal = undefined;
+
+	NGUI.UIPanel.list.push(this);
 };
 
 RenderQueue = {
@@ -2281,19 +2374,19 @@ NGUI.UIPanel.UpdateAll = function(frame) {
 	var rq = 3000;
 	for (var i in list) {
 		var p = list[i];
-		if (p.renderQueue == RenderQueue.Automatic) {
+		if (p.renderQueue === RenderQueue.Automatic) {
 			p.startingRenderQueue = rq;
 			p.UpdateDrawCalls();
 			rq += p.drawCalls.length + 2;
 		}
-		else if (p.renderQueue == RenderQueue.StartAt) {
+		else if (p.renderQueue === RenderQueue.StartAt) {
 			p.UpdateDrawCalls();
 			if (p.drawCalls.length != 0)
 				rq = Math.max(rq, p.startingRenderQueue + p.drawCalls.length);
 		}
 		else { // Explicit
 			p.UpdateDrawCalls();
-			if (p.drawCalls.Count != 0)
+			if (p.drawCalls.length !== 0)
 				rq = Math.max(rq, p.startingRenderQueue + 1);
 		}
 	}
@@ -2301,7 +2394,7 @@ NGUI.UIPanel.UpdateAll = function(frame) {
 
 Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 	constructor: NGUI.UIPanel,
-	get hasClipping() { return this.mClipping === Clipping.SoftClip;  },
+	hasClipping: function() { return this.mClipping === Clipping.SoftClip;  },
 	getViewSize: function() {
 		if (this.mClipping != Clipping.None)
 			return new UnityEngine.Vector2(this.mClipRange.z, this.mClipRange.w);
@@ -2333,7 +2426,11 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		this.mSortingOrder = json.sort | 0;
 		this.renderQueue = json.renderQueue | RenderQueue.Automatic;
 		this.startingRenderQueue = json.startingRenderQueue | 3000;
+		this.mRebuild = true;
 		this.FindParent();
+	},
+	AddWidget: function(w) {
+		this.widgets.push(w);
 	},
 	FindParent: function() {
 		var parent = this.transform.parent;
@@ -2343,7 +2440,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		this.UpdateTransformMatrix(frame);
 		this.UpdateLayers(frame);
 		this.UpdateWidgets(frame);
-		if (this.mRebuild) {
+		if (this.mRebuild === true) {
 			this.mRebuild = false;
 			this.FillAllDrawCalls();
 		} else {
@@ -2392,7 +2489,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 			// Update the widget's geometry if necessary
 			if (w.UpdateGeometry(frame)) {
 				changed = true;
-				if (!this.mRebuild) {
+				if (this.mRebuild !== true) {
 					if (w.drawCall !== undefined)
 						w.drawCall.isDirty = true;
 					else
@@ -2432,8 +2529,8 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		}
 	},
 	FillAllDrawCalls: function() {
-		if (this.drawCall.length > 0)
-			this.drawCall.length = 0; // clear drawCalls
+		if (this.drawCalls.length > 0)
+			this.drawCalls.length = 0; // clear drawCalls
 
 		var texture = undefined;
 		var dc = undefined;
@@ -2470,6 +2567,11 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 				++count;
 				w.WriteToBuffers(dc.verts, dc.uvs, dc.cols);
 			}
+		}
+
+		if (dc !== undefined && dc.verts.length !== 0) {
+			this.drawCalls.push(dc);
+			dc.UpdateGeometry(count);
 		}
 	},
 });
@@ -2595,7 +2697,7 @@ NGUI.UISprite = function(gameObject) {
 
 Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
 	constructor: NGUI.UISprite,
-	get texture() { return this.mAtlas ? this.mAtlas.texture : undefined; },
+	texture: function() { return this.mAtlas ? this.mAtlas.texture : undefined; },
 	border: function() {
 		var sp = this.GetAtlasSprite();
 		if (sp) return new UnityEngine.Vector4(sp.borderLeft, sp.borderBottom, sp.borderRight, sp.borderTop);
@@ -2613,18 +2715,18 @@ Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
 	},
 	OnFill: function(verts, uvs, cols) {
 		if (this.mAtlas === undefined) return;
-		var texture = this.mAtlas.texture;
-		if (texture === undefined) return;
+		var tex = this.mAtlas.texture;
+		if (tex === undefined) return;
 
 		var sprite = this.GetAtlasSprite();
 		if (sprite === undefined) return;
 
-		var outer = new NGUI.Rect(sprite.x, sprite.y, sprite.width, sprite.height);
-		var inner = new NGUI.Rect(sprite.x + sprite.borderLeft, sprite.y + sprite.borderTop,
+		var outer = new UnityEngine.Rect(sprite.x, sprite.y, sprite.width, sprite.height);
+		var inner = new UnityEngine.Rect(sprite.x + sprite.borderLeft, sprite.y + sprite.borderTop,
 			sprite.width - sprite.borderLeft - sprite.borderRight,
 			sprite.height - sprite.borderBottom - sprite.borderTop);
-		outer = NGUIMath.ConvertToTexCoords(outer, texture.width, texture.height);
-		inner = NGUIMath.ConvertToTexCoords(inner, texture.width, texture.height);
+		outer = NGUIMath.ConvertToTexCoords(outer, tex.width, tex.height);
+		inner = NGUIMath.ConvertToTexCoords(inner, tex.width, tex.height);
 		this.Fill(verts, uvs, cols, outer, inner);
 	},
 });

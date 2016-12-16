@@ -14,7 +14,6 @@ NGUI.UIWidget = function(gameObject) {
 	this.mIsVisibleByPanel = true;
 	this.mDrawRegion = new UnityEngine.Vector4(0, 0, 1, 1);
 	this.mLocalToPanel = new UnityEngine.Matrix4x4();
-	this.mMatrixFrame = 1;
 
 	// public variables.
 	this.minWidth = 2;
@@ -48,13 +47,13 @@ AspectRatioSource = {
 
 Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 	constructor: NGUI.UIWidget,
-	get pivotOffset() { return NGUIMath.GetPivotOffset(this.mPivot); },
-	get texture() { return undefined; },
+	pivotOffset: function() { return NGUIMath.GetPivotOffset(this.mPivot); },
+	texture: function() { return undefined; },
 	isVisible: function() { return this.mIsVisibleByAlpha && this.mIsVisibleByPanel && this.mIsInFront && this.finalAlpha > 0.001; },
 	hasVertices: function() { return this.geometry.hasVertices(); },
 	border: function() { return new UnityEngine.Vector4(0, 0, 0, 0); },
 	drawingDimensions: function() {
-		var offset = this.pivotOffset;
+		var offset = this.pivotOffset();
 		var x0 = -offset.x * this.mWidth;
 		var y0 = -offset.y * this.mHeight;
 		var x1 = x0 + this.mWidth;
@@ -65,6 +64,7 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 			this.mDrawRegion.z == 1 ? x1 : Mathf.Lerp(x0, x1, this.mDrawRegion.z),
 			this.mDrawRegion.w == 1 ? y1 : Mathf.Lerp(y0, y1, this.mDrawRegion.w));
 	},
+	OnFill: function(verts, uvs, cols) { },
 	Load: function(json) {
 		NGUI.UIRect.prototype.Load.call(this, json);
 		if (json.c !== undefined)
@@ -75,8 +75,39 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 		this.mWidth = json.w | 100;
 		this.mHeight = json.h | 100;
 		this.mDepth = json.d | 0;
+		this.mChanged = true;
+		this.CreatePanel(); // ensure we have a parent panel.
 	},
-	OnFill: function(verts, uvs, cols) { },
+	CreatePanel: function() {
+		if (this.panel === undefined) {
+			this.panel = NGUITools.FindInParents(this.gameObject, 'UIPanel');
+			this.panel.AddWidget(this);
+		}
+		return this.panel;
+	},
+	UpdateTransform: function() {
+		var trans = this.transform;
+		if (this.mMoved !== true && trans.hasChanged) {
+			trans.hasChanged = false;
+			this.mLocalToPanel.MultiplyMatrices(this.panel.worldToLocal, trans.localToWorldMatrix);
+			var offset = this.pivotOffset();
+			var x0 = -offset.x * this.mWidth;
+			var y0 = -offset.y * this.mHeight;
+			var x1 = x0 + this.mWidth;
+			var y1 = y0 + this.mHeight;
+			var wt = this.transform;
+			var v0 = wt.TransformPoint(new UnityEngine.Vector3(x0, y0, 0));
+			var v1 = wt.TransformPoint(new UnityEngine.Vector3(x1, y1, 0));
+			v0 = this.panel.worldToLocal.MultiplyPoint3x4(v0);
+			v1 = this.panel.worldToLocal.MultiplyPoint3x4(v1);
+			if (UnityEngine.Vector3.SqrMagnitude(this.mOldV0, v0) > 0.000001 ||
+				UnityEngine.Vector3.SqrMagnitude(this.mOldV1, v1) > 0.000001) {
+				this.mMoved = true;
+				this.mOldV0 = v0;
+				this.mOldV1 = v1;
+			}
+		}
+	},
 	UpdateVisibility: function(visibleByAlpha, visibleByPanel) {
 		if (this.mIsVisibleByAlpha != visibleByAlpha || this.mIsVisibleByPanel != visibleByPanel) {
 			this.mChanged = true;
@@ -91,7 +122,7 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 		var trans = this.transform;
 		var parent = trans.parent;
 		var pos = trans.localPosition;
-		var pvt = this.pivotOffset;
+		var pvt = this.pivotOffset();
 
 		// Attempt to fast-path if all anchors match
 		if (this.leftAnchor.target === this.bottomAnchor.target &&
@@ -180,34 +211,28 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 		}
 	},
 	UpdateGeometry: function(frame) {
-		if (this.mChanged) {
+		if (this.mChanged === true) {
 			this.mChanged = false;
-			if (this.mIsVisibleByAlpha && this.finalAlpha > 0.001) {
-				var hadVertices = this.geometry.hasVertices;
-				if (this.fillGeometry) {
+			if (this.mIsVisibleByAlpha === true && this.finalAlpha > 0.001) {
+				var hadVertices = this.geometry.hasVertices();
+				if (this.fillGeometry === true) {
 					this.geometry.Clear();
 					this.OnFill(this.geometry.verts, this.geometry.uvs, this.geometry.cols);
 				}
-				if (geometry.hasVertices) {
-					if (this.mMatrixFrame != frame) {
-						this.mLocalToPanel = this.panel.worldToLocal * this.transform.localToWorldMatrix;
-						this.mMatrixFrame = frame;
-					}
+				if (this.geometry.hasVertices() === true) {
+					this.mLocalToPanel.MultiplyMatrices(this.panel.worldToLocal, this.transform.localToWorldMatrix);
 					this.geometry.ApplyTransform(this.mLocalToPanel);
 					this.mMoved = false;
 					return true;
 				}
 			}
 			
-			if (this.fillGeometry) this.geometry.Clear();
+			if (this.fillGeometry === true) this.geometry.Clear();
 			this.mMoved = false;
 			return true;
 		}
-		else if (this.mMoved && this.geometry.hasVertices()) {
-			if (this.mMatrixFrame != frame) {
-				this.mLocalToPanel = this.panel.worldToLocal * this.transform.localToWorldMatrix;
-				this.mMatrixFrame = frame;
-			}
+		else if (this.mMoved === true && this.geometry.hasVertices() === true) {
+			this.mLocalToPanel = this.panel.worldToLocal * this.transform.localToWorldMatrix;
 			this.geometry.ApplyTransform(this.mLocalToPanel);
 			this.mMoved = false;
 			return true;

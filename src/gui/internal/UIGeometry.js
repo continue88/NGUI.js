@@ -9,7 +9,7 @@ NGUI.UIGeometry = function() {
 NGUI.UIGeometry.prototype = {
 	constructor: NGUI.UIGeometry,
 	hasVertices: function() { return this.verts.length > 0; },
-	clear: function() {
+	Clear: function() {
 		this.verts.length = 0;
 		this.uvs.length = 0;
 		this.cols.length = 0;
@@ -22,9 +22,9 @@ NGUI.UIGeometry.prototype = {
 	},
 	WriteToBuffers: function(v, u, c) {
 		for (var i in this.mRtpVerts) {
-			v.push(this.mRtpVerts.buffer[i]);
-			u.push(this.uvs.buffer[i]);
-			c.push(this.cols.buffer[i]);
+			v.push(this.mRtpVerts[i]);
+			u.push(this.uvs[i]);
+			c.push(this.cols[i]);
 		}
 	},
 }

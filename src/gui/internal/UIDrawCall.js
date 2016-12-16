@@ -64,7 +64,7 @@ NGUI.UIDrawCall.prototype = {
 	OnWillRenderObject: function() {
 		var currentPanel = this.panel;
 		for (var i = 0; currentPanel !== undefined; ) {
-			if (currentPanel.hasClipping) {
+			if (currentPanel.hasClipping()) {
 				var angle = 0;
 				var cr = currentPanel.drawCallClipRange.clone();
 				if (currentPanel != this.panel) {

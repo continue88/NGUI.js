@@ -17,6 +17,7 @@ UnityEngine.Transform = function(gameObject) {
 	this.parent = undefined; // UnityEngine.Transform
 	this.children = [];
 	this.needUpdate = false;
+	this.hasChanged = false;
 };
 
 Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, {

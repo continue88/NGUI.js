@@ -19,6 +19,7 @@ UnityEngine.GameObject.prototype = {
 		var type = UnityEngine.GetType(typeName);
 		var comp = this.GetComponent(type);
 		if (comp !== undefined) return comp;
+		
 		var switchList = [];
 		var testList = [this.transform];
 		while (true) {
@@ -44,9 +45,9 @@ UnityEngine.GameObject.prototype = {
 		var type = UnityEngine.GetType(typeName);
 		var comp = this.GetComponent(type);
 		if (comp !== undefined) foundList.push(comp);
+
 		var switchList = [];
 		var testList = [this.transform];
-		var type = UnityEngine.GetType(typeName);
 		while (true) {
 			switchList.length = 0;
 			for (var i in testList) {

@@ -37,11 +37,11 @@ function CopyVector4sArray(vectors) {
 	}
 	return array;
 }
-function CopyVector2sArray(uv) {
+function CopyVector2sArray(uvs) {
 	var offset = 0;
-	var array = new Float32Array(vectors.length * 2);
-	for (var i in vectors) {
-		var vector = vectors[i];
+	var array = new Float32Array(uvs.length * 2);
+	for (var i in uvs) {
+		var vector = uvs[i];
 		array[offset++] = vector.x;
 		array[offset++] = vector.y;
 	}

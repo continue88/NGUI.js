@@ -28,6 +28,7 @@ UnityEngine.Resources.loadAllFinish = function(){
     var sprite = go.GetComponentInChildren('UISprite');
     var sprites = go.GetComponentsInChildren('UISprite');
     console.log(sprites.length);
+    NGUI.UIPanel.UpdateAll();
   });
 };
 

@@ -42,7 +42,8 @@ gTempUVs = [new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngin
 
 Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 	constructor: NGUI.UIBasicSprite,
-	get pixelSize() { return 1; },
+	pixelSize: function() { return 1; },
+	texture: function() { return undefined; },
 	drawingUVs: function() {
 		switch (this.mFlip) {
 			case Flip.Horizontally: return new UnityEngine.Vector4(this.mOuterUV.xMax, this.mOuterUV.yMin, this.mOuterUV.xMin, this.mOuterUV.yMax);
@@ -56,7 +57,7 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 			this.mColor.r * 255,
 			this.mColor.g * 255,
 			this.mColor.b * 255,
-			this.this.finalAlpha * 255); 
+			this.finalAlpha * 255); 
 	},
 	Load: function(json) {
 		NGUI.UIWidget.prototype.Load.call(this, json);
@@ -105,8 +106,8 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 		cols.push(c);
 	},
 	SlicedFill: function(verts, uvs, cols) {
-		var br = this.border() * pixelSize;
-		if (br.x == 0 && br.y == 0 && br.z == 0 && br.w == 0)
+		var br = this.border().multiplyScalar(this.pixelSize());
+		if (br.x === 0 && br.y === 0 && br.z === 0 && br.w === 0)
 			return this.SimpleFill(verts, uvs, cols);
 
 		var c = this.drawingColor();
@@ -156,7 +157,7 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 		for (var x = 0; x < 3; ++x) {
 			var x2 = x + 1;
 			for (var y = 0; y < 3; ++y) {
-				if (centerType == AdvancedType.Invisible && x == 1 && y == 1)
+				if (this.centerType == AdvancedType.Invisible && x == 1 && y == 1)
 					continue;
 				var y2 = y + 1;
 				verts.push(new UnityEngine.Vector3(gTempPos[x].x, gTempPos[y].y));
@@ -323,6 +324,68 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 			verts.push(gTempPos[i]);
 			uvs.push(gTempUVs[i]);
 			cols.push(c);
+		}
+	},
+	TiledFill: function(verts, uvs, cols) {
+		var tex = this.texture();
+		if (tex === undefined) return;
+
+		var size = new UnityEngine.Vector2(this.mInnerUV.width * tex.width, this.mInnerUV.height * tex.height);
+		size.multiplyScalar(this.pixelSize());
+		if (size.x < 2 || size.y < 2) return;
+
+		var c = this.drawingColor();
+		var v = this.drawingDimensions();
+		var u = new UnityEngine.Vector2();
+		if (this.mFlip === Flip.Horizontally || this.mFlip === Flip.Both) {
+			u.x = this.mInnerUV.xMax;
+			u.z = this.mInnerUV.xMin;
+		} else {
+			u.x = this.mInnerUV.xMin;
+			u.z = this.mInnerUV.xMax;
+		}
+		if (this.mFlip === Flip.Vertically || this.mFlip === Flip.Both) {
+			u.y = this.mInnerUV.yMax;
+			u.w = this.mInnerUV.yMin;
+		} else {
+			u.y = this.mInnerUV.yMin;
+			u.w = this.mInnerUV.yMax;
+		}
+
+		var x0 = v.x;
+		var y0 = v.y;
+		var u0 = u.x;
+		var v0 = u.y;
+		while (y0 < v.w) {
+			x0 = v.x;
+			var y1 = y0 + size.y;
+			var v1 = u.w;
+			if (y1 > v.w) {
+				v1 = Mathf.Lerp(u.y, u.w, (v.w - y0) / size.y);
+				y1 = v.w;
+			}
+			while (x0 < v.z){
+				var x1 = x0 + size.x;
+				var u1 = u.z;
+				if (x1 > v.z){
+					u1 = Mathf.Lerp(u.x, u.z, (v.z - x0) / size.x);
+					x1 = v.z;
+				}
+				verts.push(new UnityEngine.Vector3(x0, y0));
+				verts.push(new UnityEngine.Vector3(x0, y1));
+				verts.push(new UnityEngine.Vector3(x1, y1));
+				verts.push(new UnityEngine.Vector3(x1, y0));
+				uvs.push(new UnityEngine.Vector2(u0, v0));
+				uvs.push(new UnityEngine.Vector2(u0, v1));
+				uvs.push(new UnityEngine.Vector2(u1, v1));
+				uvs.push(new UnityEngine.Vector2(u1, v0));
+				cols.push(c);
+				cols.push(c);
+				cols.push(c);
+				cols.push(c);
+				x0 += size.x;
+			}
+			y0 += size.y;
 		}
 	},
 	AdvancedFill: function(verts, uvs, cols) {
