@@ -35,12 +35,12 @@ public class NguiJS
     public static LitJson.JsonData Export(GameObject go)
     {
         var data = new LitJson.JsonData();
-        data["name"] = go.name;
-        data["transform"] = Export(go.transform);
-        data["components"] = Export(go.GetComponents<Component>());
+        data["n"] = go.name;
+        data["t"] = Export(go.transform);
+        data["c"] = Export(go.GetComponents<Component>());
 
         if (go.transform.childCount > 0)
-            data["children"] = ExportChildren(go);
+            data["q"] = ExportChildren(go);
         return data;
     }
 
@@ -93,8 +93,8 @@ public class NguiJS
             mUsedAtlas.Add(sprite.atlas);
 
         var data = new LitJson.JsonData();
-        data["atlas"] = sprite.atlas.name;
-        data["sprite"] = sprite.spriteName;
+        data["l"] = sprite.atlas.name;
+        data["s"] = sprite.spriteName;
         data["c"] = Export(sprite.color);
         Export(data, "t", (int)sprite.type, (int)UIBasicSprite.Type.Simple);
         Export(data, "f", (int)sprite.flip, (int)UIBasicSprite.Flip.Nothing);
