@@ -28,6 +28,9 @@ Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, 
 	setParent: function(parent) {
 		this.parent = parent;
 		parent.children.push(this);
+		this.setNeedUpdate(true); // update all children.
+	},
+	setNeedUpdate(recursive) {
 		this.exec(function(self) { self.needUpdate = true; }, true); // update all children.
 	},
 	Load: function(json) {
