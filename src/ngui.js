@@ -6,7 +6,8 @@
 //
 
 UnityEngine={
-    GetType: function(typeName) { 
+    GetType: function(typeName) {
+        if (typeof(typeName) === 'function') return typeName; 
         var type = NGUI[typeName] || UnityEngine[typeName];
         if (typeof(type) === 'function') return type;
     }
@@ -237,6 +238,57 @@ UnityEngine.GameObject.prototype = {
 			if (comp instanceof componentType)
 				return comp;
 		}
+	},
+	GetComponentInChildren: function(typeName) {
+		var type = UnityEngine.GetType(typeName);
+		var comp = this.GetComponent(type);
+		if (comp !== undefined) return comp;
+		var switchList = [];
+		var testList = [this.transform];
+		while (true) {
+			switchList.length = 0;
+			for (var i in testList) {
+				var transform = testList[i]; 
+				for (var c in transform.children) {
+					var child = transform.children[c];
+					var comp = child.gameObject.GetComponent(type);
+					if (comp !== undefined) return comp; // check child.
+					if (child.children.length > 0)
+						switchList.push(child);
+				}
+			}
+			if (switchList.length === 0) break;
+			var tmp = testList;
+			testList = switchList;
+			switchList = tmp;
+		}
+	},
+	GetComponentsInChildren: function(typeName) {
+		var foundList = [];
+		var type = UnityEngine.GetType(typeName);
+		var comp = this.GetComponent(type);
+		if (comp !== undefined) foundList.push(comp);
+		var switchList = [];
+		var testList = [this.transform];
+		var type = UnityEngine.GetType(typeName);
+		while (true) {
+			switchList.length = 0;
+			for (var i in testList) {
+				var transform = testList[i]; 
+				for (var c in transform.children) {
+					var child = transform.children[c];
+					var comp = child.gameObject.GetComponent(type);
+					if (comp !== undefined) foundList.push(comp);
+					if (child.children.length > 0)
+						switchList.push(child);
+				}
+			}
+			if (switchList.length === 0) break;
+			var tmp = testList;
+			testList = switchList;
+			switchList = tmp;
+		}
+		return foundList;
 	},
 	LoadInternal: function(datas, onCreate, onLoad) {
 		if (datas === undefined) return;

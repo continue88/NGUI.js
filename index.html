@@ -23,7 +23,12 @@ body {
 
 UnityEngine.Resources.Load('./res/test1/Wooden Atlas.js', 'UIAtlas');
 UnityEngine.Resources.loadAllFinish = function(){
-  UnityEngine.Resources.Load('./res/test1/UI Root.js', 'GameObject');
+  UnityEngine.Resources.Load('./res/test1/UI Root.js', 'GameObject', function(go) {
+    console.log(go);
+    var sprite = go.GetComponentInChildren('UISprite');
+    var sprites = go.GetComponentsInChildren('UISprite');
+    console.log(sprites.length);
+  });
 };
 
 //UnityEngine.Resources.Load('./res/test2/UI_Atlas_Login.js', 'UIAtlas');

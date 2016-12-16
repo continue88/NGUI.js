@@ -16,16 +16,22 @@ UnityEngine.GameObject.prototype = {
 		}
 	},
 	GetComponentInChildren: function(typeName) {
-		var testList = [this.transform];
+		var type = UnityEngine.GetType(typeName);
+		var comp = this.GetComponent(type);
+		if (comp !== undefined) return comp;
 		var switchList = [];
+		var testList = [this.transform];
 		while (true) {
 			switchList.length = 0;
 			for (var i in testList) {
 				var transform = testList[i]; 
-				var comp = transform.gameObject.GetComponent(typeName);
-				if (comp !== undefined) return comp;
-				for (var c in transform.children)
-					switchList.push(transform.children[c]);
+				for (var c in transform.children) {
+					var child = transform.children[c];
+					var comp = child.gameObject.GetComponent(type);
+					if (comp !== undefined) return comp; // check child.
+					if (child.children.length > 0)
+						switchList.push(child);
+				}
 			}
 			if (switchList.length === 0) break;
 			var tmp = testList;
@@ -35,16 +41,23 @@ UnityEngine.GameObject.prototype = {
 	},
 	GetComponentsInChildren: function(typeName) {
 		var foundList = [];
-		var testList = [this.transform];
+		var type = UnityEngine.GetType(typeName);
+		var comp = this.GetComponent(type);
+		if (comp !== undefined) foundList.push(comp);
 		var switchList = [];
+		var testList = [this.transform];
+		var type = UnityEngine.GetType(typeName);
 		while (true) {
 			switchList.length = 0;
 			for (var i in testList) {
 				var transform = testList[i]; 
-				var comp = transform.gameObject.GetComponent(typeName);
-				if (comp !== undefined) foundList.push(comp);
-				for (var c in transform.children)
-					switchList.push(transform.children[c]);
+				for (var c in transform.children) {
+					var child = transform.children[c];
+					var comp = child.gameObject.GetComponent(type);
+					if (comp !== undefined) foundList.push(comp);
+					if (child.children.length > 0)
+						switchList.push(child);
+				}
 			}
 			if (switchList.length === 0) break;
 			var tmp = testList;
