@@ -89,13 +89,13 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		return count;
 	},
 	Load: function(json) {
-		NGUI.UIRect.Load.call(this, json);
+		NGUI.UIRect.prototype.Load.call(this, json);
 		this.mAlpha = json.alpha | 1;
 		this.mDepth = json.depth | 0;
 		this.mClipping = json.clipping | Clipping.None;
 		this.mClipOffset.set(json.clipOffset.x | 0, json.clipOffset.y | 0);
 		this.mClipRange.set(json.clipRange.x | 0, json.clipRange.y | 0, json.clipRange.z | 0, json.clipRange.w | 0);
-		this.mClipSoftness.set(json.clipOffset.x | 0, json.clipOffset.y | 0);
+		this.mClipSoftness.set(json.clipSoftness.x | 0, json.clipSoftness.y | 0);
 		this.mSortingOrder = json.sort | 0;
 		this.renderQueue = json.renderQueue | RenderQueue.Automatic;
 		this.startingRenderQueue = json.startingRenderQueue | 3000;

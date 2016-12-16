@@ -16,7 +16,6 @@ Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
 	},
 	Load: function(json) {
 		NGUI.UIBasicSprite.prototype.Load.call(this, json);
-		// json.atlas; // TODO: find atlas with name.
 		this.mAtlas = UnityEngine.Resources.Load(json.l, 'UIAtlas');
 		this.mSpriteName = json.s;
 	},

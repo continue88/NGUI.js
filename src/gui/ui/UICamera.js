@@ -1,9 +1,9 @@
 
 NGUI.UICamera = function(gameObject) {
-	NGUI.MonoBehaviour.call(this, gameObject);
+	UnityEngine.MonoBehaviour.call(this, gameObject);
 };
 
-Object.assign(NGUI.UICamera.prototype, NGUI.MonoBehaviour.prototype, {
+Object.assign(NGUI.UICamera.prototype, UnityEngine.MonoBehaviour.prototype, {
 	constructor: NGUI.UICamera,
     Load: function(json) {
         // load json.

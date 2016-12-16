@@ -29,18 +29,18 @@ NGUI.Constraint = {
 
 Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
 	constructor: NGUI.UIRoot,
-	get constraint() {
+	constraint: function() {
 		if (this.fitWidth)
 			return this.fitHeight ? NGUI.Constraint.Fit : NGUI.Constraint.FitWidth;
 		return this.fitHeight ? NGUI.Constraint.FitHeight : NGUI.Constraint.Fill;
 	},
-	get activeScaling() {
+	activeScaling: function() {
 		if (this.scalingStyle === NGUI.Scaling.ConstrainedOnMobiles)
 			return NGUI.Scaling.Constrained;
 		return this.scalingStyle;
 	},
-	get activeHeight() {
-		var scaling = this.activeScaling;
+	activeHeight: function() {
+		var scaling = this.activeScaling();
 		if (scaling === NGUI.Scaling.Flexible) {
 			var screen = NGUITools.screenSize.clone();
 			var aspect = screen.x / screen.y;
@@ -54,7 +54,7 @@ Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
 			var height = Mathf.RoundToInt((this.shrinkPortraitUI && screen.y > screen.x) ? screen.y / aspect : screen.y);
 			return height;
 		} else {
-			var cons = this.constraint;
+			var cons = this.constraint();
 			if (cons === NGUI.Constraint.FitHeight)
 				return this.manualHeight;
 			var screen = NGUITools.screenSize.clone();
@@ -64,9 +64,9 @@ Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
 			case NGUI.Constraint.FitWidth:
 				return Mathf.RoundToInt(manualWidth / aspect);
 			case NGUI.Constraint.Fit:
-				return (initialAspect > aspect) ? Mathf.RoundToInt(this.manualWidth / aspect) : manualHeight;
+				return (initialAspect > aspect) ? Mathf.RoundToInt(this.manualWidth / aspect) : this.manualHeight;
 			case NGUI.Constraint.Fill:
-				return (initialAspect < aspect) ? Mathf.RoundToInt(manualWidth / aspect) : manualHeight;
+				return (initialAspect < aspect) ? Mathf.RoundToInt(this.manualWidth / aspect) : this.manualHeight;
 			}
 			return manualHeight;
 		}
@@ -82,7 +82,7 @@ Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
 		this.scalingStyle = json.scalingStyle | this.scalingStyle;
 	},
 	Update: function() {
-		var calcActiveHeight = this.activeHeight;
+		var calcActiveHeight = this.activeHeight();
 		var floatEpsilon = 0.00001; 
 		if (calcActiveHeight > 0) {
 			var size = 2 / calcActiveHeight;

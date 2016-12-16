@@ -17,10 +17,13 @@ UnityEngine.GameObject.prototype = {
 	},
 	Load: function(json) {
 		this.name = json.n;
-		if (json.t) this.transform.Load(json.t);
-		if (json.c) {
-			for (var i in json.c) {
-				var componentData = json.c[i];
+		var trans = json.t;
+		var comps = json.c;
+		var child = json.q;
+		if (trans !== undefined) this.transform.Load(trans);
+		if (comps !== undefined) {
+			for (var i in comps) {
+				var componentData = comps[i];
 				var componentTypeName = componentData.meta_type;
 				var componentType = NGUI[componentTypeName] || UnityEngine[componentTypeName];
 				if (componentType) {
@@ -30,11 +33,11 @@ UnityEngine.GameObject.prototype = {
 				}
 			}
 		}
-		if (json.q) {
-			for (var i in json.q) {
+		if (child !== undefined) {
+			for (var i in child) {
 				var go = new UnityEngine.GameObject();
 				go.transform.setParent(this.transform);
-				go.Load(json.q[i]);
+				go.Load(child[i]);
 			}
 		}
 		// update from the root.

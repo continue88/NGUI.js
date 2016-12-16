@@ -176,6 +176,46 @@ Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
 
 
 //
+// ..\src\gui\unity3d\EventDispatcher.js
+//
+
+UnityEngine.EventDispatcher = function() {
+    this._listeners = {};
+}
+
+UnityEngine.EventDispatcher.prototype = {
+    constructor: UnityEngine.EventDispatcher,
+	on: function(type, listener) {
+		var listeners = this._listeners;
+		if (listeners[ type ] === undefined) listeners[ type ] = [];
+		if (listeners[ type ].indexOf(listener) === - 1)
+			listeners[ type ].push(listener);
+	},
+	remove: function(type, listener) {
+		var listeners = this._listeners;
+		var listenerArray = listeners[ type ];
+		if (listenerArray !== undefined) {
+			var index = listenerArray.indexOf(listener);
+			if (index !== - 1)
+				listenerArray.splice(index, 1);
+		}
+	},
+	emit: function(event) {
+		var listeners = this._listeners;
+		var listenerArray = listeners[ event.type ];
+		if (listenerArray !== undefined) {
+			event.target = this;
+			var array = [], i = 0;
+			var length = listenerArray.length;
+			for (i = 0; i < length; i ++)
+				array[ i ] = listenerArray[ i ];
+			for (i = 0; i < length; i ++)
+				array[ i ].call(this, event);
+		}
+	}
+};
+
+//
 // ..\src\gui\unity3d\GameObject.js
 //
 
@@ -197,10 +237,13 @@ UnityEngine.GameObject.prototype = {
 	},
 	Load: function(json) {
 		this.name = json.n;
-		if (json.t) this.transform.Load(json.t);
-		if (json.c) {
-			for (var i in json.c) {
-				var componentData = json.c[i];
+		var trans = json.t;
+		var comps = json.c;
+		var child = json.q;
+		if (trans !== undefined) this.transform.Load(trans);
+		if (comps !== undefined) {
+			for (var i in comps) {
+				var componentData = comps[i];
 				var componentTypeName = componentData.meta_type;
 				var componentType = NGUI[componentTypeName] || UnityEngine[componentTypeName];
 				if (componentType) {
@@ -210,11 +253,11 @@ UnityEngine.GameObject.prototype = {
 				}
 			}
 		}
-		if (json.q) {
-			for (var i in json.q) {
+		if (child !== undefined) {
+			for (var i in child) {
 				var go = new UnityEngine.GameObject();
 				go.transform.setParent(this.transform);
-				go.Load(json.q[i]);
+				go.Load(child[i]);
 			}
 		}
 		// update from the root.
@@ -710,8 +753,42 @@ UnityEngine.Rect.prototype = {
 //
 
 UnityEngine.Resources = {
-	ResourcesList: {},
-	GetDataRoot: function() { return _data_; },
+	resourcesList: {},
+	objectLoading: 0,
+	getDataRoot: function() { return _data_; },
+	getUrlName: function(url) { 
+		var name = url.substring(url.lastIndexOf('/') + 1);
+		var ext = name.lastIndexOf('.');
+		if (ext < 0) ext = undefined;
+		return name.substring(0, ext);
+	},
+	getFromCache: function(name, typeName) {
+		var typeList = this.resourcesList[typeName];
+		if (typeList !== undefined) return typeList[name]; 
+	},
+	addToCache: function(url, typeName, obj) {
+		var typeList = this.resourcesList[typeName];
+		if (typeList === undefined) 
+			typeList = this.resourcesList[typeName] = {};
+		var name = this.getUrlName(url);
+		typeList[name] = obj;
+	},
+	onLoadStartInternal: function(url) {
+		try {
+			this.objectLoading ++;
+			if (this.loadStart !== undefined) this.loadStart(url);
+		} catch (exception) {
+		}
+	},
+	onLoadFinishedInternal: function(url) {
+		try {
+			this.objectLoading--;
+			if (this.loadFinish !== undefined) this.loadFinish(url);
+			if (this.objectLoading <= 0)
+				if (this.loadAllFinish !== undefined) this.loadAllFinish();
+		} catch (exception) {
+		}
+	},
 	LoadWithType: function(url, type, onLoad) {
 		var isScript = (type === 'script'); 
 		var element = document.createElement(type);  
@@ -720,27 +797,34 @@ UnityEngine.Resources = {
 			if (element.readyState && element.readyState !== 'loaded' && element.readyState !== 'complete')  
 				return; 
 			
-			if (isScript) {
-				// the script data file should always begin with: _data_={...}
-				var dataRoot = UnityEngine.Resources.GetDataRoot();
-				dataRoot._url_ = url; // marker the url.
-				if (onLoad) onLoad(dataRoot);
-				_data_ = undefined; // clear the data root.
-			} else {
-				if (onLoad) onLoad(element);
+			try {
+				if (isScript) {
+					var dataRoot = UnityEngine.Resources.getDataRoot();
+					dataRoot._url_ = url; // marker the url.
+					if (onLoad) onLoad(dataRoot);
+				} else {
+					if (onLoad) onLoad(element);
+				}
+			} catch (exception) {
 			}
+			_data_ = undefined; // clear the data root.
+			UnityEngine.Resources.onLoadFinishedInternal(url);
 		};  
 		element.src = url;  
+		// TODO: create a resources element.
 		document.getElementsByTagName('head')[0].appendChild(element);
+		this.onLoadStartInternal(url);
 		return element;  
 	},
 	Load: function(url, typeName, onLoad) {
-		// TODO: check cache.
+		var cacheObj = this.getFromCache(this.getUrlName(url), typeName);
+		if (cacheObj !== undefined) return cacheObj;
 		this.LoadWithType(url, 'script', function(data) {
 			var type = UnityEngine[typeName] || NGUI[typeName];
 			if (type !== undefined) {
 				var obj = new type();
 				obj.Load(data);
+				UnityEngine.Resources.addToCache(url, typeName, obj);
 				if (onLoad) onLoad(obj);
 			} else {
 				console.error("Type not found:" + typeName);
@@ -748,8 +832,10 @@ UnityEngine.Resources = {
 		});
 	},
 	LoadImage: function(url, onLoad) {
-		// TODO: check cache.
+		var cacheObj = this.getFromCache(this.getUrlName(url), 'img');
+		if (cacheObj !== undefined) return cacheObj;
 		this.LoadWithType(url, 'img', function(image) {
+			UnityEngine.Resources.addToCache(url, 'img', image);
 			if (onLoad) onLoad(image);
 		});
 	},
@@ -2057,10 +2143,10 @@ NGUI.UIAtlas.prototype = {
 //
 
 NGUI.UICamera = function(gameObject) {
-	NGUI.MonoBehaviour.call(this, gameObject);
+	UnityEngine.MonoBehaviour.call(this, gameObject);
 };
 
-Object.assign(NGUI.UICamera.prototype, NGUI.MonoBehaviour.prototype, {
+Object.assign(NGUI.UICamera.prototype, UnityEngine.MonoBehaviour.prototype, {
 	constructor: NGUI.UICamera,
     Load: function(json) {
         // load json.
@@ -2161,7 +2247,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		return count;
 	},
 	Load: function(json) {
-		NGUI.UIRect.Load.call(this, json);
+		NGUI.UIRect.prototype.Load.call(this, json);
 		this.mAlpha = json.alpha | 1;
 		this.mDepth = json.depth | 0;
 		this.mClipping = json.clipping | Clipping.None;
@@ -2346,18 +2432,18 @@ NGUI.Constraint = {
 
 Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
 	constructor: NGUI.UIRoot,
-	get constraint() {
+	constraint: function() {
 		if (this.fitWidth)
 			return this.fitHeight ? NGUI.Constraint.Fit : NGUI.Constraint.FitWidth;
 		return this.fitHeight ? NGUI.Constraint.FitHeight : NGUI.Constraint.Fill;
 	},
-	get activeScaling() {
+	activeScaling: function() {
 		if (this.scalingStyle === NGUI.Scaling.ConstrainedOnMobiles)
 			return NGUI.Scaling.Constrained;
 		return this.scalingStyle;
 	},
-	get activeHeight() {
-		var scaling = this.activeScaling;
+	activeHeight: function() {
+		var scaling = this.activeScaling();
 		if (scaling === NGUI.Scaling.Flexible) {
 			var screen = NGUITools.screenSize.clone();
 			var aspect = screen.x / screen.y;
@@ -2371,7 +2457,7 @@ Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
 			var height = Mathf.RoundToInt((this.shrinkPortraitUI && screen.y > screen.x) ? screen.y / aspect : screen.y);
 			return height;
 		} else {
-			var cons = this.constraint;
+			var cons = this.constraint();
 			if (cons === NGUI.Constraint.FitHeight)
 				return this.manualHeight;
 			var screen = NGUITools.screenSize.clone();
@@ -2381,9 +2467,9 @@ Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
 			case NGUI.Constraint.FitWidth:
 				return Mathf.RoundToInt(manualWidth / aspect);
 			case NGUI.Constraint.Fit:
-				return (initialAspect > aspect) ? Mathf.RoundToInt(this.manualWidth / aspect) : manualHeight;
+				return (initialAspect > aspect) ? Mathf.RoundToInt(this.manualWidth / aspect) : this.manualHeight;
 			case NGUI.Constraint.Fill:
-				return (initialAspect < aspect) ? Mathf.RoundToInt(manualWidth / aspect) : manualHeight;
+				return (initialAspect < aspect) ? Mathf.RoundToInt(this.manualWidth / aspect) : this.manualHeight;
 			}
 			return manualHeight;
 		}
@@ -2399,7 +2485,7 @@ Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
 		this.scalingStyle = json.scalingStyle | this.scalingStyle;
 	},
 	Update: function() {
-		var calcActiveHeight = this.activeHeight;
+		var calcActiveHeight = this.activeHeight();
 		var floatEpsilon = 0.00001; 
 		if (calcActiveHeight > 0) {
 			var size = 2 / calcActiveHeight;
@@ -2441,7 +2527,6 @@ Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
 	},
 	Load: function(json) {
 		NGUI.UIBasicSprite.prototype.Load.call(this, json);
-		// json.atlas; // TODO: find atlas with name.
 		this.mAtlas = UnityEngine.Resources.Load(json.l, 'UIAtlas');
 		this.mSpriteName = json.s;
 	},

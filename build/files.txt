@@ -3,6 +3,7 @@ unity3d\Color.js
 unity3d\Color32.js
 unity3d\Component.js
 unity3d\Camera.js
+unity3d\EventDispatcher.js
 unity3d\GameObject.js
 unity3d\Mathf.js
 unity3d\Matrix4x4.js
