@@ -185,11 +185,7 @@ public class NguiJS
         return data;
     }
 
-    public static LitJson.JsonData Export(Color v)
-    {
-        return Export((Color32)v);
-    }
-
+    public static LitJson.JsonData Export(Color v) { return Export((Color32)v); }
     public static LitJson.JsonData Export(Color32 color32)
     {
         var data = new LitJson.JsonData();
