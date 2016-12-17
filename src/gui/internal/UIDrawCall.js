@@ -43,6 +43,7 @@ NGUI.UIDrawCall.prototype = {
 			indexBuffer[index++] = i + 3;
 			indexBuffer[index++] = i;
 		}
+		return indexBuffer;
 	},
 	UpdateGeometry: function(count) {
 		this.mMesh = new UnityEngine.Mesh();

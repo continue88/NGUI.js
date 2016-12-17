@@ -59,6 +59,7 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 					gl.uniform4f(programInfo.uniforms._ClipRange2, clipRange.x, clipRange.y, clipRange.z, clipRange.w);
 					gl.uniform4f(programInfo.uniforms._ClipRange2, clipArgs.x, clipArgs.y, clipArgs.z, clipArgs.w);
 				}
+
 				texture.SetupTexture(gl, 0); // setup texture.
 				if (mesh.hasIndexBuffer())
 					gl.drawElements(gl.TRIANGLES, mesh.triangleCount * 3, gl.UNSIGNED_SHORT, 0);
@@ -135,12 +136,12 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 			'}'
 		].join('\n'), [
 			'uniform sampler2D _MainTex;',
-			'uniform vec2 _ClipArgs0;',
+			'uniform vec4 _ClipArgs0;',
 			'varying vec2 vUV;',
 			'varying vec3 vColor;',
 			'varying vec2 vWorldPos;',
 			'void main() {',
-			'   vec2 factor = (vec2(1.0, 1.0) - abs(vWorldPos)) * _ClipArgs0;',
+			'   vec2 factor = (vec2(1.0, 1.0) - abs(vWorldPos)) * _ClipArgs0.xy;',
 			'   vec4 col = texture2D(_MainTex, vUV) * vec4(vColor, 1.0);',
 			'   col.a *= clamp( min(factor.x, factor.y), 0.0, 1.0);',
 			'   gl_FragColor = col;',

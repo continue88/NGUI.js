@@ -257,7 +257,7 @@ public class NguiJS
     }
     
     public static void Export(LitJson.JsonData data, string name, int value, int def) { if (value != def) data[name] = value; }
-    public static void Export(LitJson.JsonData data, string name, float value, float def) { if (value != def) data[name] = value.ToString("0.##"); }
+    public static void Export(LitJson.JsonData data, string name, float value, float def) { if (value != def) data[name] = System.Math.Round(value, 2); }
     public static void Export(LitJson.JsonData data, string name, bool value, bool def) { if (value != def) data[name] = value; }
     public static void Export(LitJson.JsonData data, string name, Vector2 value, Vector2 def) { data[name] = Export(value, def); }
     public static void Export(LitJson.JsonData data, string name, Vector3 value, Vector3 def) { data[name] = Export(value, def); }

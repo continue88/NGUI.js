@@ -698,7 +698,7 @@ UnityEngine.Mesh.prototype = {
 		if (this.vertices !== undefined) this.UpdateBuffer(gl, 'position', this.vertices, gl.ARRAY_BUFFER, true, 3, gl.FLOAT, false, 3 * 4, 0);
 		if (this.uv !== undefined) this.UpdateBuffer(gl, 'uv', this.uv, gl.ARRAY_BUFFER, true, 2, gl.FLOAT, false, 2 * 4, 0);
 		if (this.colors !== undefined) this.UpdateBuffer(gl, 'color', this.colors, gl.ARRAY_BUFFER, true, 4, gl.FLOAT, false, 4 * 4, 0);
-		if (this.colors32 !== undefined) this.UpdateBuffer(gl, 'color', this.colors32, gl.ARRAY_BUFFER, true, 4, gl.GL_UNSIGNED_BYTE, false, 4 * 1, 0);
+		if (this.colors32 !== undefined) this.UpdateBuffer(gl, 'color', this.colors32, gl.ARRAY_BUFFER, true, 4, gl.UNSIGNED_BYTE, false, 4 * 1, 0);
 		if (this.triangles !== undefined) this.UpdateBuffer(gl, 'index', this.triangles, gl.ELEMENT_ARRAY_BUFFER, false, 1, gl.UNSIGNED_SHORT, false, 1 * 2, 0);
 		this.vertices = undefined;
 		this.uv = undefined;
@@ -722,6 +722,8 @@ UnityEngine.Mesh.prototype = {
 			vertexAttrib.normalized, 
 			vertexAttrib.stride,
 			vertexAttrib.offset);
+		//var error = gl.getError();
+		//if (error != gl.NO_ERROR)	console.error(vertexAttrib);
 	},
 	SetupVertexAttribs: function(gl, programAttributes) {
 		if (this.vertices !== undefined) this.UpdateBuffers(gl);
@@ -944,7 +946,7 @@ UnityEngine.Texture2D.prototype = {
 			gl.bindTexture(gl.TEXTURE_2D, this.glTexture);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
-			gl.texImage2D(gl.TEXTURE_2D, 0, this.glFormat, this.glFormat | gl.RGBA, this.glType | gl.UNSIGNED_BYTE, this.image);
+			gl.texImage2D(gl.TEXTURE_2D, 0, this.glFormat | gl.RGBA, this.glFormat | gl.RGBA, this.glType | gl.UNSIGNED_BYTE, this.image);
 			return;
 		}
 		gl.activeTexture(gl.TEXTURE0 + slot);
@@ -1394,6 +1396,7 @@ NGUI.UIDrawCall.prototype = {
 			indexBuffer[index++] = i + 3;
 			indexBuffer[index++] = i;
 		}
+		return indexBuffer;
 	},
 	UpdateGeometry: function(count) {
 		this.mMesh = new UnityEngine.Mesh();
@@ -2317,6 +2320,7 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 					gl.uniform4f(programInfo.uniforms._ClipRange2, clipRange.x, clipRange.y, clipRange.z, clipRange.w);
 					gl.uniform4f(programInfo.uniforms._ClipRange2, clipArgs.x, clipArgs.y, clipArgs.z, clipArgs.w);
 				}
+
 				texture.SetupTexture(gl, 0); // setup texture.
 				if (mesh.hasIndexBuffer())
 					gl.drawElements(gl.TRIANGLES, mesh.triangleCount * 3, gl.UNSIGNED_SHORT, 0);
@@ -2393,12 +2397,12 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 			'}'
 		].join('\n'), [
 			'uniform sampler2D _MainTex;',
-			'uniform vec2 _ClipArgs0;',
+			'uniform vec4 _ClipArgs0;',
 			'varying vec2 vUV;',
 			'varying vec3 vColor;',
 			'varying vec2 vWorldPos;',
 			'void main() {',
-			'   vec2 factor = (vec2(1.0, 1.0) - abs(vWorldPos)) * _ClipArgs0;',
+			'   vec2 factor = (vec2(1.0, 1.0) - abs(vWorldPos)) * _ClipArgs0.xy;',
 			'   vec4 col = texture2D(_MainTex, vUV) * vec4(vColor, 1.0);',
 			'   col.a *= clamp( min(factor.x, factor.y), 0.0, 1.0);',
 			'   gl_FragColor = col;',
