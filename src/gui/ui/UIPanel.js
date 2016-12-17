@@ -66,7 +66,11 @@ NGUI.UIPanel.UpdateAll = function(frame) {
 				rq = Math.max(rq, p.startingRenderQueue + 1);
 		}
 	}
-}
+};
+NGUI.UIPanel.Foreach = function(action) {
+	var list = NGUI.UIPanel.list;
+	for (var i in list) action(list[i]);
+};
 
 Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 	constructor: NGUI.UIPanel,
@@ -214,7 +218,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 				w.drawCall = undefined;
 				continue;
 			}
-			var mt = w.texture;
+			var mt = w.texture();
 			if (texture != mt) {
 				if (dc !== undefined && dc.verts.length != 0) {
 					this.drawCalls.push(dc);

@@ -21,47 +21,51 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 		for (var i = 0; i < maxVertexAttributes; i++)
 			gl.disableVertexAttribArray( i );
 		
-		var drawCalls = uiRoot.GetDrawCalls();
 		var camera = uiRoot.GetCamera();
-		for (var i in drawCalls) {
-			var drawCall = drawCalls[i];
-			var mesh = drawCall.mMesh;
-			var texture = drawCall.texture;
-			var programInfo = programInfos[drawCall.mClipCount];
-			if (mesh === undefined || texture === undefined || programInfo === undefined)
-				continue;
+		NGUI.UIPanel.Foreach(function(panel) {
+			var drawCalls = panel.drawCalls;
+			for (var i in drawCalls) {
+				var drawCall = drawCalls[i];
+				drawCall.OnWillRenderObject();
 
-			gl.useProgram( programInfo.program ); // setup shader programs.
-			mesh.SetupVertexAttribs(gl, programInfo.attributes); // setup vertex data.
+				var mesh = drawCall.mMesh;
+				var texture = drawCall.texture;
+				var programInfo = programInfos[drawCall.mClipCount];
+				if (mesh === undefined || texture === undefined || programInfo === undefined)
+					continue;
 
-			var mvp = UnityEngine.Matrix4x4.Temp;// TODO: setup the UNITY_MATRIX_MVP (ModelViewProj)
-			mvp.MultiplyMatrices(camera.worldToCameraMatrix, drawCall.localToWorldMatrix);
-			mvp.MultiplyMatrices(camera.projectionMatrix, mvp);
-			gl.uniformMatrix4fv(programInfo.uniforms.UNITY_MATRIX_MVP, false, mvp.elements);
-			if (programInfo.uniforms._ClipRange0 !== undefined) {
-				var clipRange = drawCall.ClipRange[0],
-					clipArgs = drawCall.ClipArgs[0];
-				gl.uniform4f(programInfo.uniforms._ClipRange0, clipRange.x, clipRange.y, clipRange.z, clipRange.w);
-				gl.uniform4f(programInfo.uniforms._ClipArgs0, clipArgs.x, clipArgs.y, clipArgs.z, clipArgs.w);
+				gl.useProgram( programInfo.program ); // setup shader programs.
+				mesh.SetupVertexAttribs(gl, programInfo.attributes); // setup vertex data.
+
+				var mvp = UnityEngine.Matrix4x4.Temp;// TODO: setup the UNITY_MATRIX_MVP (ModelViewProj)
+				mvp.MultiplyMatrices(camera.worldToCameraMatrix, drawCall.localToWorldMatrix);
+				mvp.MultiplyMatrices(camera.projectionMatrix, mvp);
+				gl.uniformMatrix4fv(programInfo.uniforms.UNITY_MATRIX_MVP, false, mvp.elements);
+				if (programInfo.uniforms._ClipRange0 !== undefined) {
+					var clipRange = drawCall.ClipRange[0],
+						clipArgs = drawCall.ClipArgs[0];
+					gl.uniform4f(programInfo.uniforms._ClipRange0, clipRange.x, clipRange.y, clipRange.z, clipRange.w);
+					gl.uniform4f(programInfo.uniforms._ClipArgs0, clipArgs.x, clipArgs.y, clipArgs.z, clipArgs.w);
+				}
+				if (programInfo.uniforms._ClipRange1 !== undefined) {
+					var clipRange = drawCall.ClipRange[1],
+						clipArgs = drawCall.ClipArgs[1];
+					gl.uniform4f(programInfo.uniforms._ClipRange1, clipRange.x, clipRange.y, clipRange.z, clipRange.w);
+					gl.uniform4f(programInfo.uniforms._ClipRange1, clipArgs.x, clipArgs.y, clipArgs.z, clipArgs.w);
+				}
+				if (programInfo.uniforms._ClipRange2 !== undefined) {
+					var clipRange = drawCall.ClipRange[2],
+						clipArgs = drawCall.ClipArgs[2];
+					gl.uniform4f(programInfo.uniforms._ClipRange2, clipRange.x, clipRange.y, clipRange.z, clipRange.w);
+					gl.uniform4f(programInfo.uniforms._ClipRange2, clipArgs.x, clipArgs.y, clipArgs.z, clipArgs.w);
+				}
+				texture.SetupTexture(gl, 0); // setup texture.
+				if (mesh.hasIndexBuffer())
+					gl.drawElements(gl.TRIANGLES, mesh.triangleCount * 3, gl.UNSIGNED_SHORT, 0);
+				else
+					gl.drawArrays(gl.TRIANGLES, 0, mesh.vertexCount);
 			}
-			if (programInfo.uniforms._ClipRange1 !== undefined) {
-				var clipRange = drawCall.ClipRange[1],
-					clipArgs = drawCall.ClipArgs[1];
-				gl.uniform4f(programInfo.uniforms._ClipRange1, clipRange.x, clipRange.y, clipRange.z, clipRange.w);
-				gl.uniform4f(programInfo.uniforms._ClipRange1, clipArgs.x, clipArgs.y, clipArgs.z, clipArgs.w);
-			}
-			if (programInfo.uniforms._ClipRange2 !== undefined) {
-				var clipRange = drawCall.ClipRange[2],
-					clipArgs = drawCall.ClipArgs[2];
-				gl.uniform4f(programInfo.uniforms._ClipRange2, clipRange.x, clipRange.y, clipRange.z, clipRange.w);
-				gl.uniform4f(programInfo.uniforms._ClipRange2, clipArgs.x, clipArgs.y, clipArgs.z, clipArgs.w);
-			}
-			texture.SetupTexture(gl, 0); // setup texture.
-			if (mesh.hasIndexBuffer())
-				gl.drawElements(gl.TRIANGLES, mesh.triangleCount * 3, gl.UNSIGNED_SHORT, 0);
-			else
-				gl.drawArrays(gl.TRIANGLES, 0, mesh.vertexCount);
-		}
+		});
 
 		// restore gl
 		renderer.resetGLState();

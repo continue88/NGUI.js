@@ -78,7 +78,7 @@ NGUI.UIDrawCall.prototype = {
 					diff.z = NGUIMath.WrapAngle(diff.z);
 					angle = diff.z;
 				}
-				this.SetClipping(i++, cr, currentPanel.clipSoftness, angle);
+				this.SetClipping(i++, cr, currentPanel.mClipSoftness, angle);
 			}
 			currentPanel = currentPanel.parentPanel;
 		}

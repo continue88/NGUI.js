@@ -40,8 +40,9 @@ UnityEngine.Resources = {
 	},
 	LoadWithType: function(url, type, onLoad) {
 		var isScript = (type === 'script'); 
-		var element = document.createElement(type);  
+		var element = document.createElement(type);
 		if (isScript) element.type = 'text/javascript';
+		else element.crossOrigin = true;
 		element.onload = element.onreadystatechange = function() {  
 			if (element.readyState && element.readyState !== 'loaded' && element.readyState !== 'complete')  
 				return; 

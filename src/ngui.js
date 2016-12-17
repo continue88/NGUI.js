@@ -867,8 +867,9 @@ UnityEngine.Resources = {
 	},
 	LoadWithType: function(url, type, onLoad) {
 		var isScript = (type === 'script'); 
-		var element = document.createElement(type);  
+		var element = document.createElement(type);
 		if (isScript) element.type = 'text/javascript';
+		else element.crossOrigin = true;
 		element.onload = element.onreadystatechange = function() {  
 			if (element.readyState && element.readyState !== 'loaded' && element.readyState !== 'complete')  
 				return; 
@@ -941,8 +942,8 @@ UnityEngine.Texture2D.prototype = {
 			this.glTexture = gl.createTexture();
 			gl.activeTexture(gl.TEXTURE0 + slot);
 			gl.bindTexture(gl.TEXTURE_2D, this.glTexture);
-			gl.texParameteri( type, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
-			gl.texParameteri( type, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
 			gl.texImage2D(gl.TEXTURE_2D, 0, this.glFormat, this.glFormat | gl.RGBA, this.glType | gl.UNSIGNED_BYTE, this.image);
 			return;
 		}
@@ -1428,7 +1429,7 @@ NGUI.UIDrawCall.prototype = {
 					diff.z = NGUIMath.WrapAngle(diff.z);
 					angle = diff.z;
 				}
-				this.SetClipping(i++, cr, currentPanel.clipSoftness, angle);
+				this.SetClipping(i++, cr, currentPanel.mClipSoftness, angle);
 			}
 			currentPanel = currentPanel.parentPanel;
 		}
@@ -2278,47 +2279,51 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 		for (var i = 0; i < maxVertexAttributes; i++)
 			gl.disableVertexAttribArray( i );
 		
-		var drawCalls = uiRoot.GetDrawCalls();
 		var camera = uiRoot.GetCamera();
-		for (var i in drawCalls) {
-			var drawCall = drawCalls[i];
-			var mesh = drawCall.mMesh;
-			var texture = drawCall.texture;
-			var programInfo = programInfos[drawCall.mClipCount];
-			if (mesh === undefined || texture === undefined || programInfo === undefined)
-				continue;
+		NGUI.UIPanel.Foreach(function(panel) {
+			var drawCalls = panel.drawCalls;
+			for (var i in drawCalls) {
+				var drawCall = drawCalls[i];
+				drawCall.OnWillRenderObject();
 
-			gl.useProgram( programInfo.program ); // setup shader programs.
-			mesh.SetupVertexAttribs(gl, programInfo.attributes); // setup vertex data.
+				var mesh = drawCall.mMesh;
+				var texture = drawCall.texture;
+				var programInfo = programInfos[drawCall.mClipCount];
+				if (mesh === undefined || texture === undefined || programInfo === undefined)
+					continue;
 
-			var mvp = UnityEngine.Matrix4x4.Temp;// TODO: setup the UNITY_MATRIX_MVP (ModelViewProj)
-			mvp.MultiplyMatrices(camera.worldToCameraMatrix, drawCall.localToWorldMatrix);
-			mvp.MultiplyMatrices(camera.projectionMatrix, mvp);
-			gl.uniformMatrix4fv(programInfo.uniforms.UNITY_MATRIX_MVP, false, mvp.elements);
-			if (programInfo.uniforms._ClipRange0 !== undefined) {
-				var clipRange = drawCall.ClipRange[0],
-					clipArgs = drawCall.ClipArgs[0];
-				gl.uniform4f(programInfo.uniforms._ClipRange0, clipRange.x, clipRange.y, clipRange.z, clipRange.w);
-				gl.uniform4f(programInfo.uniforms._ClipArgs0, clipArgs.x, clipArgs.y, clipArgs.z, clipArgs.w);
+				gl.useProgram( programInfo.program ); // setup shader programs.
+				mesh.SetupVertexAttribs(gl, programInfo.attributes); // setup vertex data.
+
+				var mvp = UnityEngine.Matrix4x4.Temp;// TODO: setup the UNITY_MATRIX_MVP (ModelViewProj)
+				mvp.MultiplyMatrices(camera.worldToCameraMatrix, drawCall.localToWorldMatrix);
+				mvp.MultiplyMatrices(camera.projectionMatrix, mvp);
+				gl.uniformMatrix4fv(programInfo.uniforms.UNITY_MATRIX_MVP, false, mvp.elements);
+				if (programInfo.uniforms._ClipRange0 !== undefined) {
+					var clipRange = drawCall.ClipRange[0],
+						clipArgs = drawCall.ClipArgs[0];
+					gl.uniform4f(programInfo.uniforms._ClipRange0, clipRange.x, clipRange.y, clipRange.z, clipRange.w);
+					gl.uniform4f(programInfo.uniforms._ClipArgs0, clipArgs.x, clipArgs.y, clipArgs.z, clipArgs.w);
+				}
+				if (programInfo.uniforms._ClipRange1 !== undefined) {
+					var clipRange = drawCall.ClipRange[1],
+						clipArgs = drawCall.ClipArgs[1];
+					gl.uniform4f(programInfo.uniforms._ClipRange1, clipRange.x, clipRange.y, clipRange.z, clipRange.w);
+					gl.uniform4f(programInfo.uniforms._ClipRange1, clipArgs.x, clipArgs.y, clipArgs.z, clipArgs.w);
+				}
+				if (programInfo.uniforms._ClipRange2 !== undefined) {
+					var clipRange = drawCall.ClipRange[2],
+						clipArgs = drawCall.ClipArgs[2];
+					gl.uniform4f(programInfo.uniforms._ClipRange2, clipRange.x, clipRange.y, clipRange.z, clipRange.w);
+					gl.uniform4f(programInfo.uniforms._ClipRange2, clipArgs.x, clipArgs.y, clipArgs.z, clipArgs.w);
+				}
+				texture.SetupTexture(gl, 0); // setup texture.
+				if (mesh.hasIndexBuffer())
+					gl.drawElements(gl.TRIANGLES, mesh.triangleCount * 3, gl.UNSIGNED_SHORT, 0);
+				else
+					gl.drawArrays(gl.TRIANGLES, 0, mesh.vertexCount);
 			}
-			if (programInfo.uniforms._ClipRange1 !== undefined) {
-				var clipRange = drawCall.ClipRange[1],
-					clipArgs = drawCall.ClipArgs[1];
-				gl.uniform4f(programInfo.uniforms._ClipRange1, clipRange.x, clipRange.y, clipRange.z, clipRange.w);
-				gl.uniform4f(programInfo.uniforms._ClipRange1, clipArgs.x, clipArgs.y, clipArgs.z, clipArgs.w);
-			}
-			if (programInfo.uniforms._ClipRange2 !== undefined) {
-				var clipRange = drawCall.ClipRange[2],
-					clipArgs = drawCall.ClipArgs[2];
-				gl.uniform4f(programInfo.uniforms._ClipRange2, clipRange.x, clipRange.y, clipRange.z, clipRange.w);
-				gl.uniform4f(programInfo.uniforms._ClipRange2, clipArgs.x, clipArgs.y, clipArgs.z, clipArgs.w);
-			}
-			texture.SetupTexture(gl, 0); // setup texture.
-			if (mesh.hasIndexBuffer())
-				gl.drawElements(gl.TRIANGLES, mesh.triangleCount * 3, gl.UNSIGNED_SHORT, 0);
-			else
-				gl.drawArrays(gl.TRIANGLES, 0, mesh.vertexCount);
-		}
+		});
 
 		// restore gl
 		renderer.resetGLState();
@@ -2708,7 +2713,11 @@ NGUI.UIPanel.UpdateAll = function(frame) {
 				rq = Math.max(rq, p.startingRenderQueue + 1);
 		}
 	}
-}
+};
+NGUI.UIPanel.Foreach = function(action) {
+	var list = NGUI.UIPanel.list;
+	for (var i in list) action(list[i]);
+};
 
 Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 	constructor: NGUI.UIPanel,
@@ -2856,7 +2865,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 				w.drawCall = undefined;
 				continue;
 			}
-			var mt = w.texture;
+			var mt = w.texture();
 			if (texture != mt) {
 				if (dc !== undefined && dc.verts.length != 0) {
 					this.drawCalls.push(dc);
@@ -2898,8 +2907,6 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 NGUI.UIRoot = function(gameObject) {
 	UnityEngine.MonoBehaviour.call(this, gameObject);
 	this.camera = undefined;
-	this.drawCalls = [];
-
 	this.manualWidth = 1280;
 	this.manualHeight = 1280;
 	this.minimumHeight = 320;

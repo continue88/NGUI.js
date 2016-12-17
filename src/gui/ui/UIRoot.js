@@ -2,8 +2,6 @@
 NGUI.UIRoot = function(gameObject) {
 	UnityEngine.MonoBehaviour.call(this, gameObject);
 	this.camera = undefined;
-	this.drawCalls = [];
-
 	this.manualWidth = 1280;
 	this.manualHeight = 1280;
 	this.minimumHeight = 320;

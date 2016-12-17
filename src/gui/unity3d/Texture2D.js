@@ -22,8 +22,8 @@ UnityEngine.Texture2D.prototype = {
 			this.glTexture = gl.createTexture();
 			gl.activeTexture(gl.TEXTURE0 + slot);
 			gl.bindTexture(gl.TEXTURE_2D, this.glTexture);
-			gl.texParameteri( type, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
-			gl.texParameteri( type, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
 			gl.texImage2D(gl.TEXTURE_2D, 0, this.glFormat, this.glFormat | gl.RGBA, this.glType | gl.UNSIGNED_BYTE, this.image);
 			return;
 		}
