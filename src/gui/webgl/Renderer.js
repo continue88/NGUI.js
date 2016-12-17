@@ -11,6 +11,17 @@ WebGL.Renderer = function (parameters) {
 	function onContextLost() {
 	}
 
+	this.setSize = function ( width, height ) {
+		this.width = width;
+		this.height = height;
+		canvas.width = width;
+		canvas.height = height;
+		this.domElement.style.width = width + 'px';
+		this.domElement.style.height = height + 'px';
+	};
+
+	this.setSize(NGUITools.screenSize.x, NGUITools.screenSize.y);
+
 	function getGLContext(parameters, canvas) {
 		var glContext = undefined;
 		try {

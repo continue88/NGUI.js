@@ -1331,7 +1331,7 @@ NGUIMath = {
 //
 
 NGUITools = {
-	screenSize: new UnityEngine.Vector2(100, 100),
+	screenSize: new UnityEngine.Vector2(640, 480),
 	FindInParents: function(go, typeName) {
 		var comp = go.GetComponent(typeName);
 		if (comp === undefined) {
@@ -2271,6 +2271,9 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 		if (programInfos === undefined)
 			programInfos = createProgramInfos();
 
+		gl.clearColor(1, 0, 0, 1);
+		gl.clear(gl.COLOR_BUFFER_BIT);
+
 		gl.disable( gl.CULL_FACE );
 		gl.disable( gl.DEPTH_TEST );
 		gl.depthMask( false );
@@ -2550,6 +2553,17 @@ WebGL.Renderer = function (parameters) {
 	
 	function onContextLost() {
 	}
+
+	this.setSize = function ( width, height ) {
+		this.width = width;
+		this.height = height;
+		canvas.width = width;
+		canvas.height = height;
+		this.domElement.style.width = width + 'px';
+		this.domElement.style.height = height + 'px';
+	};
+
+	this.setSize(NGUITools.screenSize.x, NGUITools.screenSize.y);
 
 	function getGLContext(parameters, canvas) {
 		var glContext = undefined;

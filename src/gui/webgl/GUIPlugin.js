@@ -10,6 +10,9 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 		if (programInfos === undefined)
 			programInfos = createProgramInfos();
 
+		gl.clearColor(1, 0, 0, 1);
+		gl.clear(gl.COLOR_BUFFER_BIT);
+
 		gl.disable( gl.CULL_FACE );
 		gl.disable( gl.DEPTH_TEST );
 		gl.depthMask( false );

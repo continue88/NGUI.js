@@ -28,9 +28,11 @@ UnityEngine.Resources.loadAllFinish = function(){
 
     var uiRoot = go.GetComponentInChildren('UIRoot');
     var guiRender = new WebGL.Renderer({antialias: true});
+    document.body.appendChild(guiRender.domElement);
+
     var guiPlugin = new WebGL.GUIPlugin(guiRender, uiRoot);
     function render() {
-      //requestAnimationFrame( render );
+      requestAnimationFrame( render );
       guiPlugin.render();
     }
     render();
