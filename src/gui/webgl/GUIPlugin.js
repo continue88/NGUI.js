@@ -43,6 +43,10 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 				var mvp = UnityEngine.Matrix4x4.Temp;// TODO: setup the UNITY_MATRIX_MVP (ModelViewProj)
 				mvp.MultiplyMatrices(camera.worldToCameraMatrix, drawCall.localToWorldMatrix);
 				mvp.MultiplyMatrices(camera.projectionMatrix, mvp);
+				//console.log(drawCall.localToWorldMatrix.elements);
+				//console.log(camera.projectionMatrix.elements);
+				//console.log(camera.worldToCameraMatrix.elements);
+				//console.log(mvp.elements);
 				gl.uniformMatrix4fv(programInfo.uniforms.UNITY_MATRIX_MVP, false, mvp.elements);
 				if (programInfo.uniforms._ClipRange0 !== undefined) {
 					var clipRange = drawCall.ClipRange[0],

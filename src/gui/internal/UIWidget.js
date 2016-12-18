@@ -14,6 +14,8 @@ NGUI.UIWidget = function(gameObject) {
 	this.mIsVisibleByPanel = true;
 	this.mDrawRegion = new UnityEngine.Vector4(0, 0, 1, 1);
 	this.mLocalToPanel = new UnityEngine.Matrix4x4();
+	this.mOldV0 = new UnityEngine.Vector3();
+	this.mOldV1 = new UnityEngine.Vector3();
 
 	// public variables.
 	this.minWidth = 2;

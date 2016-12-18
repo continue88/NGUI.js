@@ -11,8 +11,8 @@ UnityEngine.Camera = function(gameObject) {
 	this.rect = new UnityEngine.Rect();
 
 	this.projectionMatrix = new UnityEngine.Matrix4x4();
-	this.cameraToWorldMatrix = this.transform.localToWorldMatrix;
-	this.worldToCameraMatrix = this.transform.worldToLocalMatrix;
+	this.cameraToWorldMatrix = new UnityEngine.Matrix4x4();
+	this.worldToCameraMatrix = new UnityEngine.Matrix4x4();
 
 	// cached matrix. 
 	this.viewProjMatrix = undefined;
@@ -27,6 +27,9 @@ Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
 			this.projectionMatrix.Ortho(-this.aspect, this.aspect, 1, -1, this.nearClipPlane, this.farClipPlane);
 		else
 			this.projectionMatrix.Perspective(this.fieldOfView, this.aspect, this.nearClipPlane, this.farClipPlane);
+
+		this.cameraToWorldMatrix.SetTRS(this.transform.position, this.transform.rotation, new UnityEngine.Vector3(1, 1, 1));
+		this.worldToCameraMatrix.getInverse(this.cameraToWorldMatrix);
 	},
 	Load: function(json) {
 		this.isOrthoGraphic = json.orth;

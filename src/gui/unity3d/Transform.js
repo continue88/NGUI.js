@@ -43,6 +43,7 @@ Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, 
 	Update: function() {
 		if (!this.needUpdate) return;
 		this.needUpdate = false;
+		this.hasChanged = true; // tell other i changed.
 		var localMatrix = new UnityEngine.Matrix4x4();
 		localMatrix.SetTRS(this.localPosition, this.localRotation, this.localScale);
 		if (this.parent === undefined) {

@@ -102,8 +102,8 @@ UnityEngine.Camera = function(gameObject) {
 	this.rect = new UnityEngine.Rect();
 
 	this.projectionMatrix = new UnityEngine.Matrix4x4();
-	this.cameraToWorldMatrix = this.transform.localToWorldMatrix;
-	this.worldToCameraMatrix = this.transform.worldToLocalMatrix;
+	this.cameraToWorldMatrix = new UnityEngine.Matrix4x4();
+	this.worldToCameraMatrix = new UnityEngine.Matrix4x4();
 
 	// cached matrix. 
 	this.viewProjMatrix = undefined;
@@ -118,6 +118,9 @@ Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
 			this.projectionMatrix.Ortho(-this.aspect, this.aspect, 1, -1, this.nearClipPlane, this.farClipPlane);
 		else
 			this.projectionMatrix.Perspective(this.fieldOfView, this.aspect, this.nearClipPlane, this.farClipPlane);
+
+		this.cameraToWorldMatrix.SetTRS(this.transform.position, this.transform.rotation, new UnityEngine.Vector3(1, 1, 1));
+		this.worldToCameraMatrix.getInverse(this.cameraToWorldMatrix);
 	},
 	Load: function(json) {
 		this.isOrthoGraphic = json.orth;
@@ -1002,6 +1005,7 @@ Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, 
 	Update: function() {
 		if (!this.needUpdate) return;
 		this.needUpdate = false;
+		this.hasChanged = true; // tell other i changed.
 		var localMatrix = new UnityEngine.Matrix4x4();
 		localMatrix.SetTRS(this.localPosition, this.localRotation, this.localScale);
 		if (this.parent === undefined) {
@@ -1560,6 +1564,8 @@ NGUI.UIWidget = function(gameObject) {
 	this.mIsVisibleByPanel = true;
 	this.mDrawRegion = new UnityEngine.Vector4(0, 0, 1, 1);
 	this.mLocalToPanel = new UnityEngine.Matrix4x4();
+	this.mOldV0 = new UnityEngine.Vector3();
+	this.mOldV1 = new UnityEngine.Vector3();
 
 	// public variables.
 	this.minWidth = 2;
@@ -2304,6 +2310,10 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 				var mvp = UnityEngine.Matrix4x4.Temp;// TODO: setup the UNITY_MATRIX_MVP (ModelViewProj)
 				mvp.MultiplyMatrices(camera.worldToCameraMatrix, drawCall.localToWorldMatrix);
 				mvp.MultiplyMatrices(camera.projectionMatrix, mvp);
+				//console.log(drawCall.localToWorldMatrix.elements);
+				//console.log(camera.projectionMatrix.elements);
+				//console.log(camera.worldToCameraMatrix.elements);
+				//console.log(mvp.elements);
 				gl.uniformMatrix4fv(programInfo.uniforms.UNITY_MATRIX_MVP, false, mvp.elements);
 				if (programInfo.uniforms._ClipRange0 !== undefined) {
 					var clipRange = drawCall.ClipRange[0],
@@ -2807,13 +2817,13 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 	},
 	UpdateTransformMatrix: function(frame) {
 		this.worldToLocal = this.transform.worldToLocalMatrix;
-		var size = this.getViewSize().multiplyScalar(0.5);
+		var size = this.getViewSize();
 		var x = this.mClipOffset.x + this.mClipRange.x;
 		var y = this.mClipOffset.y + this.mClipRange.y;
-		this.mMin.x = x - size.x;
-		this.mMin.y = y - size.y;
-		this.mMax.x = x + size.x;
-		this.mMax.y = y + size.y;
+		this.mMin.x = x - size.x * 0.5;
+		this.mMin.y = y - size.y * 0.5;
+		this.mMax.x = x + size.x * 0.5;
+		this.mMax.y = y + size.y * 0.5;
 	},
 	UpdateLayers: function(frame) {
 		// TODO: unity3d layer...

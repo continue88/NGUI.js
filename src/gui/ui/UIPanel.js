@@ -142,13 +142,13 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 	},
 	UpdateTransformMatrix: function(frame) {
 		this.worldToLocal = this.transform.worldToLocalMatrix;
-		var size = this.getViewSize().multiplyScalar(0.5);
+		var size = this.getViewSize();
 		var x = this.mClipOffset.x + this.mClipRange.x;
 		var y = this.mClipOffset.y + this.mClipRange.y;
-		this.mMin.x = x - size.x;
-		this.mMin.y = y - size.y;
-		this.mMax.x = x + size.x;
-		this.mMax.y = y + size.y;
+		this.mMin.x = x - size.x * 0.5;
+		this.mMin.y = y - size.y * 0.5;
+		this.mMax.x = x + size.x * 0.5;
+		this.mMax.y = y + size.y * 0.5;
 	},
 	UpdateLayers: function(frame) {
 		// TODO: unity3d layer...
