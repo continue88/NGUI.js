@@ -5,8 +5,8 @@ NGUIMath = {
 		if (width != 0 && height != 0) {
 			final.xMin = rect.xMin / width;
 			final.xMax = rect.xMax / width;
-			final.yMin = 1 - rect.yMax / height;
-			final.yMax = 1 - rect.yMin / height;
+			final.yMin = rect.yMin / height;
+			final.yMax = rect.yMax / height;
 		}
 		return final;
 	},

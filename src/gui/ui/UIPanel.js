@@ -16,6 +16,7 @@ NGUI.UIPanel = function(gameObject) {
 	this.mMin = new UnityEngine.Vector2();
 	this.mMax = new UnityEngine.Vector2();
 	this.mClipping = Clipping.None;
+	this.mSortWidgets = false;
 
 	this.startingRenderQueue = 3000;
 	this.drawCallClipRange = new UnityEngine.Vector4(0, 0, 1, 1);
@@ -111,6 +112,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 	},
 	AddWidget: function(w) {
 		this.widgets.push(w);
+		this.mSortWidgets = true;
 	},
 	FindParent: function() {
 		var parent = this.transform.parent;
@@ -153,8 +155,13 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 	UpdateLayers: function(frame) {
 		// TODO: unity3d layer...
 	},
+	SortWidgets: function() {
+		this.mSortWidgets = false;
+		this.widgets.sort(function(a, b) { return a.mDepth - b.mDepth; });
+	},
 	UpdateWidgets: function(frame) {
 		var changed = false;
+		if (this.mSortWidgets === true) this.SortWidgets();
 		for (var i in this.widgets) {
 			var w = this.widgets[i];
 			if (w.panel != this || !w.enabled)

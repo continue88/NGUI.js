@@ -10,12 +10,13 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 		if (programInfos === undefined)
 			programInfos = createProgramInfos();
 
-		gl.clearColor(1, 0, 0, 1);
+		gl.clearColor(0, 0, 0, 1);
 		gl.clear(gl.COLOR_BUFFER_BIT);
 
 		gl.disable( gl.CULL_FACE );
 		gl.disable( gl.DEPTH_TEST );
 		gl.depthMask( false );
+
 		gl.enable( gl.BLEND );
 		gl.blendEquationSeparate( gl.FUNC_ADD, gl.FUNC_ADD );
 		gl.blendFuncSeparate( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA );
@@ -109,9 +110,9 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 			'uniform mat4 UNITY_MATRIX_MVP;',
 			'attribute vec3 vertex;',
 			'attribute vec2 uv;',
-			'attribute vec3 color;',
+			'attribute vec4 color;',
 			'varying vec2 vUV;',
-			'varying vec3 vColor;',
+			'varying vec4 vColor;',
 			'void main() {',
 			'   vUV = uv;',
 			'   vColor = color;',
@@ -120,9 +121,9 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 		].join('\n'), [
 			'uniform sampler2D _MainTex;',
 			'varying vec2 vUV;',
-			'varying vec3 vColor;',
+			'varying vec4 vColor;',
 			'void main() {',
-				'gl_FragColor = texture2D(_MainTex, vUV) * vec4(vColor, 1.0);',
+				'gl_FragColor = texture2D(_MainTex, vUV) * vColor;',
 			'}'
 		].join('\n'));
 		
@@ -131,9 +132,9 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 			'uniform vec4 _ClipRange0;',
 			'attribute vec3 vertex;',
 			'attribute vec2 uv;',
-			'attribute vec3 color;',
+			'attribute vec4 color;',
 			'varying vec2 vUV;',
-			'varying vec3 vColor;',
+			'varying vec4 vColor;',
 			'varying vec2 vWorldPos;',
 			'void main() {',
 			'   vUV = uv;',
@@ -145,11 +146,11 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 			'uniform sampler2D _MainTex;',
 			'uniform vec4 _ClipArgs0;',
 			'varying vec2 vUV;',
-			'varying vec3 vColor;',
+			'varying vec4 vColor;',
 			'varying vec2 vWorldPos;',
 			'void main() {',
 			'   vec2 factor = (vec2(1.0, 1.0) - abs(vWorldPos)) * _ClipArgs0.xy;',
-			'   vec4 col = texture2D(_MainTex, vUV) * vec4(vColor, 1.0);',
+			'   vec4 col = texture2D(_MainTex, vUV) * vColor;',
 			'   col.a *= clamp( min(factor.x, factor.y), 0.0, 1.0);',
 			'   gl_FragColor = col;',
 			'}'
@@ -162,9 +163,9 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 			'uniform vec4 _ClipArgs1;',
 			'attribute vec3 vertex;',
 			'attribute vec2 uv;',
-			'attribute vec3 color;',
+			'attribute vec4 color;',
 			'varying vec2 vUV;',
-			'varying vec3 vColor;',
+			'varying vec4 vColor;',
 			'varying vec4 vWorldPos;',
 			'vec2 Rotate (vec2 v, vec2 rot) {',
 			'	vec2 ret;',
@@ -184,14 +185,14 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 			'uniform vec4 _ClipArgs0;',
 			'uniform vec4 _ClipArgs1;',
 			'varying vec2 vUV;',
-			'varying vec3 vColor;',
+			'varying vec4 vColor;',
 			'varying vec4 vWorldPos;',
 			'void main() {',
 			'   vec2 factor = (vec2(1.0, 1.0) - abs(vWorldPos.xy)) * _ClipArgs0.xy;',
 			'   float f = min(factor.x, factor.y);',
 			'   factor = (vec2(1.0, 1.0) - abs(vWorldPos.zw)) * _ClipArgs1.xy;',
 			'   f = min(f, min(factor.x, factor.y));',
-			'   vec4 col = texture2D(_MainTex, vUV) * vec4(vColor, 1.0);',
+			'   vec4 col = texture2D(_MainTex, vUV) * vColor;',
 			'   col.a *= clamp(f, 0.0, 1.0);',
 			'   gl_FragColor = col;',
 			'}'

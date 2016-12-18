@@ -106,7 +106,7 @@ UnityEngine.Mesh.prototype = {
 		if (this.vertices !== undefined) this.UpdateBuffer(gl, 'position', this.vertices, gl.ARRAY_BUFFER, true, 3, gl.FLOAT, false, 3 * 4, 0);
 		if (this.uv !== undefined) this.UpdateBuffer(gl, 'uv', this.uv, gl.ARRAY_BUFFER, true, 2, gl.FLOAT, false, 2 * 4, 0);
 		if (this.colors !== undefined) this.UpdateBuffer(gl, 'color', this.colors, gl.ARRAY_BUFFER, true, 4, gl.FLOAT, false, 4 * 4, 0);
-		if (this.colors32 !== undefined) this.UpdateBuffer(gl, 'color', this.colors32, gl.ARRAY_BUFFER, true, 4, gl.UNSIGNED_BYTE, false, 4 * 1, 0);
+		if (this.colors32 !== undefined) this.UpdateBuffer(gl, 'color', this.colors32, gl.ARRAY_BUFFER, true, 4, gl.UNSIGNED_BYTE, true, 4 * 1, 0);
 		if (this.triangles !== undefined) this.UpdateBuffer(gl, 'index', this.triangles, gl.ELEMENT_ARRAY_BUFFER, false, 1, gl.UNSIGNED_SHORT, false, 1 * 2, 0);
 		this.vertices = undefined;
 		this.uv = undefined;

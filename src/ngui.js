@@ -701,7 +701,7 @@ UnityEngine.Mesh.prototype = {
 		if (this.vertices !== undefined) this.UpdateBuffer(gl, 'position', this.vertices, gl.ARRAY_BUFFER, true, 3, gl.FLOAT, false, 3 * 4, 0);
 		if (this.uv !== undefined) this.UpdateBuffer(gl, 'uv', this.uv, gl.ARRAY_BUFFER, true, 2, gl.FLOAT, false, 2 * 4, 0);
 		if (this.colors !== undefined) this.UpdateBuffer(gl, 'color', this.colors, gl.ARRAY_BUFFER, true, 4, gl.FLOAT, false, 4 * 4, 0);
-		if (this.colors32 !== undefined) this.UpdateBuffer(gl, 'color', this.colors32, gl.ARRAY_BUFFER, true, 4, gl.UNSIGNED_BYTE, false, 4 * 1, 0);
+		if (this.colors32 !== undefined) this.UpdateBuffer(gl, 'color', this.colors32, gl.ARRAY_BUFFER, true, 4, gl.UNSIGNED_BYTE, true, 4 * 1, 0);
 		if (this.triangles !== undefined) this.UpdateBuffer(gl, 'index', this.triangles, gl.ELEMENT_ARRAY_BUFFER, false, 1, gl.UNSIGNED_SHORT, false, 1 * 2, 0);
 		this.vertices = undefined;
 		this.uv = undefined;
@@ -947,10 +947,10 @@ UnityEngine.Texture2D.prototype = {
 			this.glTexture = gl.createTexture();
 			gl.activeTexture(gl.TEXTURE0 + slot);
 			gl.bindTexture(gl.TEXTURE_2D, this.glTexture);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);//NEAREST );
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);//NEAREST );
 			gl.texImage2D(gl.TEXTURE_2D, 0, this.glFormat | gl.RGBA, this.glFormat | gl.RGBA, this.glType | gl.UNSIGNED_BYTE, this.image);
-			return;
+			//return;
 		}
 		gl.activeTexture(gl.TEXTURE0 + slot);
 		gl.bindTexture(gl.TEXTURE_2D, this.glTexture);
@@ -1300,8 +1300,8 @@ NGUIMath = {
 		if (width != 0 && height != 0) {
 			final.xMin = rect.xMin / width;
 			final.xMax = rect.xMax / width;
-			final.yMin = 1 - rect.yMax / height;
-			final.yMax = 1 - rect.yMin / height;
+			final.yMin = rect.yMin / height;
+			final.yMax = rect.yMax / height;
 		}
 		return final;
 	},
@@ -2277,12 +2277,13 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 		if (programInfos === undefined)
 			programInfos = createProgramInfos();
 
-		gl.clearColor(1, 0, 0, 1);
+		gl.clearColor(0, 0, 0, 1);
 		gl.clear(gl.COLOR_BUFFER_BIT);
 
 		gl.disable( gl.CULL_FACE );
 		gl.disable( gl.DEPTH_TEST );
 		gl.depthMask( false );
+
 		gl.enable( gl.BLEND );
 		gl.blendEquationSeparate( gl.FUNC_ADD, gl.FUNC_ADD );
 		gl.blendFuncSeparate( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA );
@@ -2376,9 +2377,9 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 			'uniform mat4 UNITY_MATRIX_MVP;',
 			'attribute vec3 vertex;',
 			'attribute vec2 uv;',
-			'attribute vec3 color;',
+			'attribute vec4 color;',
 			'varying vec2 vUV;',
-			'varying vec3 vColor;',
+			'varying vec4 vColor;',
 			'void main() {',
 			'   vUV = uv;',
 			'   vColor = color;',
@@ -2387,9 +2388,9 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 		].join('\n'), [
 			'uniform sampler2D _MainTex;',
 			'varying vec2 vUV;',
-			'varying vec3 vColor;',
+			'varying vec4 vColor;',
 			'void main() {',
-				'gl_FragColor = texture2D(_MainTex, vUV) * vec4(vColor, 1.0);',
+				'gl_FragColor = texture2D(_MainTex, vUV) * vColor;',
 			'}'
 		].join('\n'));
 		
@@ -2398,9 +2399,9 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 			'uniform vec4 _ClipRange0;',
 			'attribute vec3 vertex;',
 			'attribute vec2 uv;',
-			'attribute vec3 color;',
+			'attribute vec4 color;',
 			'varying vec2 vUV;',
-			'varying vec3 vColor;',
+			'varying vec4 vColor;',
 			'varying vec2 vWorldPos;',
 			'void main() {',
 			'   vUV = uv;',
@@ -2412,11 +2413,11 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 			'uniform sampler2D _MainTex;',
 			'uniform vec4 _ClipArgs0;',
 			'varying vec2 vUV;',
-			'varying vec3 vColor;',
+			'varying vec4 vColor;',
 			'varying vec2 vWorldPos;',
 			'void main() {',
 			'   vec2 factor = (vec2(1.0, 1.0) - abs(vWorldPos)) * _ClipArgs0.xy;',
-			'   vec4 col = texture2D(_MainTex, vUV) * vec4(vColor, 1.0);',
+			'   vec4 col = texture2D(_MainTex, vUV) * vColor;',
 			'   col.a *= clamp( min(factor.x, factor.y), 0.0, 1.0);',
 			'   gl_FragColor = col;',
 			'}'
@@ -2429,9 +2430,9 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 			'uniform vec4 _ClipArgs1;',
 			'attribute vec3 vertex;',
 			'attribute vec2 uv;',
-			'attribute vec3 color;',
+			'attribute vec4 color;',
 			'varying vec2 vUV;',
-			'varying vec3 vColor;',
+			'varying vec4 vColor;',
 			'varying vec4 vWorldPos;',
 			'vec2 Rotate (vec2 v, vec2 rot) {',
 			'	vec2 ret;',
@@ -2451,14 +2452,14 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 			'uniform vec4 _ClipArgs0;',
 			'uniform vec4 _ClipArgs1;',
 			'varying vec2 vUV;',
-			'varying vec3 vColor;',
+			'varying vec4 vColor;',
 			'varying vec4 vWorldPos;',
 			'void main() {',
 			'   vec2 factor = (vec2(1.0, 1.0) - abs(vWorldPos.xy)) * _ClipArgs0.xy;',
 			'   float f = min(factor.x, factor.y);',
 			'   factor = (vec2(1.0, 1.0) - abs(vWorldPos.zw)) * _ClipArgs1.xy;',
 			'   f = min(f, min(factor.x, factor.y));',
-			'   vec4 col = texture2D(_MainTex, vUV) * vec4(vColor, 1.0);',
+			'   vec4 col = texture2D(_MainTex, vUV) * vColor;',
 			'   col.a *= clamp(f, 0.0, 1.0);',
 			'   gl_FragColor = col;',
 			'}'
@@ -2691,6 +2692,7 @@ NGUI.UIPanel = function(gameObject) {
 	this.mMin = new UnityEngine.Vector2();
 	this.mMax = new UnityEngine.Vector2();
 	this.mClipping = Clipping.None;
+	this.mSortWidgets = false;
 
 	this.startingRenderQueue = 3000;
 	this.drawCallClipRange = new UnityEngine.Vector4(0, 0, 1, 1);
@@ -2786,6 +2788,7 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 	},
 	AddWidget: function(w) {
 		this.widgets.push(w);
+		this.mSortWidgets = true;
 	},
 	FindParent: function() {
 		var parent = this.transform.parent;
@@ -2828,8 +2831,13 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 	UpdateLayers: function(frame) {
 		// TODO: unity3d layer...
 	},
+	SortWidgets: function() {
+		this.mSortWidgets = false;
+		this.widgets.sort(function(a, b) { return a.mDepth - b.mDepth; });
+	},
 	UpdateWidgets: function(frame) {
 		var changed = false;
+		if (this.mSortWidgets === true) this.SortWidgets();
 		for (var i in this.widgets) {
 			var w = this.widgets[i];
 			if (w.panel != this || !w.enabled)

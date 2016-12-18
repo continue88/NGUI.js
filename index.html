@@ -21,7 +21,7 @@ body {
 <script src="./src/ngui.js"></script>
 <script>
 
-var guiRender = new WebGL.Renderer({antialias: true});
+var guiRender = new WebGL.Renderer({antialias: false});
 document.body.appendChild(guiRender.domElement);
 UnityEngine.Resources.Load('./res/test1/Wooden Atlas.js', 'UIAtlas');
 UnityEngine.Resources.loadAllFinish = function(){
