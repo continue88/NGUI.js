@@ -111,8 +111,8 @@ UnityEngine.GameObject.prototype = {
 		});
 		
 		// update from the root.
-		if (this.transform.parent === undefined)
-			this.transform.Update();
+		//if (this.transform.parent === undefined)
+		//	this.transform.Update();
 		return this;
 	},
 };

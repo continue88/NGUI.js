@@ -21,14 +21,25 @@ body {
 <script src="./src/ngui.js"></script>
 <script>
 
+var guiRender = new WebGL.Renderer({antialias: true});
+document.body.appendChild(guiRender.domElement);
 UnityEngine.Resources.Load('./res/test1/Wooden Atlas.js', 'UIAtlas');
 UnityEngine.Resources.loadAllFinish = function(){
   UnityEngine.Resources.Load('./res/test1/UI Root.js', 'GameObject', function(go) {
-    NGUI.UIPanel.UpdateAll();
+    NGUITools.screenSize.x = guiRender.domElement.clientWidth;
+    NGUITools.screenSize.y = guiRender.domElement.clientHeight;
+    console.log(NGUITools.screenSize);
 
     var uiRoot = go.GetComponentInChildren('UIRoot');
-    var guiRender = new WebGL.Renderer({antialias: true});
-    document.body.appendChild(guiRender.domElement);
+    uiRoot.Update();
+
+    uiRoot.camera.setAspect(guiRender.domElement.clientWidth / guiRender.domElement.clientHeight);
+    console.log(uiRoot.camera.projectionMatrix);
+
+    go.transform.Update();
+    
+    NGUI.UIPanel.UpdateAll();
+
 
     var guiPlugin = new WebGL.GUIPlugin(guiRender, uiRoot);
     function render() {

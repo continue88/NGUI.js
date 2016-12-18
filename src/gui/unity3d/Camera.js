@@ -21,20 +21,20 @@ UnityEngine.Camera = function(gameObject) {
 
 Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
 	constructor: UnityEngine.Camera,
-	setPerspective(fov, aspect, near, far) {
-		this.isOrthoGraphic = true;
-		this.nearClipPlane = near;
-		this.farClipPlane = far;
+	setAspect(aspect) {
 		this.aspect = aspect;
-		this.fieldOfView = fov;
-		this.projectionMatrix.Perspective(this.fieldOfView, this.aspect, this.nearClipPlane, this.farClipPlane);
+		if (this.isOrthoGraphic === true)
+			this.projectionMatrix.Ortho(-this.aspect, this.aspect, 1, -1, this.nearClipPlane, this.farClipPlane);
+		else
+			this.projectionMatrix.Perspective(this.fieldOfView, this.aspect, this.nearClipPlane, this.farClipPlane);
 	},
 	Load: function(json) {
 		this.isOrthoGraphic = json.orth;
-		if (!this.isOrthoGraphic)
-			this.projectionMatrix.Ortho(); // TODO: build ortho data.
-		else
-			this.setPerspective(json.fov, json.aspect, json.near, json.far);
+		this.nearClipPlane = json.near;
+		this.farClipPlane = json.far;
+		this.aspect = json.aspect;
+		this.fieldOfView = json.fov;
+		this.setAspect(json.aspect);
 	},
 	GetSides: function(depth, relativeTo) {
 		var mSides = [];

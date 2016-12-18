@@ -11,16 +11,16 @@ WebGL.Renderer = function (parameters) {
 	function onContextLost() {
 	}
 
-	this.setSize = function ( width, height ) {
-		this.width = width;
-		this.height = height;
-		canvas.width = width;
-		canvas.height = height;
-		this.domElement.style.width = width + 'px';
-		this.domElement.style.height = height + 'px';
+	this.setSize = function () {
+		this.domElement.style.width = '100%';
+		this.domElement.style.height = '100%';
+		this.width = this.domElement.clientWidth;
+		this.height = this.domElement.clientHeight;
+		//canvas.width = this.width;
+		//canvas.height = this.height;
 	};
 
-	this.setSize(NGUITools.screenSize.x, NGUITools.screenSize.y);
+	this.setSize();
 
 	function getGLContext(parameters, canvas) {
 		var glContext = undefined;
