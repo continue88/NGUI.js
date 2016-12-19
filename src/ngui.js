@@ -1976,10 +1976,8 @@ Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 		this.mCorners[2] = trans.TransformPoint(new UnityEngine.Vector3(x1, cy, 0));
 		this.mCorners[3] = trans.TransformPoint(new UnityEngine.Vector3(cx, y0, 0));
 		if (relativeTo !== undefined) {
-			for (var i in this.mCorners) {
-				var vec = this.mCorners[i];
-				vec = relativeTo.InverseTransformPoint(vec);
-			}
+			for (var i in this.mCorners)
+				this.mCorners[i] = relativeTo.InverseTransformPoint(this.mCorners[i]);
 		}
 		return this.mCorners;
 	}
