@@ -47,7 +47,7 @@ AspectRatioSource = {
 	BasedOnHeight: 2,
 }
 
-Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
+Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 	constructor: NGUI.UIWidget,
 	pivotOffset: function() { return NGUIMath.GetPivotOffset(this.mPivot); },
 	texture: function() { return undefined; },

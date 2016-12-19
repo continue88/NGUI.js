@@ -6,7 +6,7 @@ NGUI.UISprite = function(gameObject) {
 	this.mSprite = undefined; // refrence to UISpriteData
 };
 
-Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
+Object.assign(NGUI.UISprite.prototype = Object.create(NGUI.UIBasicSprite.prototype), {
 	constructor: NGUI.UISprite,
 	texture: function() { return this.mAtlas ? this.mAtlas.texture : undefined; },
 	border: function() {

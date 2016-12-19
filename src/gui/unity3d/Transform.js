@@ -20,7 +20,7 @@ UnityEngine.Transform = function(gameObject) {
 	this.hasChanged = false;
 };
 
-Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, {
+Object.assign(UnityEngine.Transform.prototype = Object.create(UnityEngine.Component.prototype), {
 	constructor: UnityEngine.Transform,
 	exec: function(action, recursive) {
 		action(this); // do this action.

@@ -148,7 +148,7 @@ UnityEngine.Component = function(gameObject) {
 	this.transform = gameObject.transform; // UnityEngine.Transform
 };
 
-Object.assign(UnityEngine.Component.prototype, UnityEngine.Object.prototype, {
+Object.assign(UnityEngine.Component.prototype = Object.create(UnityEngine.Object.prototype), {
 	constructor: UnityEngine.Component,
 	Load: function(json) {
 		UnityEngine.Object.prototype.Load.call(this, json);
@@ -182,7 +182,7 @@ UnityEngine.Camera = function(gameObject) {
 	this.invViewProjMatrix = undefined; 
 };
 
-Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
+Object.assign(UnityEngine.Camera.prototype = Object.create(UnityEngine.Component.prototype), {
 	constructor: UnityEngine.Camera,
 	getViewProjMatrix: function() {
 		if (this.viewProjMatrix === undefined) {
@@ -323,12 +323,13 @@ UnityEngine.GameObject = function () {
 	this.layer = 0;
 };
 
-Object.assign(UnityEngine.GameObject.prototype, UnityEngine.Object.prototype, {
+Object.assign(UnityEngine.GameObject.prototype = Object.create(UnityEngine.Object.prototype), {
 	constructor: UnityEngine.GameObject,
 	GetComponent: function(typeName) {
 		var componentType = UnityEngine.GetType(typeName);
 		for (var i in this.components) {
 			var comp = this.components[i];
+			// TODO: check the supper calss....
 			if (comp instanceof componentType)
 				return comp;
 		}
@@ -843,7 +844,7 @@ UnityEngine.MonoBehaviour = function(gameObject) {
 	this.enabled = true;
 };
 
-Object.assign(UnityEngine.MonoBehaviour.prototype, UnityEngine.Component.prototype, {
+Object.assign(UnityEngine.MonoBehaviour.prototype = Object.create(UnityEngine.Component.prototype), {
 	constructor: UnityEngine.MonoBehaviour,
 	Load: function(json) {
 		UnityEngine.Component.prototype.Load.call(this, json);
@@ -1081,7 +1082,7 @@ UnityEngine.Transform = function(gameObject) {
 	this.hasChanged = false;
 };
 
-Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, {
+Object.assign(UnityEngine.Transform.prototype = Object.create(UnityEngine.Component.prototype), {
 	constructor: UnityEngine.Transform,
 	exec: function(action, recursive) {
 		action(this); // do this action.
@@ -1620,7 +1621,7 @@ NGUI.UIRect = function(gameObject) {
 	this.mAnchorsCached = false;
 };
 
-Object.assign(NGUI.UIRect.prototype, UnityEngine.MonoBehaviour.prototype, {
+Object.assign(NGUI.UIRect.prototype = Object.create(UnityEngine.MonoBehaviour.prototype), {
 	constructor: NGUI.UIRect,
 	cameraRayDistance: function() {
 		if (this.mCam === undefined) return 0;
@@ -1748,7 +1749,7 @@ AspectRatioSource = {
 	BasedOnHeight: 2,
 }
 
-Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
+Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 	constructor: NGUI.UIWidget,
 	pivotOffset: function() { return NGUIMath.GetPivotOffset(this.mPivot); },
 	texture: function() { return undefined; },
@@ -1998,7 +1999,7 @@ Flip = {
 gTempPos = [new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngine.Vector2()];
 gTempUVs = [new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngine.Vector2()];
 
-Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
+Object.assign(NGUI.UIBasicSprite.prototype = Object.create(NGUI.UIWidget.prototype), {
 	constructor: NGUI.UIBasicSprite,
 	pixelSize: function() { return 1; },
 	texture: function() { return undefined; },
@@ -2832,7 +2833,7 @@ NGUI.UICamera = function(gameObject) {
 
 NGUI.UICamera.current = undefined;
 
-Object.assign(NGUI.UICamera.prototype, UnityEngine.MonoBehaviour.prototype, {
+Object.assign(NGUI.UICamera.prototype = Object.create(UnityEngine.MonoBehaviour.prototype), {
 	constructor: NGUI.UICamera,
     Load: function(json) {
         UnityEngine.MonoBehaviour.prototype.Load.call(this, json);
@@ -2923,7 +2924,7 @@ NGUI.UIPanel.Foreach = function(action) {
 	for (var i in list) action(list[i]);
 };
 
-Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
+Object.assign(NGUI.UIPanel.prototype = Object.create(NGUI.UIRect.prototype), {
 	constructor: NGUI.UIPanel,
 	hasClipping: function() { return this.mClipping === Clipping.SoftClip;  },
 	getViewSize: function() {
@@ -3038,6 +3039,8 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 		}
 		this.mResized = false;
 	},
+	FindDrawCall: function(w) {
+	},
 	UpdateDrawCalls: function() {
 		var trans = this.transform;
 		if (this.mClipping != Clipping.None) {
@@ -3142,7 +3145,7 @@ NGUI.Constraint = {
 	FitHeight: 3,
 };
 
-Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
+Object.assign(NGUI.UIRoot.prototype = Object.create(UnityEngine.MonoBehaviour.prototype), {
 	constructor: NGUI.UIRoot,
 	constraint: function() {
 		if (this.fitWidth)
@@ -3230,7 +3233,7 @@ NGUI.UISprite = function(gameObject) {
 	this.mSprite = undefined; // refrence to UISpriteData
 };
 
-Object.assign(NGUI.UISprite.prototype, NGUI.UIBasicSprite.prototype, {
+Object.assign(NGUI.UISprite.prototype = Object.create(NGUI.UIBasicSprite.prototype), {
 	constructor: NGUI.UISprite,
 	texture: function() { return this.mAtlas ? this.mAtlas.texture : undefined; },
 	border: function() {

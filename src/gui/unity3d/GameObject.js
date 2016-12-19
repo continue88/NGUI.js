@@ -8,13 +8,12 @@ UnityEngine.GameObject = function () {
 	this.layer = 0;
 };
 
-Object.assign(UnityEngine.GameObject.prototype, UnityEngine.Object.prototype, {
+Object.assign(UnityEngine.GameObject.prototype = Object.create(UnityEngine.Object.prototype), {
 	constructor: UnityEngine.GameObject,
 	GetComponent: function(typeName) {
 		var componentType = UnityEngine.GetType(typeName);
 		for (var i in this.components) {
 			var comp = this.components[i];
-			// TODO: check the supper calss....
 			if (comp instanceof componentType)
 				return comp;
 		}

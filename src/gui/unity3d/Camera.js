@@ -19,7 +19,7 @@ UnityEngine.Camera = function(gameObject) {
 	this.invViewProjMatrix = undefined; 
 };
 
-Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
+Object.assign(UnityEngine.Camera.prototype = Object.create(UnityEngine.Component.prototype), {
 	constructor: UnityEngine.Camera,
 	getViewProjMatrix: function() {
 		if (this.viewProjMatrix === undefined) {

@@ -25,7 +25,7 @@ NGUI.Constraint = {
 	FitHeight: 3,
 };
 
-Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
+Object.assign(NGUI.UIRoot.prototype = Object.create(UnityEngine.MonoBehaviour.prototype), {
 	constructor: NGUI.UIRoot,
 	constraint: function() {
 		if (this.fitWidth)

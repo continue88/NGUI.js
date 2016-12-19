@@ -40,7 +40,7 @@ Flip = {
 gTempPos = [new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngine.Vector2()];
 gTempUVs = [new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngine.Vector2()];
 
-Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
+Object.assign(NGUI.UIBasicSprite.prototype = Object.create(NGUI.UIWidget.prototype), {
 	constructor: NGUI.UIBasicSprite,
 	pixelSize: function() { return 1; },
 	texture: function() { return undefined; },

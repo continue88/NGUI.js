@@ -73,7 +73,7 @@ NGUI.UIPanel.Foreach = function(action) {
 	for (var i in list) action(list[i]);
 };
 
-Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
+Object.assign(NGUI.UIPanel.prototype = Object.create(NGUI.UIRect.prototype), {
 	constructor: NGUI.UIPanel,
 	hasClipping: function() { return this.mClipping === Clipping.SoftClip;  },
 	getViewSize: function() {
@@ -187,6 +187,8 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 			}
 		}
 		this.mResized = false;
+	},
+	FindDrawCall: function(w) {
 	},
 	UpdateDrawCalls: function() {
 		var trans = this.transform;

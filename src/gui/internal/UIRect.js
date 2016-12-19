@@ -15,7 +15,7 @@ NGUI.UIRect = function(gameObject) {
 	this.mAnchorsCached = false;
 };
 
-Object.assign(NGUI.UIRect.prototype, UnityEngine.MonoBehaviour.prototype, {
+Object.assign(NGUI.UIRect.prototype = Object.create(UnityEngine.MonoBehaviour.prototype), {
 	constructor: NGUI.UIRect,
 	cameraRayDistance: function() {
 		if (this.mCam === undefined) return 0;

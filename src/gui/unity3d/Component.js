@@ -5,7 +5,7 @@ UnityEngine.Component = function(gameObject) {
 	this.transform = gameObject.transform; // UnityEngine.Transform
 };
 
-Object.assign(UnityEngine.Component.prototype, UnityEngine.Object.prototype, {
+Object.assign(UnityEngine.Component.prototype = Object.create(UnityEngine.Object.prototype), {
 	constructor: UnityEngine.Component,
 	Load: function(json) {
 		UnityEngine.Object.prototype.Load.call(this, json);
