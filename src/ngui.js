@@ -131,7 +131,11 @@ UnityEngine.Object.prototype = {
         else
             console.warn('no id found!!!');
         UnityEngine.Object.RegisterObject(this);
-    }
+    },
+    SendMessage: function(methodName, value) {
+        var func = this[methodName];
+        if (typeof(func) === 'function') func(value);
+     },
 };
 
 //
@@ -296,6 +300,7 @@ UnityEngine.GameObject = function () {
 	this.name = '';
 	this.transform = new UnityEngine.Transform(this);
 	this.components = [];
+	this.activeSelf = true;
 };
 
 Object.assign(UnityEngine.GameObject.prototype, UnityEngine.Object.prototype, {
@@ -405,6 +410,13 @@ Object.assign(UnityEngine.GameObject.prototype, UnityEngine.Object.prototype, {
 		});
 		return this;
 	},
+	SetActive: function(active) {
+		this.activeSelf = active;
+	},
+    SendMessage: function(methodName, value) {
+		for (var i in this.components)
+			this.components[i].SendMessage(methodName, value);
+     },
 });
 
 //

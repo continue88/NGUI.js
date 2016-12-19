@@ -53,5 +53,9 @@ UnityEngine.Object.prototype = {
         else
             console.warn('no id found!!!');
         UnityEngine.Object.RegisterObject(this);
-    }
+    },
+    SendMessage: function(methodName, value) {
+        var func = this[methodName];
+        if (typeof(func) === 'function') func(value);
+     },
 };
