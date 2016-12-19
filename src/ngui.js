@@ -1301,8 +1301,8 @@ NGUIMath = {
 		if (width != 0 && height != 0) {
 			final.xMin = rect.xMin / width;
 			final.xMax = rect.xMax / width;
-			final.yMin = 1 - rect.yMax / height;
-			final.yMax = 1 - rect.yMin / height;
+			final.yMin = rect.yMin / height;
+			final.yMax = rect.yMax / height;
 		}
 		return final;
 	},
@@ -2383,7 +2383,7 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 			'varying vec2 vUV;',
 			'varying vec4 vColor;',
 			'void main() {',
-			'   vUV = vec2(uv.x, 1.0-uv.y);',
+			'   vUV = uv;',
 			'   vColor = color;',
 			'   gl_Position = UNITY_MATRIX_MVP * vec4(vertex, 1.0);',
 			'}'
