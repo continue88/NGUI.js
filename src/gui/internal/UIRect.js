@@ -23,7 +23,10 @@ Object.assign(NGUI.UIRect.prototype, UnityEngine.MonoBehaviour.prototype, {
 		return (this.mCam.nearClipPlane + this.mCam.farClipPlane) * 0.5;
 	},
 	Load: function(json) {
-		//if (json)
+		if (json.la !== undefined) this.leftAnchor.Load(json.la);
+		if (json.ra !== undefined) this.rightAnchor.Load(json.ra);
+		if (json.ba !== undefined) this.leftAnchor.Load(json.ba);
+		if (json.ta !== undefined) this.leftAnchor.Load(json.ta);
 	},
 	GetSides: function(relativeTo) {
 		if (this.mCam !== undefined) return this.mCam.GetSides(this.cameraRayDistance(), relativeTo);

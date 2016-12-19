@@ -8,7 +8,7 @@ public class NguiJS
     const string JsPrefix = "_data_=";
     static List<UIAtlas> mUsedAtlas = new List<UIAtlas>();
     static List<string> mAtlasImages = new List<string>();
-
+    static Transform mRootTrans;
 
     [MenuItem("NGUI.js/Test")]
     public static void Test()
@@ -23,11 +23,12 @@ public class NguiJS
         if (Selection.gameObjects == null || Selection.gameObjects.Length == 0)
             throw new System.Exception("You must select at least one game object.");
 
+        var go = Selection.gameObjects[0];
+        mRootTrans = go.transform;
         mUsedAtlas.Clear();
         mAtlasImages.Clear();
 
-        var gos = new List<GameObject>(Selection.gameObjects);
-        gos.ForEach(go => File.WriteAllText(EditorUtility.SaveFilePanel("Save As", "", go.name, "js"), JsPrefix + Export(go).ToJson()));
+        File.WriteAllText(EditorUtility.SaveFilePanel("Save As", "", go.name, "js"), JsPrefix + Export(go).ToJson());
         mUsedAtlas.ForEach(atlas => File.WriteAllText(EditorUtility.SaveFilePanel("Save As", "", atlas.name, "js"), JsPrefix + Export(atlas).ToJson()));
         mAtlasImages.ForEach(path => File.Copy(path, EditorUtility.SaveFilePanel("Save As", "", Path.GetFileName(path), Path.GetExtension(path)), true));
     }
@@ -108,6 +109,33 @@ public class NguiJS
         Export(data, "w", sprite.width, 100);
         Export(data, "h", sprite.height, 100);
         Export(data, "d", sprite.depth, 0);
+        if (sprite.isAnchored)
+        {
+            if (sprite.leftAnchor.target) data["la"] = Export(sprite.leftAnchor);
+            if (sprite.rightAnchor.target) data["ra"] = Export(sprite.rightAnchor);
+            if (sprite.bottomAnchor.target) data["ba"] = Export(sprite.bottomAnchor);
+            if (sprite.topAnchor.target) data["ta"] = Export(sprite.topAnchor);
+        }
+        return data;
+    }
+
+    public static string GetTransformPath(Transform trans, Transform root)
+    {
+        var path = trans.name;
+        while (trans.parent && trans.parent != root)
+        {
+            path = trans.parent.name + "/" + path;
+            trans = trans.parent;
+        }
+        return path;
+    }
+
+    public static LitJson.JsonData Export(UIRect.AnchorPoint anchorPoint)
+    {
+        var data = new LitJson.JsonData();
+        Export(data, "t", GetTransformPath(anchorPoint.target, mRootTrans), "");
+        Export(data, "r", anchorPoint.relative, 0.0f);
+        Export(data, "a", anchorPoint.absolute, 0.0f);
         return data;
     }
 
@@ -255,9 +283,10 @@ public class NguiJS
         Export(data, "z", v.z, 0);
         return data;
     }
-    
+
+    public static void Export(LitJson.JsonData data, string name, string value, string def) { if (value != def) data[name] = value; }
     public static void Export(LitJson.JsonData data, string name, int value, int def) { if (value != def) data[name] = value; }
-    public static void Export(LitJson.JsonData data, string name, float value, float def) { if (value != def) data[name] = System.Math.Round(value, 2); }
+    public static void Export(LitJson.JsonData data, string name, float value, float def) { if (value != def) data[name] = value.ToString("0.##"); }
     public static void Export(LitJson.JsonData data, string name, bool value, bool def) { if (value != def) data[name] = value; }
     public static void Export(LitJson.JsonData data, string name, Vector2 value, Vector2 def) { data[name] = Export(value, def); }
     public static void Export(LitJson.JsonData data, string name, Vector3 value, Vector3 def) { data[name] = Export(value, def); }

@@ -9,6 +9,11 @@ NGUI.AnchorPoint = function(relative) {
 
 NGUI.AnchorPoint.prototype = {
 	constructor: NGUI.AnchorPoint,
+	Load: function(json) {
+		this.target = json.t;
+		this.relative = json.r || 0;
+		this.absolute = json.a || 0;
+	},
 	Set: function(target, relative, absolute) {
 		if (target instanceof UnityEngine.Transform) {
 			this.target = target;
