@@ -39,6 +39,7 @@ public class NguiJS
         data["n"] = go.name;
         data["t"] = Export(go.transform);
         data["c"] = Export(go.GetComponents<Component>());
+        data["meta_id"] = go.GetInstanceID();
 
         if (go.transform.childCount > 0)
             data["q"] = ExportChildren(go);
@@ -60,6 +61,7 @@ public class NguiJS
         data["t"] = Export(trans.localPosition);
         data["r"] = Export(trans.localRotation);
         data["s"] = Export(trans.localScale, Vector3.one);
+        data["meta_id"] = trans.GetInstanceID();
         return data;
     }
 
@@ -73,6 +75,7 @@ public class NguiJS
             if (obj != null)
             {
                 obj["meta_type"] = comp.GetType().Name;
+                obj["meta_id"] = comp.GetInstanceID();
                 data.Add(obj);
             }
         }
@@ -119,21 +122,10 @@ public class NguiJS
         return data;
     }
 
-    public static string GetTransformPath(Transform trans, Transform root)
-    {
-        var path = trans.name;
-        while (trans.parent && trans.parent != root)
-        {
-            path = trans.parent.name + "/" + path;
-            trans = trans.parent;
-        }
-        return path;
-    }
-
     public static LitJson.JsonData Export(UIRect.AnchorPoint anchorPoint)
     {
         var data = new LitJson.JsonData();
-        Export(data, "t", GetTransformPath(anchorPoint.target, mRootTrans), "");
+        Export(data, "t", anchorPoint.target.GetInstanceID(), 0);
         Export(data, "r", anchorPoint.relative, 0.0f);
         Export(data, "a", anchorPoint.absolute, 0.0f);
         return data;
@@ -286,7 +278,7 @@ public class NguiJS
 
     public static void Export(LitJson.JsonData data, string name, string value, string def) { if (value != def) data[name] = value; }
     public static void Export(LitJson.JsonData data, string name, int value, int def) { if (value != def) data[name] = value; }
-    public static void Export(LitJson.JsonData data, string name, float value, float def) { if (value != def) data[name] = value.ToString("0.##"); }
+    public static void Export(LitJson.JsonData data, string name, float value, float def) { if (value != def) data[name] = System.Math.Round(value, 2); }
     public static void Export(LitJson.JsonData data, string name, bool value, bool def) { if (value != def) data[name] = value; }
     public static void Export(LitJson.JsonData data, string name, Vector2 value, Vector2 def) { data[name] = Export(value, def); }
     public static void Export(LitJson.JsonData data, string name, Vector3 value, Vector3 def) { data[name] = Export(value, def); }
