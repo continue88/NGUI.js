@@ -114,7 +114,7 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 			'varying vec2 vUV;',
 			'varying vec4 vColor;',
 			'void main() {',
-			'   vUV = uv;',
+			'   vUV = vec2(uv.x, 1.0-uv.y);',
 			'   vColor = color;',
 			'   gl_Position = UNITY_MATRIX_MVP * vec4(vertex, 1.0);',
 			'}'

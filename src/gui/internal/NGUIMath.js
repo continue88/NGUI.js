@@ -1,12 +1,12 @@
 
 NGUIMath = {
 	ConvertToTexCoords: function(rect, width, height) {
-		var final = rect;
+		var final = rect.clone();
 		if (width != 0 && height != 0) {
 			final.xMin = rect.xMin / width;
 			final.xMax = rect.xMax / width;
-			final.yMin = rect.yMin / height;
-			final.yMax = rect.yMax / height;
+			final.yMin = 1 - rect.yMax / height;
+			final.yMax = 1 - rect.yMin / height;
 		}
 		return final;
 	},

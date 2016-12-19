@@ -70,10 +70,11 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 	Load: function(json) {
 		NGUI.UIRect.prototype.Load.call(this, json);
 		if (json.c !== undefined)
-			this.mColor.set32(json.c.r | 0, json.c.g | 0, json.c.b | 0, json.c.a | 255);
+			this.mColor.set32(json.c.r || 0, json.c.g || 0, json.c.b || 0, json.c.a || 255);
 		this.mPivot = json.p | WidgetPivot.Center;
 		this.keepAspectRatio = json.k | AspectRatioSource.Free;
 		this.aspectRatio = json.a | 1;
+		this.finalAlpha = this.mColor.a;
 		this.mWidth = json.w | 100;
 		this.mHeight = json.h | 100;
 		this.mDepth = json.d | 0;
