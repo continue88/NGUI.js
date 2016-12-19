@@ -61,11 +61,11 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 	},
 	Load: function(json) {
 		NGUI.UIWidget.prototype.Load.call(this, json);
-		this.mType = json.t | SpriteType.Simple;
-		this.mFlip = json.f | Flip.Nothing;
-		this.mFillAmount = json.fa | 1;
-		this.mFillDirection = json.fd | FillDirection.Radial360;
-		this.invert = json.fi | false;
+		this.mType = json.t || SpriteType.Simple;
+		this.mFlip = json.f || Flip.Nothing;
+		this.mFillAmount = json.fa || 1;
+		this.mFillDirection = json.fd || FillDirection.Radial360;
+		this.invert = json.fi || false;
 	},
 	Fill: function(verts, uvs, cols, outer, inner) {
 		this.mOuterUV = outer;

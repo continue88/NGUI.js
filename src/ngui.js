@@ -950,7 +950,7 @@ UnityEngine.Texture2D.prototype = {
 			gl.bindTexture(gl.TEXTURE_2D, this.glTexture);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);//NEAREST );
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);//NEAREST );
-			gl.texImage2D(gl.TEXTURE_2D, 0, this.glFormat | gl.RGBA, this.glFormat | gl.RGBA, this.glType | gl.UNSIGNED_BYTE, this.image);
+			gl.texImage2D(gl.TEXTURE_2D, 0, this.glFormat || gl.RGBA, this.glFormat || gl.RGBA, this.glType || gl.UNSIGNED_BYTE, this.image);
 			//return;
 		}
 		gl.activeTexture(gl.TEXTURE0 + slot);
@@ -998,9 +998,9 @@ Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, 
 		this.exec(function(self) { self.needUpdate = true; }, true); // update all children.
 	},
 	Load: function(json) {
-		if (json.t) this.localPosition.set(json.t.x | 0, json.t.y | 0, json.t.z | 0);
-		if (json.r) this.localRotation.euler(json.r.x | 0, json.r.y | 0, json.r.z | 0);
-		if (json.s) this.localScale.set(json.s.x | 1, json.s.y | 1, json.s.z | 1);
+		if (json.t) this.localPosition.set(json.t.x || 0, json.t.y || 0, json.t.z || 0);
+		if (json.r) this.localRotation.euler(json.r.x || 0, json.r.y || 0, json.r.z || 0);
+		if (json.s) this.localScale.set(json.s.x || 1, json.s.y || 1, json.s.z || 1);
 		this.needUpdate = true;
 	},
 	Update: function() {
@@ -1234,7 +1234,7 @@ UnityEngine.Vector4.prototype = {
 
 NGUI.AnchorPoint = function(relative) {
 	this.target = undefined; // UnityEngine.Transform
-	this.relative = relative | 0;
+	this.relative = relative || 0;
 	this.absolute = 0;
 	this.rect = undefined; // NGUI.UIRect
 	this.targetCam = undefined; // NGUI.UICamera
@@ -1256,9 +1256,9 @@ NGUI.AnchorPoint.prototype = {
 		var a0 = Math.abs(abs0);
 		var a1 = Math.abs(abs1);
 		var a2 = Math.abs(abs2);
-		if (a0 < a1 && a0 < a2) this.Set(rel0 | 0, abs0);
-		else if (a1 < a0 && a1 < a2) this.Set(rel1 | 0.5, abs1);
-		else this.Set(rel2 | 1, abs2);
+		if (a0 < a1 && a0 < a2) this.Set(rel0 || 0, abs0);
+		else if (a1 < a0 && a1 < a2) this.Set(rel1 || 0.5, abs1);
+		else this.Set(rel2 || 1, abs2);
 	},
 	SetHorizontal: function(parent, localPos) {
 		if (this.rect) {
@@ -1622,13 +1622,13 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 		NGUI.UIRect.prototype.Load.call(this, json);
 		if (json.c !== undefined)
 			this.mColor.set32(json.c.r || 0, json.c.g || 0, json.c.b || 0, json.c.a || 255);
-		this.mPivot = json.p | WidgetPivot.Center;
-		this.keepAspectRatio = json.k | AspectRatioSource.Free;
-		this.aspectRatio = json.a | 1;
+		this.mPivot = json.p || WidgetPivot.Center;
+		this.keepAspectRatio = json.k || AspectRatioSource.Free;
+		this.aspectRatio = json.a || 1;
 		this.finalAlpha = this.mColor.a;
-		this.mWidth = json.w | 100;
-		this.mHeight = json.h | 100;
-		this.mDepth = json.d | 0;
+		this.mWidth = json.w || 100;
+		this.mHeight = json.h || 100;
+		this.mDepth = json.d || 0;
 		this.mChanged = true;
 		this.CreatePanel(); // ensure we have a parent panel.
 	},
@@ -1786,7 +1786,7 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 			return true;
 		}
 		else if (this.mMoved === true && this.geometry.hasVertices() === true) {
-			this.mLocalToPanel = this.panel.worldToLocal * this.transform.localToWorldMatrix;
+			this.mLocalToPanel.MultiplyMatrices(this.panel.worldToLocal, this.transform.localToWorldMatrix);
 			this.geometry.ApplyTransform(this.mLocalToPanel);
 			this.mMoved = false;
 			return true;
@@ -1865,11 +1865,11 @@ Object.assign(NGUI.UIBasicSprite.prototype, NGUI.UIWidget.prototype, {
 	},
 	Load: function(json) {
 		NGUI.UIWidget.prototype.Load.call(this, json);
-		this.mType = json.t | SpriteType.Simple;
-		this.mFlip = json.f | Flip.Nothing;
-		this.mFillAmount = json.fa | 1;
-		this.mFillDirection = json.fd | FillDirection.Radial360;
-		this.invert = json.fi | false;
+		this.mType = json.t || SpriteType.Simple;
+		this.mFlip = json.f || Flip.Nothing;
+		this.mFillAmount = json.fa || 1;
+		this.mFillDirection = json.fd || FillDirection.Radial360;
+		this.invert = json.fi || false;
 	},
 	Fill: function(verts, uvs, cols, outer, inner) {
 		this.mOuterUV = outer;
@@ -2639,9 +2639,9 @@ NGUI.UIAtlas.prototype = {
 				this.mSprites[sprite.name] = sprite;
 			}
 		}
-		this.pixelSize = json.pixelSize | 1;
-		this.mTexture.width = json.width | 0;
-		this.mTexture.height = json.height | 0;
+		this.pixelSize = json.pixelSize || 1;
+		this.mTexture.width = json.width || 0;
+		this.mTexture.height = json.height || 0;
 
 		var tex = this.mTexture;
 		UnityEngine.Resources.LoadImage(
@@ -2776,15 +2776,15 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 	},
 	Load: function(json) {
 		NGUI.UIRect.prototype.Load.call(this, json);
-		this.mAlpha = json.alpha | 1;
-		this.mDepth = json.depth | 0;
-		this.mClipping = json.clipping | Clipping.None;
-		this.mClipOffset.set(json.clipOffset.x | 0, json.clipOffset.y | 0);
-		this.mClipRange.set(json.clipRange.x | 0, json.clipRange.y | 0, json.clipRange.z | 0, json.clipRange.w | 0);
-		this.mClipSoftness.set(json.clipSoftness.x | 0, json.clipSoftness.y | 0);
-		this.mSortingOrder = json.sort | 0;
-		this.renderQueue = json.renderQueue | RenderQueue.Automatic;
-		this.startingRenderQueue = json.startingRenderQueue | 3000;
+		this.mAlpha = json.alpha || 1;
+		this.mDepth = json.depth || 0;
+		this.mClipping = json.clipping || Clipping.None;
+		this.mClipOffset.set(json.clipOffset.x || 0, json.clipOffset.y || 0);
+		this.mClipRange.set(json.clipRange.x || 0, json.clipRange.y || 0, json.clipRange.z || 0, json.clipRange.w || 0);
+		this.mClipSoftness.set(json.clipSoftness.x || 0, json.clipSoftness.y || 0);
+		this.mSortingOrder = json.sort || 0;
+		this.renderQueue = json.renderQueue || RenderQueue.Automatic;
+		this.startingRenderQueue = json.startingRenderQueue || 3000;
 		this.mRebuild = true;
 		this.FindParent();
 	},
@@ -3122,14 +3122,14 @@ NGUI.UISpriteData.prototype = {
 		this.y = json.y;
 		this.width = json.w;
 		this.height = json.h;
-		this.borderLeft = json.bl | 0;
-		this.borderRight = json.br | 0;
-		this.borderTop = json.bt | 0;
-		this.borderBottom = json.bb | 0;
-		this.paddingLeft = json.pl | 0;
-		this.paddingRight = json.pr | 0;
-		this.paddingTop = json.pt | 0;
-		this.paddingBottom = json.pb | 0;
+		this.borderLeft = json.bl || 0;
+		this.borderRight = json.br || 0;
+		this.borderTop = json.bt || 0;
+		this.borderBottom = json.bb || 0;
+		this.paddingLeft = json.pl || 0;
+		this.paddingRight = json.pr || 0;
+		this.paddingTop = json.pt || 0;
+		this.paddingBottom = json.pb || 0;
 		return this;
 	},
 };

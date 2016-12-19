@@ -17,9 +17,9 @@ NGUI.UIAtlas.prototype = {
 				this.mSprites[sprite.name] = sprite;
 			}
 		}
-		this.pixelSize = json.pixelSize | 1;
-		this.mTexture.width = json.width | 0;
-		this.mTexture.height = json.height | 0;
+		this.pixelSize = json.pixelSize || 1;
+		this.mTexture.width = json.width || 0;
+		this.mTexture.height = json.height || 0;
 
 		var tex = this.mTexture;
 		UnityEngine.Resources.LoadImage(

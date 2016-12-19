@@ -1,7 +1,7 @@
 
 NGUI.AnchorPoint = function(relative) {
 	this.target = undefined; // UnityEngine.Transform
-	this.relative = relative | 0;
+	this.relative = relative || 0;
 	this.absolute = 0;
 	this.rect = undefined; // NGUI.UIRect
 	this.targetCam = undefined; // NGUI.UICamera
@@ -23,9 +23,9 @@ NGUI.AnchorPoint.prototype = {
 		var a0 = Math.abs(abs0);
 		var a1 = Math.abs(abs1);
 		var a2 = Math.abs(abs2);
-		if (a0 < a1 && a0 < a2) this.Set(rel0 | 0, abs0);
-		else if (a1 < a0 && a1 < a2) this.Set(rel1 | 0.5, abs1);
-		else this.Set(rel2 | 1, abs2);
+		if (a0 < a1 && a0 < a2) this.Set(rel0 || 0, abs0);
+		else if (a1 < a0 && a1 < a2) this.Set(rel1 || 0.5, abs1);
+		else this.Set(rel2 || 1, abs2);
 	},
 	SetHorizontal: function(parent, localPos) {
 		if (this.rect) {
