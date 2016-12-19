@@ -1,19 +1,14 @@
 
-NGUI.AnchorPoint = function(relative) {
-	this.target = undefined; // UnityEngine.Transform
-	this.relative = relative || 0;
-	this.absolute = 0;
+NGUI.AnchorPoint = function(json) {
+	this.target = json.t; // UnityEngine.Transform
+	this.relative = json.r || 0;
+	this.absolute = json.a || 0;
 	this.rect = undefined; // NGUI.UIRect
 	this.targetCam = undefined; // NGUI.UICamera
 };
 
 NGUI.AnchorPoint.prototype = {
 	constructor: NGUI.AnchorPoint,
-	Load: function(json) {
-		this.target = json.t;
-		this.relative = json.r || 0;
-		this.absolute = json.a || 0;
-	},
 	Set: function(target, relative, absolute) {
 		if (target instanceof UnityEngine.Transform) {
 			this.target = target;

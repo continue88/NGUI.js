@@ -10,4 +10,7 @@ Object.assign(UnityEngine.Component.prototype, UnityEngine.Object.prototype, {
 	Load: function(json) {
 		UnityEngine.Object.prototype.Load.call(this, json);
 	},
+	GetComponent: function(type) { return this.gameObject.GetComponent(type); },
+	GetComponentInChildren: function(type) { return this.gameObject.GetComponentInChildren(type); },
+	GetComponentsInChildren: function(type) { return this.gameObject.GetComponentsInChildren(type); },
 });

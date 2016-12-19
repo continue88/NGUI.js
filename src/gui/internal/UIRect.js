@@ -2,10 +2,10 @@
 NGUI.UIRect = function(gameObject) {
 	UnityEngine.MonoBehaviour.call(this, gameObject);
 
-	this.leftAnchor = new NGUI.AnchorPoint();
-	this.rightAnchor = new NGUI.AnchorPoint();
-	this.bottomAnchor = new NGUI.AnchorPoint();
-	this.topAnchor = new NGUI.AnchorPoint();
+	this.leftAnchor = undefined;// new NGUI.AnchorPoint();
+	this.rightAnchor = undefined;//new NGUI.AnchorPoint();
+	this.bottomAnchor = undefined;//new NGUI.AnchorPoint();
+	this.topAnchor = undefined;//new NGUI.AnchorPoint();
 
 	this.finalAlpha = 1;
 	this.mSides = [];
@@ -24,10 +24,10 @@ Object.assign(NGUI.UIRect.prototype, UnityEngine.MonoBehaviour.prototype, {
 	},
 	Load: function(json) {
 		UnityEngine.MonoBehaviour.prototype.Load.call(this, json);
-		if (json.la !== undefined) this.leftAnchor.Load(json.la);
-		if (json.ra !== undefined) this.rightAnchor.Load(json.ra);
-		if (json.ba !== undefined) this.leftAnchor.Load(json.ba);
-		if (json.ta !== undefined) this.leftAnchor.Load(json.ta);
+		if (json.la !== undefined) this.leftAnchor = new NGUI.AnchorPoint(json.la);
+		if (json.ra !== undefined) this.rightAnchor = new NGUI.AnchorPoint(json.ra);
+		if (json.ba !== undefined) this.leftAnchor = new NGUI.AnchorPoint(json.ba);
+		if (json.ta !== undefined) this.leftAnchor = new NGUI.AnchorPoint(json.ta);
 	},
 	GetSides: function(relativeTo) {
 		if (this.mCam !== undefined) return this.mCam.GetSides(this.cameraRayDistance(), relativeTo);
@@ -40,27 +40,40 @@ Object.assign(NGUI.UIRect.prototype, UnityEngine.MonoBehaviour.prototype, {
 		return this.mSides;
 	},
 	OnAnchor: function() { },
+	ResetAnchors: function() {
+		this.mAnchorsCached = true;
+		this.leftAnchor.rect = (this.leftAnchor.target !== undefined)	? this.leftAnchor.target.GetComponent('UIRect') : null;
+		this.bottomAnchor.rect = (this.bottomAnchor.target !== undefined) ? this.bottomAnchor.target.GetComponent('UIRect') : null;
+		this.rightAnchor.rect = (this.rightAnchor.target !== undefined)	? this.rightAnchor.target.GetComponent('UIRect') : null;
+		this.topAnchor.rect = (this.topAnchor.target !== undefined)	? this.topAnchor.target.GetComponent('UIRect') : null;
+		//mCam = NGUITools.FindCameraForLayer(cachedGameObject.layer);
+		//FindCameraFor(leftAnchor);
+		//FindCameraFor(bottomAnchor);
+		//FindCameraFor(rightAnchor);
+		//FindCameraFor(topAnchor);
+		this.mUpdateAnchors = true;
+	},
 	UpdateAnchors: function(frame) {
 		var anchored = false;
 		this.mUpdateFrame = frame;
-		if (this.leftAnchor.target !== undefined) {
+		if (this.leftAnchor !== undefined) {
 			anchored = true;
-			if (this.leftAnchor.rect !== undefined && this.leftAnchor.rect.mUpdateFrame !== frame)
+			if (this.leftAnchor.rect !== undefined)
 				this.leftAnchor.rect.UpdateAnchors(frame);
 		}
-		if (this.bottomAnchor.target!== undefined) {
+		if (this.bottomAnchor !== undefined) {
 			anchored = true;
-			if (this.bottomAnchor.rect !== undefined && this.bottomAnchor.rect.mUpdateFrame !== frame)
+			if (this.bottomAnchor.rect !== undefined)
 				this.bottomAnchor.rect.UpdateAnchors(frame);
 		}
-		if (this.rightAnchor.target!== undefined) {
+		if (this.rightAnchor !== undefined) {
 			anchored = true;
-			if (this.rightAnchor.rect !== undefined && this.rightAnchor.rect.mUpdateFrame !== frame)
+			if (this.rightAnchor.rect !== undefined)
 				this.rightAnchor.rect.UpdateAnchors(frame);
 		}
-		if (this.topAnchor.target!== undefined) {
+		if (this.topAnchor !== undefined) {
 			anchored = true;
-			if (this.topAnchor.rect !== undefined && this.topAnchor.rect.mUpdateFrame !== frame)
+			if (this.topAnchor.rect !== undefined)
 				this.topAnchor.rect.UpdateAnchors(frame);
 		}
 		if (anchored) this.OnAnchor();
