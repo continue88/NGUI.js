@@ -61,5 +61,9 @@ NGUI.AnchorPoint.prototype = {
 			this.target = UnityEngine.Object.FindObjectWithId(this.target);
 		if (this.target === undefined) return;
 		this.rect = this.target.GetComponent('UIRect');
+		if (this.target === undefined || this.rect != undefined)
+			this.targetCam = null;
+		else // Find the camera responsible for the target object
+			this.targetCam = NGUITools.FindCameraForLayer(this.target.gameObject.layer);
 	}
 };

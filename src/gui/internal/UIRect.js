@@ -46,7 +46,7 @@ Object.assign(NGUI.UIRect.prototype, UnityEngine.MonoBehaviour.prototype, {
 		if (this.bottomAnchor !== undefined) this.bottomAnchor.Link();
 		if (this.rightAnchor !== undefined) this.rightAnchor.Link();
 		if (this.topAnchor !== undefined) this.topAnchor.Link();
-		//mCam = NGUITools.FindCameraForLayer(cachedGameObject.layer);
+		this.mCam = NGUITools.FindCameraForLayer(this.gameObject.layer);
 		//FindCameraFor(leftAnchor);
 		//FindCameraFor(bottomAnchor);
 		//FindCameraFor(rightAnchor);

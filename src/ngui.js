@@ -184,6 +184,21 @@ UnityEngine.Camera = function(gameObject) {
 
 Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
 	constructor: UnityEngine.Camera,
+	getViewProjMatrix: function() {
+		if (this.viewProjMatrix === undefined) {
+			this.viewProjMatrix = new UnityEngine.Matrix4x4();
+			this.viewProjMatrix.MultiplyMatrices(this.worldToCameraMatrix, this.projectionMatrix);
+		}
+		return this.viewProjMatrix;
+	},
+	getInvViewProjMatrix: function() {
+		if (this.invViewProjMatrix === undefined) {
+			var viewProjMatrix = this.getViewProjMatrix();
+			this.invViewProjMatrix = new UnityEngine.Matrix4x4();
+			this.invViewProjMatrix.getInverse(viewProjMatrix);
+		}
+		return this.invViewProjMatrix;
+	},
 	setAspect(aspect) {
 		this.aspect = aspect;
 		if (this.isOrthoGraphic === true)
@@ -193,6 +208,8 @@ Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
 
 		this.cameraToWorldMatrix.SetTRS(this.transform.position, this.transform.rotation, new UnityEngine.Vector3(1, 1, 1));
 		this.worldToCameraMatrix.getInverse(this.cameraToWorldMatrix);
+		this.viewProjMatrix = undefined;
+		this.invViewProjMatrix = undefined;
 	},
 	Load: function(json) {
 		this.isOrthoGraphic = json.orth;
@@ -242,14 +259,13 @@ Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
 		screenPoint.x = 2 * screenPoint.x - 1;
 		screenPoint.y = 1 - 2 * screenPoint.y;
 		screenPoint.z = 0; // TODO: ViewportToWorldPoint
-		if (this.viewProjMatrix === undefined) {
-			this.viewProjMatrix = new UnityEngine.Matrix4x4();
-			this.viewProjMatrix.MultiplyMatrices(this.worldToCameraMatrix, this.projectionMatrix);
-
-			this.invViewProjMatrix = new UnityEngine.Matrix4x4();
-			this.invViewProjMatrix.getInverse(this.viewProjMatrix);
-		}
-		return this.invViewProjMatrix.MultiplyPoint(screenPoint);
+		return this.getInvViewProjMatrix().MultiplyPoint(screenPoint);
+	},
+	WorldToViewportPoint: function(worldPos) {
+		var screenPos = this.getViewProjMatrix(worldPos);
+		screenPos.x = (screenPos.x + 1) * 0.5;
+		screenPos.y = (1 - screenPos.y) * 0.5;
+		return screenPos;
 	},
 });
 
@@ -304,6 +320,7 @@ UnityEngine.GameObject = function () {
 	this.transform = new UnityEngine.Transform(this);
 	this.components = [];
 	this.activeSelf = true;
+	this.layer = 0;
 };
 
 Object.assign(UnityEngine.GameObject.prototype, UnityEngine.Object.prototype, {
@@ -1379,6 +1396,16 @@ NGUI.AnchorPoint.prototype = {
 			if (this.target.camera !== undefined) return this.target.camera.GetSides(relativeTo);
 		}
 		return undefined;
+	},
+	Link: function() {
+		if (typeof(this.target) === 'number')
+			this.target = UnityEngine.Object.FindObjectWithId(this.target);
+		if (this.target === undefined) return;
+		this.rect = this.target.GetComponent('UIRect');
+		if (this.target === undefined || this.rect != undefined)
+			this.targetCam = null;
+		else // Find the camera responsible for the target object
+			this.targetCam = NGUITools.FindCameraForLayer(this.target.gameObject.layer);
 	}
 };
 
@@ -1438,6 +1465,10 @@ NGUITools = {
 			}
 		}
 		return comp;
+	},
+	FindCameraForLayer: function(layer) {
+		// TODO: add layer supported.
+		return NGUI.UICamera.current.camera;
 	},
 	GetImageUrl: function(atlasUrl, imageName) {
 		return atlasUrl.substring(0, atlasUrl.lastIndexOf('/') + 1) + imageName;
@@ -1614,18 +1645,19 @@ Object.assign(NGUI.UIRect.prototype, UnityEngine.MonoBehaviour.prototype, {
 		return this.mSides;
 	},
 	OnAnchor: function() { },
-	ResetAnchors: function() {
+	ResetAnchors: function(update) {
 		this.mAnchorsCached = true;
-		this.leftAnchor.rect = (this.leftAnchor.target !== undefined)	? this.leftAnchor.target.GetComponent('UIRect') : null;
-		this.bottomAnchor.rect = (this.bottomAnchor.target !== undefined) ? this.bottomAnchor.target.GetComponent('UIRect') : null;
-		this.rightAnchor.rect = (this.rightAnchor.target !== undefined)	? this.rightAnchor.target.GetComponent('UIRect') : null;
-		this.topAnchor.rect = (this.topAnchor.target !== undefined)	? this.topAnchor.target.GetComponent('UIRect') : null;
-		//mCam = NGUITools.FindCameraForLayer(cachedGameObject.layer);
+		if (this.leftAnchor !== undefined) this.leftAnchor.Link();
+		if (this.bottomAnchor !== undefined) this.bottomAnchor.Link();
+		if (this.rightAnchor !== undefined) this.rightAnchor.Link();
+		if (this.topAnchor !== undefined) this.topAnchor.Link();
+		this.mCam = NGUITools.FindCameraForLayer(this.gameObject.layer);
 		//FindCameraFor(leftAnchor);
 		//FindCameraFor(bottomAnchor);
 		//FindCameraFor(rightAnchor);
 		//FindCameraFor(topAnchor);
 		this.mUpdateAnchors = true;
+		if (update) this.UpdateAnchors();
 	},
 	UpdateAnchors: function(frame) {
 		var anchored = false;
@@ -1652,6 +1684,16 @@ Object.assign(NGUI.UIRect.prototype, UnityEngine.MonoBehaviour.prototype, {
 		}
 		if (anchored) this.OnAnchor();
 	},
+	GetLocalPos: function(ac, trans) {
+		if (this.mCam === undefined || ac.targetCam === undefined)
+			return this.transform.localPosition;
+
+		var pos = this.mCam.ViewportToWorldPoint(ac.targetCam.WorldToViewportPoint(ac.target.position));
+		if (trans != null) pos = trans.InverseTransformPoint(pos);
+		pos.x = Math.floor(pos.x + 0.5);
+		pos.y = Math.floor(pos.y + 0.5);
+		return pos;
+	}
 });
 
 //
@@ -1787,7 +1829,11 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 		var pvt = this.pivotOffset();
 
 		// Attempt to fast-path if all anchors match
-		if (this.leftAnchor.target === this.bottomAnchor.target &&
+		if (this.leftAnchor !== undefined && 
+			this.rightAnchor !== undefined &&
+			this.bottomAnchor !== undefined &&
+			this.topAnchor !== undefined && 
+			this.leftAnchor.target === this.bottomAnchor.target &&
 			this.leftAnchor.target === this.rightAnchor.target &&
 			this.leftAnchor.target === this.topAnchor.target) {
 			var sides = this.leftAnchor.GetSides(parent);
@@ -1807,7 +1853,7 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 			}
 		} else {
 			this.mIsInFront = true;
-			if (this.leftAnchor.target !== undefined) { // Left anchor point
+			if (this.leftAnchor !== undefined) { // Left anchor point
 				var sides = this.leftAnchor.GetSides(parent);
 				if (sides !== undefined)
 					lt = Mathf.Lerp(sides[0].x, sides[2].x, this.leftAnchor.relative) + this.leftAnchor.absolute;
@@ -1815,7 +1861,7 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 					lt = this.GetLocalPos(this.leftAnchor, parent).x + this.leftAnchor.absolute;
 			}
 			else lt = pos.x - pvt.x * this.mWidth;
-			if (this.rightAnchor.target !== undefined) { // Right anchor point
+			if (this.rightAnchor !== undefined) { // Right anchor point
 				var sides = this.rightAnchor.GetSides(parent);
 				if (sides !== undefined)
 					rt = Mathf.Lerp(sides[0].x, sides[2].x, this.rightAnchor.relative) + this.rightAnchor.absolute;
@@ -1823,15 +1869,15 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 					rt = this.GetLocalPos(this.rightAnchor, parent).x + this.rightAnchor.absolute;
 			}
 			else rt = pos.x - pvt.x * this.mWidth + this.mWidth;
-			if (this.bottomAnchor.target !== undefined) { // Bottom anchor point
+			if (this.bottomAnchor !== undefined) { // Bottom anchor point
 				var sides = this.bottomAnchor.GetSides(parent);
 				if (sides !== undefined)
 					bt = Mathf.Lerp(sides[3].y, sides[1].y, this.bottomAnchor.relative) + this.bottomAnchor.absolute;
 				else
 					bt = this.GetLocalPos(this.bottomAnchor, parent).y + this.bottomAnchor.absolute;
 			}
-			else bt = pos.y - pvt.y * MathfmHeight;
-			if (this.topAnchor.target !== undefined) { // Top anchor point
+			else bt = pos.y - pvt.y * this.mHeight;
+			if (this.topAnchor !== undefined) { // Top anchor point
 				var sides = this.topAnchor.GetSides(parent);
 				if (this.sides != null)
 					tt = Mathf.Lerp(sides[3].y, sides[1].y, this.topAnchor.relative) + this.topAnchor.absolute;
@@ -2781,17 +2827,21 @@ NGUI.UIAtlas.prototype = {
 
 NGUI.UICamera = function(gameObject) {
 	UnityEngine.MonoBehaviour.call(this, gameObject);
+    this.camera = undefined;
 };
+
+NGUI.UICamera.current = undefined;
 
 Object.assign(NGUI.UICamera.prototype, UnityEngine.MonoBehaviour.prototype, {
 	constructor: NGUI.UICamera,
     Load: function(json) {
         UnityEngine.MonoBehaviour.prototype.Load.call(this, json);
-        var camera = this.gameObject.GetComponent('Camera');
-        if (camera !== undefined) {
+        this.camera = this.gameObject.GetComponent('Camera');
+        if (this.camera !== undefined) {
             var uiRoot = NGUITools.FindInParents(this.gameObject, 'UIRoot');
-            if (uiRoot !== undefined) uiRoot.camera = camera;
+            if (uiRoot !== undefined) uiRoot.camera = this.camera;
         }
+        NGUI.UICamera.current = this;
     },
 });
 
@@ -2966,6 +3016,8 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 			var w = this.widgets[i];
 			if (w.panel != this || !w.enabled)
 				continue;
+			
+			w.ResetAnchors(true); // reset and update now.
 				
 			// First update the widget's transform
 			if (w.UpdateTransform(frame) || this.mResized) {

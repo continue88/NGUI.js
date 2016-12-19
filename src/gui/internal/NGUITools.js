@@ -12,6 +12,10 @@ NGUITools = {
 		}
 		return comp;
 	},
+	FindCameraForLayer: function(layer) {
+		// TODO: add layer supported.
+		return NGUI.UICamera.current.camera;
+	},
 	GetImageUrl: function(atlasUrl, imageName) {
 		return atlasUrl.substring(0, atlasUrl.lastIndexOf('/') + 1) + imageName;
 	},
