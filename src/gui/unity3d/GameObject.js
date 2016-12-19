@@ -109,10 +109,6 @@ UnityEngine.GameObject.prototype = {
 		}, function(go, data) {
 			go.Load(data);
 		});
-		
-		// update from the root.
-		//if (this.transform.parent === undefined)
-		//	this.transform.Update();
 		return this;
 	},
 };

@@ -40,6 +40,15 @@ Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, 
 		if (json.s) this.localScale.set(json.s.x || 1, json.s.y || 1, json.s.z || 1);
 		this.needUpdate = true;
 	},
+	Find: function(name) {
+		var sep = name.lastIndexOf('/');
+		var childName = sep > 0 ? name.substring(0, sep) : name;
+		for (var i in this.children) {
+			var child = this.children[i];
+			if (child.gameObject.name === childName)
+				return sep > 0 ? child.Find(name.substring() + 1) : child;
+		}
+	},
 	Update: function() {
 		if (!this.needUpdate) return;
 		this.needUpdate = false;
