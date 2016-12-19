@@ -1301,8 +1301,8 @@ NGUIMath = {
 		if (width != 0 && height != 0) {
 			final.xMin = rect.xMin / width;
 			final.xMax = rect.xMax / width;
-			final.yMin = rect.yMin / height;
-			final.yMax = rect.yMax / height;
+			final.yMin = 1 - rect.yMax / height;
+			final.yMax = 1 - rect.yMin / height;
 		}
 		return final;
 	},
@@ -2383,7 +2383,7 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 			'varying vec2 vUV;',
 			'varying vec4 vColor;',
 			'void main() {',
-			'   vUV = uv;',
+			'   vUV = vec2(uv.x, 1.0-uv.y);',
 			'   vColor = color;',
 			'   gl_Position = UNITY_MATRIX_MVP * vec4(vertex, 1.0);',
 			'}'
@@ -2406,7 +2406,7 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 			'varying vec4 vColor;',
 			'varying vec2 vWorldPos;',
 			'void main() {',
-			'   vUV = uv;',
+			'   vUV = vec2(uv.x, 1.0-uv.y);',
 			'   vColor = color;',
 			'   vWorldPos = vertex.xy * _ClipRange0.zw + _ClipRange0.xy;',
 			'   gl_Position = UNITY_MATRIX_MVP * vec4(vertex, 1.0);',
@@ -2443,7 +2443,7 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 			'	return ret;',
 			'}',
 			'void main() {',
-			'   vUV = uv;',
+			'   vUV = vec2(uv.x, 1.0-uv.y);',
 			'   vColor = color;',
 			'   vWorldPos.xy = vertex.xy * _ClipRange0.zw + _ClipRange0.xy;',
 			'   vWorldPos.zw = Rotate(vertex.xy, _ClipArgs1.zw) * _ClipRange1.zw + _ClipRange1.xy;',
@@ -2488,7 +2488,7 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 			'	return ret;',
 			'}',
 			'void main() {',
-			'   vUV = uv;',
+			'   vUV = vec2(uv.x, 1.0-uv.y);',
 			'   vColor = color;',
 			'   vWorldPos.xy = vertex.xy * _ClipRange0.zw + _ClipRange0.xy;',
 			'   vWorldPos.zw = Rotate(vertex.xy, _ClipArgs1.zw) * _ClipRange1.zw + _ClipRange1.xy;',
@@ -2559,24 +2559,37 @@ WebGL.Renderer = function (parameters) {
 	parameters = parameters || {};
 	var canvas = parameters.canvas !== undefined ? parameters.canvas : document.createElement('canvas');
 
+	this.pixelRatio = 1;
 	this.domElement = canvas; 
-	this.width = this.domElement.width,
-	this.height = this.domElement.height,
 	this.gl = getGLContext(parameters, canvas);
+	this.width = canvas.width;
+	this.height = canvas.height;
+	this.viewport = new UnityEngine.Vector4(0, 0, this.width, this.height );
 	
-	function onContextLost() {
+	function onContextLost(event) {
 	}
 
-	this.setSize = function () {
-		this.domElement.style.width = '100%';
-		this.domElement.style.height = '100%';
-		this.width = this.domElement.clientWidth;
-		this.height = this.domElement.clientHeight;
-		//canvas.width = this.width;
-		//canvas.height = this.height;
+	this.setSize = function (width, height, updateStyle) {
+		this.width = width;
+		this.height = height;
+		canvas.width = this.width * this.pixelRatio;
+		canvas.height = this.height * this.pixelRatio;
+		if (updateStyle !== false) {
+			canvas.style.width = width + 'px';
+			canvas.style.height = height + 'px';
+		}
+		this.setViewport(0, 0, width, height);
 	};
 
-	this.setSize();
+	this.setPixelRatio = function(value) {
+		this.pixelRatio = value;
+		this.setSize(this.viewport.z, this.viewport.w, false);
+	}
+
+	this.setViewport = function(x, y, w, h) {
+		this.viewport.set(x, y, w, h);
+		this.gl.viewport(x, y, w, h);
+	}
 
 	function getGLContext(parameters, canvas) {
 		var glContext = undefined;

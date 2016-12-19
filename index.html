@@ -17,62 +17,39 @@ body {
 </head>
 <body>
 </body>
-<script src="./src/three.min.js"></script>
 <script src="./src/ngui.js"></script>
 <script>
 
 var guiRender = new WebGL.Renderer({antialias: false});
+//guiRender.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(guiRender.domElement);
+
 UnityEngine.Resources.Load('./res/test1/Wooden Atlas.js', 'UIAtlas');
 UnityEngine.Resources.loadAllFinish = function(){
   UnityEngine.Resources.Load('./res/test1/UI Root.js', 'GameObject', function(go) {
-    NGUITools.screenSize.x = guiRender.domElement.clientWidth;
-    NGUITools.screenSize.y = guiRender.domElement.clientHeight;
-    console.log(NGUITools.screenSize);
-
     var uiRoot = go.GetComponentInChildren('UIRoot');
-    uiRoot.Update();
 
-    uiRoot.camera.setAspect(guiRender.domElement.clientWidth / guiRender.domElement.clientHeight);
-    console.log(uiRoot.camera.projectionMatrix);
+    function onResize(e) {
+      NGUITools.screenSize.x = window.innerWidth;
+      NGUITools.screenSize.y = window.innerHeight;
+      guiRender.setSize(window.innerWidth, window.innerHeight);
 
-    go.transform.Update();
-    
-    NGUI.UIPanel.UpdateAll();
-
+      uiRoot.Update();
+      uiRoot.camera.setAspect(window.innerWidth / window.innerHeight);
+      go.transform.Update();
+      NGUI.UIPanel.UpdateAll();
+    }
+    onResize();
+    window.addEventListener('resize', onResize, true);
 
     var guiPlugin = new WebGL.GUIPlugin(guiRender, uiRoot);
     function render() {
-      //requestAnimationFrame( render );
+      requestAnimationFrame( render );
       guiPlugin.render();
     }
     render();
   });
 };
-
-//UnityEngine.Resources.Load('./res/test2/UI_Atlas_Login.js', 'UIAtlas');
-//UnityEngine.Resources.Load('./res/test2/NoticeWnd.js', 'GameObject');
-/*
-  var renderer = new THREE.WebGLRenderer({antialias: true});
-  renderer.setPixelRatio(window.devicePixelRatio);
-  document.body.appendChild(renderer.domElement);
-  var scene = new THREE.Scene();
-  var camera = new THREE.PerspectiveCamera(75, window.innerHeight / window.innerWidth, 0.1, 10000);
-
-  var geometry = new THREE.BoxGeometry( 1, 1, 1 );
-  var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-  var cube = new THREE.Mesh( geometry, material );
-  scene.add( cube );
-  camera.position.z = 5;
-
-  function render() {
-    requestAnimationFrame( render );
-    cube.rotation.x += 0.1;
-    cube.rotation.y += 0.1;
-    renderer.render( scene, camera );
-  }
-  render();
-*/
 
 </script>
 </html>

@@ -3,24 +3,37 @@ WebGL.Renderer = function (parameters) {
 	parameters = parameters || {};
 	var canvas = parameters.canvas !== undefined ? parameters.canvas : document.createElement('canvas');
 
+	this.pixelRatio = 1;
 	this.domElement = canvas; 
-	this.width = this.domElement.width,
-	this.height = this.domElement.height,
 	this.gl = getGLContext(parameters, canvas);
+	this.width = canvas.width;
+	this.height = canvas.height;
+	this.viewport = new UnityEngine.Vector4(0, 0, this.width, this.height );
 	
-	function onContextLost() {
+	function onContextLost(event) {
 	}
 
-	this.setSize = function () {
-		this.domElement.style.width = '100%';
-		this.domElement.style.height = '100%';
-		this.width = this.domElement.clientWidth;
-		this.height = this.domElement.clientHeight;
-		//canvas.width = this.width;
-		//canvas.height = this.height;
+	this.setSize = function (width, height, updateStyle) {
+		this.width = width;
+		this.height = height;
+		canvas.width = this.width * this.pixelRatio;
+		canvas.height = this.height * this.pixelRatio;
+		if (updateStyle !== false) {
+			canvas.style.width = width + 'px';
+			canvas.style.height = height + 'px';
+		}
+		this.setViewport(0, 0, width, height);
 	};
 
-	this.setSize();
+	this.setPixelRatio = function(value) {
+		this.pixelRatio = value;
+		this.setSize(this.viewport.z, this.viewport.w, false);
+	}
+
+	this.setViewport = function(x, y, w, h) {
+		this.viewport.set(x, y, w, h);
+		this.gl.viewport(x, y, w, h);
+	}
 
 	function getGLContext(parameters, canvas) {
 		var glContext = undefined;
