@@ -21,6 +21,21 @@ UnityEngine.Camera = function(gameObject) {
 
 Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
 	constructor: UnityEngine.Camera,
+	getViewProjMatrix: function() {
+		if (this.viewProjMatrix === undefined) {
+			this.viewProjMatrix = new UnityEngine.Matrix4x4();
+			this.viewProjMatrix.MultiplyMatrices(this.worldToCameraMatrix, this.projectionMatrix);
+		}
+		return this.viewProjMatrix;
+	},
+	getInvViewProjMatrix: function() {
+		if (this.invViewProjMatrix === undefined) {
+			var viewProjMatrix = this.getViewProjMatrix();
+			this.invViewProjMatrix = new UnityEngine.Matrix4x4();
+			this.invViewProjMatrix.getInverse(viewProjMatrix);
+		}
+		return this.invViewProjMatrix;
+	},
 	setAspect(aspect) {
 		this.aspect = aspect;
 		if (this.isOrthoGraphic === true)
@@ -30,6 +45,8 @@ Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
 
 		this.cameraToWorldMatrix.SetTRS(this.transform.position, this.transform.rotation, new UnityEngine.Vector3(1, 1, 1));
 		this.worldToCameraMatrix.getInverse(this.cameraToWorldMatrix);
+		this.viewProjMatrix = undefined;
+		this.invViewProjMatrix = undefined;
 	},
 	Load: function(json) {
 		this.isOrthoGraphic = json.orth;
@@ -79,13 +96,12 @@ Object.assign(UnityEngine.Camera.prototype, UnityEngine.Component.prototype, {
 		screenPoint.x = 2 * screenPoint.x - 1;
 		screenPoint.y = 1 - 2 * screenPoint.y;
 		screenPoint.z = 0; // TODO: ViewportToWorldPoint
-		if (this.viewProjMatrix === undefined) {
-			this.viewProjMatrix = new UnityEngine.Matrix4x4();
-			this.viewProjMatrix.MultiplyMatrices(this.worldToCameraMatrix, this.projectionMatrix);
-
-			this.invViewProjMatrix = new UnityEngine.Matrix4x4();
-			this.invViewProjMatrix.getInverse(this.viewProjMatrix);
-		}
-		return this.invViewProjMatrix.MultiplyPoint(screenPoint);
+		return this.getInvViewProjMatrix().MultiplyPoint(screenPoint);
+	},
+	WorldToViewportPoint: function(worldPos) {
+		var screenPos = this.getViewProjMatrix(worldPos);
+		screenPos.x = (screenPos.x + 1) * 0.5;
+		screenPos.y = (1 - screenPos.y) * 0.5;
+		return screenPos;
 	},
 });

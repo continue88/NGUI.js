@@ -40,18 +40,19 @@ Object.assign(NGUI.UIRect.prototype, UnityEngine.MonoBehaviour.prototype, {
 		return this.mSides;
 	},
 	OnAnchor: function() { },
-	ResetAnchors: function() {
+	ResetAnchors: function(update) {
 		this.mAnchorsCached = true;
-		this.leftAnchor.rect = (this.leftAnchor.target !== undefined)	? this.leftAnchor.target.GetComponent('UIRect') : null;
-		this.bottomAnchor.rect = (this.bottomAnchor.target !== undefined) ? this.bottomAnchor.target.GetComponent('UIRect') : null;
-		this.rightAnchor.rect = (this.rightAnchor.target !== undefined)	? this.rightAnchor.target.GetComponent('UIRect') : null;
-		this.topAnchor.rect = (this.topAnchor.target !== undefined)	? this.topAnchor.target.GetComponent('UIRect') : null;
+		if (this.leftAnchor !== undefined) this.leftAnchor.Link();
+		if (this.bottomAnchor !== undefined) this.bottomAnchor.Link();
+		if (this.rightAnchor !== undefined) this.rightAnchor.Link();
+		if (this.topAnchor !== undefined) this.topAnchor.Link();
 		//mCam = NGUITools.FindCameraForLayer(cachedGameObject.layer);
 		//FindCameraFor(leftAnchor);
 		//FindCameraFor(bottomAnchor);
 		//FindCameraFor(rightAnchor);
 		//FindCameraFor(topAnchor);
 		this.mUpdateAnchors = true;
+		if (update) this.UpdateAnchors();
 	},
 	UpdateAnchors: function(frame) {
 		var anchored = false;
@@ -78,4 +79,14 @@ Object.assign(NGUI.UIRect.prototype, UnityEngine.MonoBehaviour.prototype, {
 		}
 		if (anchored) this.OnAnchor();
 	},
+	GetLocalPos: function(ac, trans) {
+		if (this.mCam === undefined || ac.targetCam === undefined)
+			return this.transform.localPosition;
+
+		var pos = this.mCam.ViewportToWorldPoint(ac.targetCam.WorldToViewportPoint(ac.target.position));
+		if (trans != null) pos = trans.InverseTransformPoint(pos);
+		pos.x = Math.floor(pos.x + 0.5);
+		pos.y = Math.floor(pos.y + 0.5);
+		return pos;
+	}
 });

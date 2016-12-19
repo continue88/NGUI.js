@@ -166,6 +166,8 @@ Object.assign(NGUI.UIPanel.prototype, NGUI.UIRect.prototype, {
 			var w = this.widgets[i];
 			if (w.panel != this || !w.enabled)
 				continue;
+			
+			w.ResetAnchors(true); // reset and update now.
 				
 			// First update the widget's transform
 			if (w.UpdateTransform(frame) || this.mResized) {

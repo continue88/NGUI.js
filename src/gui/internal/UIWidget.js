@@ -128,7 +128,11 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 		var pvt = this.pivotOffset();
 
 		// Attempt to fast-path if all anchors match
-		if (this.leftAnchor.target === this.bottomAnchor.target &&
+		if (this.leftAnchor !== undefined && 
+			this.rightAnchor !== undefined &&
+			this.bottomAnchor !== undefined &&
+			this.topAnchor !== undefined && 
+			this.leftAnchor.target === this.bottomAnchor.target &&
 			this.leftAnchor.target === this.rightAnchor.target &&
 			this.leftAnchor.target === this.topAnchor.target) {
 			var sides = this.leftAnchor.GetSides(parent);
@@ -148,7 +152,7 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 			}
 		} else {
 			this.mIsInFront = true;
-			if (this.leftAnchor.target !== undefined) { // Left anchor point
+			if (this.leftAnchor !== undefined) { // Left anchor point
 				var sides = this.leftAnchor.GetSides(parent);
 				if (sides !== undefined)
 					lt = Mathf.Lerp(sides[0].x, sides[2].x, this.leftAnchor.relative) + this.leftAnchor.absolute;
@@ -156,7 +160,7 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 					lt = this.GetLocalPos(this.leftAnchor, parent).x + this.leftAnchor.absolute;
 			}
 			else lt = pos.x - pvt.x * this.mWidth;
-			if (this.rightAnchor.target !== undefined) { // Right anchor point
+			if (this.rightAnchor !== undefined) { // Right anchor point
 				var sides = this.rightAnchor.GetSides(parent);
 				if (sides !== undefined)
 					rt = Mathf.Lerp(sides[0].x, sides[2].x, this.rightAnchor.relative) + this.rightAnchor.absolute;
@@ -164,15 +168,15 @@ Object.assign(NGUI.UIWidget.prototype, NGUI.UIRect.prototype, {
 					rt = this.GetLocalPos(this.rightAnchor, parent).x + this.rightAnchor.absolute;
 			}
 			else rt = pos.x - pvt.x * this.mWidth + this.mWidth;
-			if (this.bottomAnchor.target !== undefined) { // Bottom anchor point
+			if (this.bottomAnchor !== undefined) { // Bottom anchor point
 				var sides = this.bottomAnchor.GetSides(parent);
 				if (sides !== undefined)
 					bt = Mathf.Lerp(sides[3].y, sides[1].y, this.bottomAnchor.relative) + this.bottomAnchor.absolute;
 				else
 					bt = this.GetLocalPos(this.bottomAnchor, parent).y + this.bottomAnchor.absolute;
 			}
-			else bt = pos.y - pvt.y * MathfmHeight;
-			if (this.topAnchor.target !== undefined) { // Top anchor point
+			else bt = pos.y - pvt.y * this.mHeight;
+			if (this.topAnchor !== undefined) { // Top anchor point
 				var sides = this.topAnchor.GetSides(parent);
 				if (this.sides != null)
 					tt = Mathf.Lerp(sides[3].y, sides[1].y, this.topAnchor.relative) + this.topAnchor.absolute;

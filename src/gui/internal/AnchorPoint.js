@@ -55,5 +55,11 @@ NGUI.AnchorPoint.prototype = {
 			if (this.target.camera !== undefined) return this.target.camera.GetSides(relativeTo);
 		}
 		return undefined;
+	},
+	Link: function() {
+		if (typeof(this.target) === 'number')
+			this.target = UnityEngine.Object.FindObjectWithId(this.target);
+		if (this.target === undefined) return;
+		this.rect = this.target.GetComponent('UIRect');
 	}
 };
