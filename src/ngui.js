@@ -74,17 +74,39 @@ UnityEngine.Color32 = function(r, g, b, a) {
 };
 
 //
+// ..\src\gui\unity3d\Object.js
+//
+UnityEngine.Object = function() {
+    this.instanceID = UnityEngine.Object.StaticId++;
+};
+
+UnityEngine.Object.StaticId = 10000;
+
+UnityEngine.Object.prototype = {
+    constructor: UnityEngine.Object,
+    GetInstanceID: function() { return this.instanceID; },
+    Load: function(json) {
+        if (json.meta_id > 0)
+            this.instanceID = json.meta_id;
+    }
+};
+
+//
 // ..\src\gui\unity3d\Component.js
 //
 
 UnityEngine.Component = function(gameObject) {
+	UnityEngine.Object.call(this);
 	this.gameObject = gameObject;
 	this.transform = gameObject.transform; // UnityEngine.Transform
 };
 
-UnityEngine.Component.prototype = {
+Object.assign(UnityEngine.Component.prototype, UnityEngine.Object.prototype, {
 	constructor: UnityEngine.Component,
-};
+	Load: function(json) {
+		UnityEngine.Object.prototype.Load.call(this, json);
+	},
+});
 
 //
 // ..\src\gui\unity3d\Camera.js
@@ -227,12 +249,13 @@ UnityEngine.EventDispatcher.prototype = {
 //
 
 UnityEngine.GameObject = function () {
+	UnityEngine.Object.call(this);
 	this.name = '';
 	this.transform = new UnityEngine.Transform(this);
 	this.components = [];
 };
 
-UnityEngine.GameObject.prototype = {
+Object.assign(UnityEngine.GameObject.prototype, UnityEngine.Object.prototype, {
 	constructor: UnityEngine.GameObject,
 	GetComponent: function(typeName) {
 		var componentType = UnityEngine.GetType(typeName);
@@ -312,6 +335,7 @@ UnityEngine.GameObject.prototype = {
 		}
 	},
 	Load: function(json) {
+		UnityEngine.Object.prototype.Load.call(this, json);
 		var self = this;
 		var trans = json.t;
 		var comps = json.c;
@@ -336,13 +360,9 @@ UnityEngine.GameObject.prototype = {
 		}, function(go, data) {
 			go.Load(data);
 		});
-		
-		// update from the root.
-		//if (this.transform.parent === undefined)
-		//	this.transform.Update();
 		return this;
 	},
-};
+});
 
 //
 // ..\src\gui\unity3d\Mathf.js
@@ -750,6 +770,9 @@ UnityEngine.MonoBehaviour = function(gameObject) {
 
 Object.assign(UnityEngine.MonoBehaviour.prototype, UnityEngine.Component.prototype, {
 	constructor: UnityEngine.MonoBehaviour,
+	Load: function(json) {
+		UnityEngine.Component.prototype.Load.call(this, json);
+	},
 });
 
 //
@@ -998,10 +1021,20 @@ Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, 
 		this.exec(function(self) { self.needUpdate = true; }, true); // update all children.
 	},
 	Load: function(json) {
+		UnityEngine.Component.prototype.Load.call(this, json);
 		if (json.t) this.localPosition.set(json.t.x || 0, json.t.y || 0, json.t.z || 0);
 		if (json.r) this.localRotation.euler(json.r.x || 0, json.r.y || 0, json.r.z || 0);
 		if (json.s) this.localScale.set(json.s.x || 1, json.s.y || 1, json.s.z || 1);
 		this.needUpdate = true;
+	},
+	Find: function(name) {
+		var sep = name.lastIndexOf('/');
+		var childName = sep > 0 ? name.substring(0, sep) : name;
+		for (var i in this.children) {
+			var child = this.children[i];
+			if (child.gameObject.name === childName)
+				return sep > 0 ? child.Find(name.substring() + 1) : child;
+		}
 	},
 	Update: function() {
 		if (!this.needUpdate) return;
@@ -1242,6 +1275,11 @@ NGUI.AnchorPoint = function(relative) {
 
 NGUI.AnchorPoint.prototype = {
 	constructor: NGUI.AnchorPoint,
+	Load: function(json) {
+		this.target = json.t;
+		this.relative = json.r || 0;
+		this.absolute = json.a || 0;
+	},
 	Set: function(target, relative, absolute) {
 		if (target instanceof UnityEngine.Transform) {
 			this.target = target;
@@ -1506,7 +1544,11 @@ Object.assign(NGUI.UIRect.prototype, UnityEngine.MonoBehaviour.prototype, {
 		return (this.mCam.nearClipPlane + this.mCam.farClipPlane) * 0.5;
 	},
 	Load: function(json) {
-		//if (json)
+		UnityEngine.MonoBehaviour.prototype.Load.call(this, json);
+		if (json.la !== undefined) this.leftAnchor.Load(json.la);
+		if (json.ra !== undefined) this.rightAnchor.Load(json.ra);
+		if (json.ba !== undefined) this.leftAnchor.Load(json.ba);
+		if (json.ta !== undefined) this.leftAnchor.Load(json.ta);
 	},
 	GetSides: function(relativeTo) {
 		if (this.mCam !== undefined) return this.mCam.GetSides(this.cameraRayDistance(), relativeTo);
@@ -2678,6 +2720,7 @@ NGUI.UICamera = function(gameObject) {
 Object.assign(NGUI.UICamera.prototype, UnityEngine.MonoBehaviour.prototype, {
 	constructor: NGUI.UICamera,
     Load: function(json) {
+        UnityEngine.MonoBehaviour.prototype.Load.call(this, json);
         var camera = this.gameObject.GetComponent('Camera');
         if (camera !== undefined) {
             var uiRoot = NGUITools.FindInParents(this.gameObject, 'UIRoot');
@@ -3026,6 +3069,7 @@ Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
 		}
 	},
 	Load: function(json) {
+		UnityEngine.MonoBehaviour.prototype.Load.call(this, json);
 		this.manualWidth = json.manualWidth | 1280;
 		this.manualHeight = json.manualHeight | 720;
 		this.minimumHeight = json.minimumHeight | 320;

@@ -70,6 +70,7 @@ Object.assign(NGUI.UIRoot.prototype, UnityEngine.MonoBehaviour.prototype, {
 		}
 	},
 	Load: function(json) {
+		UnityEngine.MonoBehaviour.prototype.Load.call(this, json);
 		this.manualWidth = json.manualWidth | 1280;
 		this.manualHeight = json.manualHeight | 720;
 		this.minimumHeight = json.minimumHeight | 320;

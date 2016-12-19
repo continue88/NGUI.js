@@ -1,11 +1,12 @@
 
 UnityEngine.GameObject = function () {
+	UnityEngine.Object.call(this);
 	this.name = '';
 	this.transform = new UnityEngine.Transform(this);
 	this.components = [];
 };
 
-UnityEngine.GameObject.prototype = {
+Object.assign(UnityEngine.GameObject.prototype, UnityEngine.Object.prototype, {
 	constructor: UnityEngine.GameObject,
 	GetComponent: function(typeName) {
 		var componentType = UnityEngine.GetType(typeName);
@@ -85,6 +86,7 @@ UnityEngine.GameObject.prototype = {
 		}
 	},
 	Load: function(json) {
+		UnityEngine.Object.prototype.Load.call(this, json);
 		var self = this;
 		var trans = json.t;
 		var comps = json.c;
@@ -111,4 +113,4 @@ UnityEngine.GameObject.prototype = {
 		});
 		return this;
 	},
-};
+});

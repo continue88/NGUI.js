@@ -7,4 +7,7 @@ UnityEngine.MonoBehaviour = function(gameObject) {
 
 Object.assign(UnityEngine.MonoBehaviour.prototype, UnityEngine.Component.prototype, {
 	constructor: UnityEngine.MonoBehaviour,
+	Load: function(json) {
+		UnityEngine.Component.prototype.Load.call(this, json);
+	},
 });

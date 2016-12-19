@@ -35,6 +35,7 @@ Object.assign(UnityEngine.Transform.prototype, UnityEngine.Component.prototype, 
 		this.exec(function(self) { self.needUpdate = true; }, true); // update all children.
 	},
 	Load: function(json) {
+		UnityEngine.Component.prototype.Load.call(this, json);
 		if (json.t) this.localPosition.set(json.t.x || 0, json.t.y || 0, json.t.z || 0);
 		if (json.r) this.localRotation.euler(json.r.x || 0, json.r.y || 0, json.r.z || 0);
 		if (json.s) this.localScale.set(json.s.x || 1, json.s.y || 1, json.s.z || 1);
