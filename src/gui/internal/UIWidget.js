@@ -16,6 +16,7 @@ NGUI.UIWidget = function(gameObject) {
 	this.mLocalToPanel = new UnityEngine.Matrix4x4();
 	this.mOldV0 = new UnityEngine.Vector3();
 	this.mOldV1 = new UnityEngine.Vector3();
+	this.mCorners = [];//
 
 	// public variables.
 	this.minWidth = 2;
@@ -137,10 +138,10 @@ Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 			this.leftAnchor.target === this.topAnchor.target) {
 			var sides = this.leftAnchor.GetSides(parent);
 			if (sides !== undefined) {
-				lt = NGUIMath.Lerp(sides[0].x, sides[2].x, this.leftAnchor.relative) + this.leftAnchor.absolute;
-				rt = NGUIMath.Lerp(sides[0].x, sides[2].x, this.rightAnchor.relative) + this.rightAnchor.absolute;
-				bt = NGUIMath.Lerp(sides[3].y, sides[1].y, this.bottomAnchor.relative) + this.bottomAnchor.absolute;
-				tt = NGUIMath.Lerp(sides[3].y, sides[1].y, this.topAnchor.relative) + this.topAnchor.absolute;
+				lt = Mathf.Lerp(sides[0].x, sides[2].x, this.leftAnchor.relative) + this.leftAnchor.absolute;
+				rt = Mathf.Lerp(sides[0].x, sides[2].x, this.rightAnchor.relative) + this.rightAnchor.absolute;
+				bt = Mathf.Lerp(sides[3].y, sides[1].y, this.bottomAnchor.relative) + this.bottomAnchor.absolute;
+				tt = Mathf.Lerp(sides[3].y, sides[1].y, this.topAnchor.relative) + this.topAnchor.absolute;
 				this.mIsInFront = true;
 			} else { // Anchored to a single transform
 				var lp = this.GetLocalPos(leftAnchor, parent);
@@ -250,4 +251,25 @@ Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 	WriteToBuffers: function(v, u, c) {
 		this.geometry.WriteToBuffers(v, u, c);
 	},
+	GetSides: function(relativeTo) {
+		var offset = this.pivotOffset();
+		var x0 = -offset.x * this.mWidth;
+		var y0 = -offset.y * this.mHeight;
+		var x1 = x0 + this.mWidth;
+		var y1 = y0 + this.mHeight;
+		var cx = (x0 + x1) * 0.5;
+		var cy = (y0 + y1) * 0.5;
+		var trans = this.transform;
+		this.mCorners[0] = trans.TransformPoint(new UnityEngine.Vector3(x0, cy, 0));
+		this.mCorners[1] = trans.TransformPoint(new UnityEngine.Vector3(cx, y1, 0));
+		this.mCorners[2] = trans.TransformPoint(new UnityEngine.Vector3(x1, cy, 0));
+		this.mCorners[3] = trans.TransformPoint(new UnityEngine.Vector3(cx, y0, 0));
+		if (relativeTo !== undefined) {
+			for (var i in this.mCorners) {
+				var vec = this.mCorners[i];
+				vec = relativeTo.InverseTransformPoint(vec);
+			}
+		}
+		return this.mCorners;
+	}
 });

@@ -52,17 +52,17 @@ NGUI.AnchorPoint.prototype = {
 	GetSides: function(relativeTo) {
 		if (this.target !== undefined) {
 			if (this.rect !== undefined) return this.rect.GetSides(relativeTo);
-			if (this.target.camera !== undefined) return this.target.camera.GetSides(relativeTo);
+			// TODO: check the camera component if has.
+			//if (this.target.camera !== undefined) return this.target.camera.GetSides(relativeTo);
 		}
-		return undefined;
 	},
 	Link: function() {
 		if (typeof(this.target) === 'number')
 			this.target = UnityEngine.Object.FindObjectWithId(this.target);
 		if (this.target === undefined) return;
 		this.rect = this.target.GetComponent('UIRect');
-		if (this.target === undefined || this.rect != undefined)
-			this.targetCam = null;
+		if (this.target === undefined || this.rect !== undefined)
+			this.targetCam = undefined;
 		else // Find the camera responsible for the target object
 			this.targetCam = NGUITools.FindCameraForLayer(this.target.gameObject.layer);
 	}

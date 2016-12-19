@@ -25,6 +25,7 @@ NGUI.UIPanel = function(gameObject) {
 	this.drawCalls = []; // NGUI.UIDrawCall
 	this.parentPanel = undefined;
 	this.worldToLocal = undefined;
+	this.anchorOffset = false;
 
 	NGUI.UIPanel.list.push(this);
 };
@@ -262,4 +263,37 @@ Object.assign(NGUI.UIPanel.prototype = Object.create(NGUI.UIRect.prototype), {
 			dc.UpdateGeometry(count);
 		}
 	},
+	GetSides: function(relativeTo) {
+		if (this.mClipping !== Clipping.None) {
+			var x0 = this.mClipOffset.x + this.mClipRange.x - 0.5 * this.mClipRange.z;
+			var y0 = this.mClipOffset.y + this.mClipRange.y - 0.5 * this.mClipRange.w;
+			var x1 = x0 + this.mClipRange.z;
+			var y1 = y0 + this.mClipRange.w;
+			var hx = (x0 + x1) * 0.5;
+			var hy = (y0 + y1) * 0.5;
+			var wt = this.transform;
+			this.mSides[0] = wt.TransformPoint(new UnityEngine.Vector3(x0, hy, 0));
+			this.mSides[1] = wt.TransformPoint(new UnityEngine.Vector3(hx, y1, 0));
+			this.mSides[2] = wt.TransformPoint(new UnityEngine.Vector3(x1, hy, 0));
+			this.mSides[3] = wt.TransformPoint(new UnityEngine.Vector3(hx, y0, 0));
+			if (relativeTo !== undefined) {
+				for (i in this.mSides)
+					this.mSides[i] = relativeTo.InverseTransformPoint(this.mSides[i]);
+			}
+			return mSides;
+		}
+		else if (this.anchorCamera() !== undefined && this.anchorOffset) {
+			var sides = this.mCam.GetSides(this.cameraRayDistance());
+			var off = this.transform.position;
+			for (var i in sides)
+				sides[i].add(off);
+
+			if (relativeTo !== undefined) {
+				for (var i in sides)
+					sides[i] = relativeTo.InverseTransformPoint(sides[i]);
+			}
+			return sides;
+		}
+		return NGUI.UIRect.prototype.GetSides.call(this, relativeTo);
+	}
 });

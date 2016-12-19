@@ -22,11 +22,13 @@ UnityEngine.Vector3.prototype = {
 		this.x += v.x;
 		this.y += v.y;
 		this.z += v.z;
+		return this;
 	},
 	sub: function(v) {
 		this.x -= v.x;
 		this.y -= v.y;
 		this.z -= v.z;
+		return this;
 	},
 	dot: function(v) {
 		return this.x * v.x + this.y * v.y + this.z * v.z;

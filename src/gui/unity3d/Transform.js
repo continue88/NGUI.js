@@ -72,10 +72,8 @@ Object.assign(UnityEngine.Transform.prototype = Object.create(UnityEngine.Compon
 		for (var i in this.children)
 			this.children[i].Update();
 	},
-	InverseTransformPoint: function(pos) {
-		return this.worldToLocalMatrix.MultiplyPoint3x4(pos);
-	},
-	TransformPoint: function(pos) {
-		return this.localToWorldMatrix.MultiplyPoint3x4(pos);
-	},
+	InverseTransformPoint: function(pos) { return this.worldToLocalMatrix.MultiplyPoint3x4(pos); },
+	InverseTransformDirection: function(dir) { return this.worldToLocalMatrix.MultiplyVector(dir); },
+	TransformPoint: function(pos) { return this.localToWorldMatrix.MultiplyPoint3x4(pos); },
+	TransformDirection: function(dir) { return this.localToWorldMatrix.MultiplyVector(dir); },
 });

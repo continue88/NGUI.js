@@ -171,7 +171,7 @@ UnityEngine.Camera = function(gameObject) {
 	this.fieldOfView = 1;
 	this.nearClipPlane = 0.1;
 	this.farClipPlane = 1000;
-	this.rect = new UnityEngine.Rect();
+	this.rect = new UnityEngine.Rect(0, 0, 1, 1);
 
 	this.projectionMatrix = new UnityEngine.Matrix4x4();
 	this.cameraToWorldMatrix = new UnityEngine.Matrix4x4();
@@ -238,10 +238,12 @@ Object.assign(UnityEngine.Camera.prototype = Object.create(UnityEngine.Component
 			var t = this.transform;
 			var rot = t.rotation;
 			var pos = t.position;
-			mSides[0] = rot * (new UnityEngine.Vector3(x0, 0, depth)) + pos;
-			mSides[1] = rot * (new UnityEngine.Vector3(0, y1, depth)) + pos;
-			mSides[2] = rot * (new UnityEngine.Vector3(x1, 0, depth)) + pos;
-			mSides[3] = rot * (new UnityEngine.Vector3(0, y0, depth)) + pos;
+			var mat = UnityEngine.Matrix4x4.Temp;
+			mat.makeRotationFromQuaternion(rot);
+			mSides[0] = mat.MultiplyVector(new UnityEngine.Vector3(x0, 0, depth)).add(pos);
+			mSides[1] = mat.MultiplyVector(new UnityEngine.Vector3(0, y1, depth)).add(pos);
+			mSides[2] = mat.MultiplyVector(new UnityEngine.Vector3(x1, 0, depth)).add(pos);
+			mSides[3] = mat.MultiplyVector(new UnityEngine.Vector3(0, y0, depth)).add(pos);
 		} else {
 			mSides[0] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0, 0.5, depth));
 			mSides[1] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0.5, 1, depth));
@@ -329,7 +331,6 @@ Object.assign(UnityEngine.GameObject.prototype = Object.create(UnityEngine.Objec
 		var componentType = UnityEngine.GetType(typeName);
 		for (var i in this.components) {
 			var comp = this.components[i];
-			// TODO: check the supper calss....
 			if (comp instanceof componentType)
 				return comp;
 		}
@@ -449,7 +450,7 @@ Mathf = UnityEngine.Mathf = {
 	Rad2Deg: 57.29578,
 	FloorToInt: function(v) { return Math.floor(v); },
 	RoundToInt: function(v) { return Math.floor(v + 0.5); },
-	Lerp: function(t, a, b) {
+	Lerp: function(a, b, t) {
 		return a + t * (b - a);
 	},
 	Clamp: function(val, min, max) {
@@ -1134,12 +1135,10 @@ Object.assign(UnityEngine.Transform.prototype = Object.create(UnityEngine.Compon
 		for (var i in this.children)
 			this.children[i].Update();
 	},
-	InverseTransformPoint: function(pos) {
-		return this.worldToLocalMatrix.MultiplyPoint3x4(pos);
-	},
-	TransformPoint: function(pos) {
-		return this.localToWorldMatrix.MultiplyPoint3x4(pos);
-	},
+	InverseTransformPoint: function(pos) { return this.worldToLocalMatrix.MultiplyPoint3x4(pos); },
+	InverseTransformDirection: function(dir) { return this.worldToLocalMatrix.MultiplyVector(dir); },
+	TransformPoint: function(pos) { return this.localToWorldMatrix.MultiplyPoint3x4(pos); },
+	TransformDirection: function(dir) { return this.localToWorldMatrix.MultiplyVector(dir); },
 });
 
 //
@@ -1224,11 +1223,13 @@ UnityEngine.Vector3.prototype = {
 		this.x += v.x;
 		this.y += v.y;
 		this.z += v.z;
+		return this;
 	},
 	sub: function(v) {
 		this.x -= v.x;
 		this.y -= v.y;
 		this.z -= v.z;
+		return this;
 	},
 	dot: function(v) {
 		return this.x * v.x + this.y * v.y + this.z * v.z;
@@ -1394,17 +1395,17 @@ NGUI.AnchorPoint.prototype = {
 	GetSides: function(relativeTo) {
 		if (this.target !== undefined) {
 			if (this.rect !== undefined) return this.rect.GetSides(relativeTo);
-			if (this.target.camera !== undefined) return this.target.camera.GetSides(relativeTo);
+			// TODO: check the camera component if has.
+			//if (this.target.camera !== undefined) return this.target.camera.GetSides(relativeTo);
 		}
-		return undefined;
 	},
 	Link: function() {
 		if (typeof(this.target) === 'number')
 			this.target = UnityEngine.Object.FindObjectWithId(this.target);
 		if (this.target === undefined) return;
 		this.rect = this.target.GetComponent('UIRect');
-		if (this.target === undefined || this.rect != undefined)
-			this.targetCam = null;
+		if (this.target === undefined || this.rect !== undefined)
+			this.targetCam = undefined;
 		else // Find the camera responsible for the target object
 			this.targetCam = NGUITools.FindCameraForLayer(this.target.gameObject.layer);
 	}
@@ -1624,16 +1625,24 @@ NGUI.UIRect = function(gameObject) {
 Object.assign(NGUI.UIRect.prototype = Object.create(UnityEngine.MonoBehaviour.prototype), {
 	constructor: NGUI.UIRect,
 	cameraRayDistance: function() {
-		if (this.mCam === undefined) return 0;
-		if (this.mCam.isOrthoGraphic) return 100;
-		return (this.mCam.nearClipPlane + this.mCam.farClipPlane) * 0.5;
+		var cam = this.mCam;
+		if (cam === undefined) return 0;
+		if (cam.isOrthoGraphic)
+			return (cam.nearClipPlane + cam.farClipPlane) * 0.5;
+		var vec = this.transform.position.clone().sub(cam.transform.position);
+		var forward = cam.transform.TransformDirection(new UnityEngine.Vector3(0, 0, 1));
+		return forward.dot(vec);
+	},
+	anchorCamera: function() {
+		if (!this.mAnchorsCached) this.ResetAnchors();
+		return this.mCam;
 	},
 	Load: function(json) {
 		UnityEngine.MonoBehaviour.prototype.Load.call(this, json);
 		if (json.la !== undefined) this.leftAnchor = new NGUI.AnchorPoint(json.la);
 		if (json.ra !== undefined) this.rightAnchor = new NGUI.AnchorPoint(json.ra);
-		if (json.ba !== undefined) this.leftAnchor = new NGUI.AnchorPoint(json.ba);
-		if (json.ta !== undefined) this.leftAnchor = new NGUI.AnchorPoint(json.ta);
+		if (json.ba !== undefined) this.bottomAnchor = new NGUI.AnchorPoint(json.ba);
+		if (json.ta !== undefined) this.topAnchor = new NGUI.AnchorPoint(json.ta);
 	},
 	GetSides: function(relativeTo) {
 		if (this.mCam !== undefined) return this.mCam.GetSides(this.cameraRayDistance(), relativeTo);
@@ -1718,6 +1727,7 @@ NGUI.UIWidget = function(gameObject) {
 	this.mLocalToPanel = new UnityEngine.Matrix4x4();
 	this.mOldV0 = new UnityEngine.Vector3();
 	this.mOldV1 = new UnityEngine.Vector3();
+	this.mCorners = [];//
 
 	// public variables.
 	this.minWidth = 2;
@@ -1839,10 +1849,10 @@ Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 			this.leftAnchor.target === this.topAnchor.target) {
 			var sides = this.leftAnchor.GetSides(parent);
 			if (sides !== undefined) {
-				lt = NGUIMath.Lerp(sides[0].x, sides[2].x, this.leftAnchor.relative) + this.leftAnchor.absolute;
-				rt = NGUIMath.Lerp(sides[0].x, sides[2].x, this.rightAnchor.relative) + this.rightAnchor.absolute;
-				bt = NGUIMath.Lerp(sides[3].y, sides[1].y, this.bottomAnchor.relative) + this.bottomAnchor.absolute;
-				tt = NGUIMath.Lerp(sides[3].y, sides[1].y, this.topAnchor.relative) + this.topAnchor.absolute;
+				lt = Mathf.Lerp(sides[0].x, sides[2].x, this.leftAnchor.relative) + this.leftAnchor.absolute;
+				rt = Mathf.Lerp(sides[0].x, sides[2].x, this.rightAnchor.relative) + this.rightAnchor.absolute;
+				bt = Mathf.Lerp(sides[3].y, sides[1].y, this.bottomAnchor.relative) + this.bottomAnchor.absolute;
+				tt = Mathf.Lerp(sides[3].y, sides[1].y, this.topAnchor.relative) + this.topAnchor.absolute;
 				this.mIsInFront = true;
 			} else { // Anchored to a single transform
 				var lp = this.GetLocalPos(leftAnchor, parent);
@@ -1952,6 +1962,27 @@ Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 	WriteToBuffers: function(v, u, c) {
 		this.geometry.WriteToBuffers(v, u, c);
 	},
+	GetSides: function(relativeTo) {
+		var offset = this.pivotOffset();
+		var x0 = -offset.x * this.mWidth;
+		var y0 = -offset.y * this.mHeight;
+		var x1 = x0 + this.mWidth;
+		var y1 = y0 + this.mHeight;
+		var cx = (x0 + x1) * 0.5;
+		var cy = (y0 + y1) * 0.5;
+		var trans = this.transform;
+		this.mCorners[0] = trans.TransformPoint(new UnityEngine.Vector3(x0, cy, 0));
+		this.mCorners[1] = trans.TransformPoint(new UnityEngine.Vector3(cx, y1, 0));
+		this.mCorners[2] = trans.TransformPoint(new UnityEngine.Vector3(x1, cy, 0));
+		this.mCorners[3] = trans.TransformPoint(new UnityEngine.Vector3(cx, y0, 0));
+		if (relativeTo !== undefined) {
+			for (var i in this.mCorners) {
+				var vec = this.mCorners[i];
+				vec = relativeTo.InverseTransformPoint(vec);
+			}
+		}
+		return this.mCorners;
+	}
 });
 
 //
@@ -2876,6 +2907,7 @@ NGUI.UIPanel = function(gameObject) {
 	this.drawCalls = []; // NGUI.UIDrawCall
 	this.parentPanel = undefined;
 	this.worldToLocal = undefined;
+	this.anchorOffset = false;
 
 	NGUI.UIPanel.list.push(this);
 };
@@ -3113,6 +3145,39 @@ Object.assign(NGUI.UIPanel.prototype = Object.create(NGUI.UIRect.prototype), {
 			dc.UpdateGeometry(count);
 		}
 	},
+	GetSides: function(relativeTo) {
+		if (this.mClipping !== Clipping.None) {
+			var x0 = this.mClipOffset.x + this.mClipRange.x - 0.5 * this.mClipRange.z;
+			var y0 = this.mClipOffset.y + this.mClipRange.y - 0.5 * this.mClipRange.w;
+			var x1 = x0 + this.mClipRange.z;
+			var y1 = y0 + this.mClipRange.w;
+			var hx = (x0 + x1) * 0.5;
+			var hy = (y0 + y1) * 0.5;
+			var wt = this.transform;
+			this.mSides[0] = wt.TransformPoint(new UnityEngine.Vector3(x0, hy, 0));
+			this.mSides[1] = wt.TransformPoint(new UnityEngine.Vector3(hx, y1, 0));
+			this.mSides[2] = wt.TransformPoint(new UnityEngine.Vector3(x1, hy, 0));
+			this.mSides[3] = wt.TransformPoint(new UnityEngine.Vector3(hx, y0, 0));
+			if (relativeTo !== undefined) {
+				for (i in this.mSides)
+					this.mSides[i] = relativeTo.InverseTransformPoint(this.mSides[i]);
+			}
+			return mSides;
+		}
+		else if (this.anchorCamera() !== undefined && this.anchorOffset) {
+			var sides = this.mCam.GetSides(this.cameraRayDistance());
+			var off = this.transform.position;
+			for (var i in sides)
+				sides[i].add(off);
+
+			if (relativeTo !== undefined) {
+				for (var i in sides)
+					sides[i] = relativeTo.InverseTransformPoint(sides[i]);
+			}
+			return sides;
+		}
+		return NGUI.UIRect.prototype.GetSides.call(this, relativeTo);
+	}
 });
 
 //

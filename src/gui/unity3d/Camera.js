@@ -8,7 +8,7 @@ UnityEngine.Camera = function(gameObject) {
 	this.fieldOfView = 1;
 	this.nearClipPlane = 0.1;
 	this.farClipPlane = 1000;
-	this.rect = new UnityEngine.Rect();
+	this.rect = new UnityEngine.Rect(0, 0, 1, 1);
 
 	this.projectionMatrix = new UnityEngine.Matrix4x4();
 	this.cameraToWorldMatrix = new UnityEngine.Matrix4x4();
@@ -75,10 +75,12 @@ Object.assign(UnityEngine.Camera.prototype = Object.create(UnityEngine.Component
 			var t = this.transform;
 			var rot = t.rotation;
 			var pos = t.position;
-			mSides[0] = rot * (new UnityEngine.Vector3(x0, 0, depth)) + pos;
-			mSides[1] = rot * (new UnityEngine.Vector3(0, y1, depth)) + pos;
-			mSides[2] = rot * (new UnityEngine.Vector3(x1, 0, depth)) + pos;
-			mSides[3] = rot * (new UnityEngine.Vector3(0, y0, depth)) + pos;
+			var mat = UnityEngine.Matrix4x4.Temp;
+			mat.makeRotationFromQuaternion(rot);
+			mSides[0] = mat.MultiplyVector(new UnityEngine.Vector3(x0, 0, depth)).add(pos);
+			mSides[1] = mat.MultiplyVector(new UnityEngine.Vector3(0, y1, depth)).add(pos);
+			mSides[2] = mat.MultiplyVector(new UnityEngine.Vector3(x1, 0, depth)).add(pos);
+			mSides[3] = mat.MultiplyVector(new UnityEngine.Vector3(0, y0, depth)).add(pos);
 		} else {
 			mSides[0] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0, 0.5, depth));
 			mSides[1] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0.5, 1, depth));

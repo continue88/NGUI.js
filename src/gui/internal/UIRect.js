@@ -18,16 +18,24 @@ NGUI.UIRect = function(gameObject) {
 Object.assign(NGUI.UIRect.prototype = Object.create(UnityEngine.MonoBehaviour.prototype), {
 	constructor: NGUI.UIRect,
 	cameraRayDistance: function() {
-		if (this.mCam === undefined) return 0;
-		if (this.mCam.isOrthoGraphic) return 100;
-		return (this.mCam.nearClipPlane + this.mCam.farClipPlane) * 0.5;
+		var cam = this.mCam;
+		if (cam === undefined) return 0;
+		if (cam.isOrthoGraphic)
+			return (cam.nearClipPlane + cam.farClipPlane) * 0.5;
+		var vec = this.transform.position.clone().sub(cam.transform.position);
+		var forward = cam.transform.TransformDirection(new UnityEngine.Vector3(0, 0, 1));
+		return forward.dot(vec);
+	},
+	anchorCamera: function() {
+		if (!this.mAnchorsCached) this.ResetAnchors();
+		return this.mCam;
 	},
 	Load: function(json) {
 		UnityEngine.MonoBehaviour.prototype.Load.call(this, json);
 		if (json.la !== undefined) this.leftAnchor = new NGUI.AnchorPoint(json.la);
 		if (json.ra !== undefined) this.rightAnchor = new NGUI.AnchorPoint(json.ra);
-		if (json.ba !== undefined) this.leftAnchor = new NGUI.AnchorPoint(json.ba);
-		if (json.ta !== undefined) this.leftAnchor = new NGUI.AnchorPoint(json.ta);
+		if (json.ba !== undefined) this.bottomAnchor = new NGUI.AnchorPoint(json.ba);
+		if (json.ta !== undefined) this.topAnchor = new NGUI.AnchorPoint(json.ta);
 	},
 	GetSides: function(relativeTo) {
 		if (this.mCam !== undefined) return this.mCam.GetSides(this.cameraRayDistance(), relativeTo);
