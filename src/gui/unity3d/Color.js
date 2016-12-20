@@ -7,6 +7,13 @@ UnityEngine.Color = function ( r, g, b, a ) {
 };
 
 const COLOR_FROM_32 = 1/255;
+UnityEngine.Color.Lerp = function(a, b, t) {
+	return new UnityEngine.Color(
+		Mathf.Lerp(a.r, b.r, t),
+		Mathf.Lerp(a.g, b.g, t),
+		Mathf.Lerp(a.b, b.b, t),
+		Mathf.Lerp(a.a, b.a, t));
+}
 
 UnityEngine.Color.prototype = {
 	constructor: UnityEngine.Color,

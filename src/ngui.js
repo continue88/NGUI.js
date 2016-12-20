@@ -33,6 +33,13 @@ UnityEngine.Color = function ( r, g, b, a ) {
 };
 
 const COLOR_FROM_32 = 1/255;
+UnityEngine.Color.Lerp = function(a, b, t) {
+	return new UnityEngine.Color(
+		Mathf.Lerp(a.r, b.r, t),
+		Mathf.Lerp(a.g, b.g, t),
+		Mathf.Lerp(a.b, b.b, t),
+		Mathf.Lerp(a.a, b.a, t));
+}
 
 UnityEngine.Color.prototype = {
 	constructor: UnityEngine.Color,
@@ -2700,6 +2707,18 @@ NGUI.UIBasicSprite.RadialCut2 = function(xy, cos, sin, invert, corner) {
 // ..\src\gui\internal\NGUIText.js
 //
 
+const CHAR_SPACE = ' '.charCodeAt(0);
+const CHAR_SPACE2 = '\u2009'.charCodeAt(0);
+const CHAR_0 = '0'.charCodeAt(0);
+const CHAR_9 = '9'.charCodeAt(0);
+const CHAR_a = 'a'.charCodeAt(0);
+const CHAR_f = 'f'.charCodeAt(0);
+const CHAR_A = 'A'.charCodeAt(0);
+const CHAR_F = 'F'.charCodeAt(0);
+const CHAR_LEFT = '['.charCodeAt(0);
+const CHAR_RIGHT = ']'.charCodeAt(0);
+const CHAR_SUB = '-'.charCodeAt(0);
+
 NGUIText = {
     glyph: {
         v0: new UnityEngine.Vector2(0, 0),
@@ -2714,15 +2733,15 @@ NGUIText = {
     pixelDensity: 1,
     mColors: [],
 
-    IsSpace: function(ch) { return (ch == ' ' || ch == 0x200a || ch == 0x200b || ch == '\u2009'); },
-    IsHex: function(ch) { return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F'); },
+	IsSpace: function(ch) { return (ch === CHAR_SPACE || ch === 0x200a || ch === 0x200b || ch === CHAR_SPACE2); },
+	IsHex: function(ch) { return (ch >= CHAR_0 && ch <= CHAR_9) || (ch >= CHAR_a && ch <= CHAR_f) || (ch >= CHAR_A && ch <= CHAR_F); },
     ReplaceSpaceWithNewline: function(s) {
 		var i = s.length - 1;
-		if (i > 0 && this.IsSpace(s[i])) s[i] = '\n';
+		if (i > 0 && this.IsSpace(s.charCodeAt(i))) s.splice(i, 1, '\n');
 	},
     EndLine: function(s) {
 		var i = s.Length - 1;
-		if (i > 0 && this.IsSpace(s[i])) s[i] = '\n';
+		if (i > 0 && this.IsSpace(s.charCodeAt(i))) s.splice(i, 1, '\n');
 		else s.concat('\n');
 	},
     Update: function(request) {
@@ -2748,9 +2767,9 @@ NGUIText = {
             index: index,
         };
 		var length = text.length;
-		if (index + 3 > length || text[index] != '[') return ret;
-		if (text[ret.index + 2] == ']') {
-			if (text[ret.index + 1] == '-') {
+		if (index + 3 > length || text.charCodeAt(index) !== CHAR_LEFT) return ret;
+		if (text.charCodeAt(ret.index + 2) == CHAR_RIGHT) {
+			if (text.charCodeAt(ret.index + 1) === CHAR_SUB) {
 				if (colors !== undefined && colors.length > 1) colors.pop();
 				ret.index += 3;
 				ret.result = true;
@@ -2787,7 +2806,7 @@ NGUIText = {
 		}
 
 		if (ret.index + 4 > length) return ret;
-		if (text[ret.index + 3] == ']') {
+		if (text.charCodeAt(ret.index + 3) === CHAR_RIGHT) {
 			var sub4 = text.substring(index, 4);
 			switch (sub4) {
 			case "[/b]":
@@ -2816,9 +2835,9 @@ NGUIText = {
 				ret.result = true;
                 return ret;
             default: {
-				var ch0 = text[ret.index + 1];
-				var ch1 = text[ret.index + 2];
-					if (IsHex(ch0) && IsHex(ch1)) {
+				var ch0 = text.charCodeAt(ret.index + 1);
+				var ch1 = text.charCodeAt(ret.index + 2);
+					if (this.IsHex(ch0) && this.IsHex(ch1)) {
 						var a = (NGUIMath.HexToDecimal(ch0) << 4) | NGUIMath.HexToDecimal(ch1);
 						this.mAlpha = a / 255;
 						ret.index += 4;
@@ -2830,7 +2849,7 @@ NGUIText = {
 			}
 		}
 		if (ret.index + 5 > length) return ret;
-		if (text[ret.index + 4] == ']') {
+		if (text.charCodeAt(ret.index + 4) === CHAR_RIGHT) {
 			var sub5 = text.substring(ret.index, 5);
 			switch (sub5) {
 			case "[sub]":
@@ -2846,7 +2865,7 @@ NGUIText = {
 			}
 		}
 		if (ret.index + 6 > length) return ret;
-		if (text[ret.index + 5] == ']') {
+		if (text.charCodeAt(ret.index + 5) === CHAR_RIGHT) {
 			var sub6 = text.substring(index, 6);
 			switch (sub6) {
 			case "[/sub]":
@@ -2866,7 +2885,7 @@ NGUIText = {
 			}
 		}
 
-		if (text[ret.index + 1] === 'u' && text[ret.index + 2] === 'r' && text[ret.index + 3] === 'l' && text[ret.index + 4] === '=') {
+		if (text.substring(ret.index + 1).startWith('url=')) {
 			var closingBracket = text.indexOf(']', ret.index + 4);
 			if (closingBracket != -1) {
 				ret.index = closingBracket + 1;
@@ -2880,23 +2899,23 @@ NGUIText = {
 		}
 
 		if (ret.index + 8 > length) return ret;
-		if (text[ret.index + 7] === ']') {
+		if (text.charCodeAt(ret.index + 7) === CHAR_RIGHT) {
 			var c = this.ParseColor24(text, ret.index + 1);
 			if (this.EncodeColor24(c) != text.substring(ret.index + 1, 6).toUpperCase())
 				return ret;
 			if (colors != null) {
 				c.a = colors[colors.length - 1].a;
 				if (premultiply && c.a != 1)
-					c = Color.Lerp(mInvisible, c, c.a);
+					c = UnityEngine.Color.Lerp(mInvisible, c, c.a);
 				colors.push(c);
 			}
 			ret.index += 8;
 			return true;
 		}
 		if (ret.index + 10 > length) return ret;
-		if (text[ret.index + 9] == ']') {
-			var c = ParseColor32(text, ret.index + 1);
-			if (EncodeColor32(c) != text.substring(ret.index + 1, 8).toUpperCase())
+		if (text.charCodeAt(ret.index + 9) === CHAR_RIGHT) {
+			var c = this.ParseColor32(text, ret.index + 1);
+			if (this.EncodeColor32(c) != text.substring(ret.index + 1, 8).toUpperCase())
 				return ret;
 
 			if (colors !== undefined) {
@@ -2981,7 +3000,7 @@ NGUIText = {
     GetGlyphWidth: function(ch, prev) {
 		if (this.bitmapFont === undefined) return 0;
         var thinSpace = false;
-        if (ch == '\u2009') {
+        if (ch === '\u2009'.charCodeAt(0)) {
             thinSpace = true;
             ch = ' ';
         }
@@ -3405,8 +3424,9 @@ NGUIText = {
         var regionWidth = this.regionWidth;
         var regionHeight = this.regionHeight;
         var finalLineHeight = this.finalLineHeight;
+		var ret = { result: false, text: "" };
 		if (regionWidth < 1 || regionHeight < 1 || finalLineHeight < 1)
-			return false;
+			return ret;
 
         var maxLines = this.maxLines;
         var fontScale = this.fontScale;
@@ -3415,21 +3435,21 @@ NGUIText = {
 		var maxLineCount = (maxLines > 0) ? maxLines : 1000000;
 		maxLineCount = Mathf.FloorToInt(Math.min(maxLineCount, height / finalLineHeight) + 0.01);
 		if (maxLineCount === 0)
-            return false;
+            return ret;
 
 		if (text.length === 0) text = " ";
 		this.Prepare(text);
 		var sb = "";
-		var textLength = text.Length;
+		var textLength = text.length;
 		var remainingWidth = regionWidth;
 		var start = 0, offset = 0, lineCount = 1, prev = 0;
 		var lineIsEmpty = true;
 		var fits = true;
 		var eastern = false;
 		for (; offset < textLength; ++offset) {
-			var ch = text[offset];
+			var ch = text.charCodeAt(offset);
 			if (ch > 12287) eastern = true;
-			if (ch == '\n') {
+			if (ch == '\n'.charCodeAt(0)) {
 				if (lineCount == maxLineCount) break;
 				remainingWidth = regionWidth;
 
@@ -3449,9 +3469,9 @@ NGUIText = {
                      continue; 
                 }
             }
-			var symbol = this.useSymbols ? this.GetSymbol(text, offset, textLength) : null;
+			var symbol = this.useSymbols ? this.GetSymbol(text, offset, textLength) : undefined;
 			var glyphWidth;
-			if (symbol !== undefined) {
+			if (symbol === undefined) {
 				var w = this.GetGlyphWidth(ch, prev);
 				if (w == 0) continue;
 				glyphWidth = finalSpacingX + w;
@@ -3510,8 +3530,9 @@ NGUIText = {
 		}
 
 		if (start < offset) sb.concat(text.substring(start, offset - start));
-		finalText = sb;
-		return fits && ((offset == textLength) || (lineCount <= Math.min(maxLines, maxLineCount)));
+		ret.result = fits && ((offset == textLength) || (lineCount <= Math.min(maxLines, maxLineCount)));
+		ret.text = sb;
+		return ret;
     },
 };
 
