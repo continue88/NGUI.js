@@ -6,8 +6,9 @@ using System.IO;
 public class NguiJS
 {
     const string JsPrefix = "_data_=";
-    static List<UIAtlas> mUsedAtlas = new List<UIAtlas>();
-    static List<string> mAtlasImages = new List<string>();
+    static HashSet<UIFont> mUsedFonts = new HashSet<UIFont>();
+    static HashSet<UIAtlas> mUsedAtlas = new HashSet<UIAtlas>();
+    static HashSet<string> mAtlasImages = new HashSet<string>();
     static Transform mRootTrans;
 
     [MenuItem("NGUI.js/Test")]
@@ -27,8 +28,10 @@ public class NguiJS
         mRootTrans = go.transform;
         mUsedAtlas.Clear();
         mAtlasImages.Clear();
+        mUsedFonts.Clear();
 
         File.WriteAllText(EditorUtility.SaveFilePanel("Save As", "", go.name, "js"), JsPrefix + Export(go).ToJson());
+        mUsedFonts.ForEach(font => File.WriteAllText(EditorUtility.SaveFilePanel("Save As", "", font.name, "js"), JsPrefix + Export(font).ToJson()));
         mUsedAtlas.ForEach(atlas => File.WriteAllText(EditorUtility.SaveFilePanel("Save As", "", atlas.name, "js"), JsPrefix + Export(atlas).ToJson()));
         mAtlasImages.ForEach(path => File.Copy(path, EditorUtility.SaveFilePanel("Save As", "", Path.GetFileName(path), Path.GetExtension(path)), true));
     }
@@ -94,8 +97,7 @@ public class NguiJS
 
     public static LitJson.JsonData Export(UISprite sprite)
     {
-        if (!mUsedAtlas.Contains(sprite.atlas))
-            mUsedAtlas.Add(sprite.atlas);
+        mUsedAtlas.Add(sprite.atlas);
 
         var data = new LitJson.JsonData();
         data["l"] = sprite.atlas.name;
@@ -119,6 +121,14 @@ public class NguiJS
             if (sprite.bottomAnchor.target) data["ba"] = Export(sprite.bottomAnchor);
             if (sprite.topAnchor.target) data["ta"] = Export(sprite.topAnchor);
         }
+        return data;
+    }
+
+    public static LitJson.JsonData Export(UILabel label)
+    {
+        mUsedFonts.Add(label.bitmapFont);
+
+        var data = new LitJson.JsonData();
         return data;
     }
 
@@ -178,6 +188,52 @@ public class NguiJS
         return data;
     }
 
+    public static LitJson.JsonData Export(UIFont font)
+    {
+        mUsedAtlas.Add(font.atlas);
+
+        var data = new LitJson.JsonData();
+        data["atlas"] = font.atlas.name;
+        data["symbols"] = Export(font.symbols);
+        return data;
+    }
+
+    public static LitJson.JsonData Export(List<BMSymbol> symbols)
+    {
+        var data = new LitJson.JsonData();
+        data.SetJsonType(LitJson.JsonType.Object);
+        symbols.ForEach(symbol => data.Add(Export(symbol)));
+        return data;
+    }
+
+    public static LitJson.JsonData Export(BMSymbol symbol)
+    {
+        var data = new LitJson.JsonData();
+        data["q"] = symbol.sequence;
+        data["s"] = symbol.spriteName;
+        data["ox"] = symbol.offsetX;
+        data["oy"] = symbol.offsetY;
+        data["w"] = symbol.width;
+        data["h"] = symbol.height;
+        data["a"] = symbol.advance;
+        return data;
+    }
+
+    public static LitJson.JsonData Export(BMGlyph glyph)
+    {
+        var data = new LitJson.JsonData();
+        data["i"] = glyph.index;
+        data["x"] = glyph.x;
+        data["y"] = glyph.y;
+        data["w"] = glyph.width;
+        data["h"] = glyph.height;
+        data["ox"] = glyph.offsetX;
+        data["oy"] = glyph.offsetY;
+        data["a"] = glyph.advance;
+        data["c"] = glyph.channel;
+        return data;
+    }
+
     public static LitJson.JsonData Export(UIAtlas atlas)
     {
         var data = new LitJson.JsonData();
@@ -185,7 +241,7 @@ public class NguiJS
         // iamge name.
         var tex = atlas.spriteMaterial.mainTexture;
         var path = AssetDatabase.GetAssetPath(tex);
-        if (!mAtlasImages.Contains(path)) mAtlasImages.Add(path);
+        mAtlasImages.Add(path);
         data["image"] = Path.GetFileName(path);
         data["width"] = tex.width;
         data["height"] = tex.height;

@@ -19,6 +19,9 @@ unity3d\Vector2.js
 unity3d\Vector3.js
 unity3d\Vector4.js
 internal\AnchorPoint.js
+internal\BMFont.js
+internal\BMGlyph.js
+internal\BMSymbol.js
 internal\NGUIMath.js
 internal\NGUITools.js
 internal\UIDrawCall.js
