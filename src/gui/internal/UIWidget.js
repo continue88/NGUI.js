@@ -2,12 +2,11 @@
 NGUI.UIWidget = function(gameObject) {
 	NGUI.UIRect.call(this, gameObject);
 	
-	this.mColor = new UnityEngine.Color(1, 1, 1), // UnityEngine.ColorKeywords.white
+	this.mColor = new UnityEngine.Color(1, 1, 1, 1),
 	this.mPivot = WidgetPivot.Center;
 	this.mWidth = 100;
 	this.mHeight = 100;
 	this.mDepth = 0;
-	this.mChanged = false;
 	this.mMoved = false;
 	this.mIsInFront = true;
 	this.mIsVisibleByAlpha = true;
@@ -79,7 +78,6 @@ Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 		this.mWidth = json.w || 100;
 		this.mHeight = json.h || 100;
 		this.mDepth = json.d || 0;
-		this.mChanged = true;
 		this.CreatePanel(); // ensure we have a parent panel.
 	},
 	CreatePanel: function() {

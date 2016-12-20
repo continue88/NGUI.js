@@ -6,13 +6,14 @@ NGUI.UIRect = function(gameObject) {
 	this.rightAnchor = undefined;//new NGUI.AnchorPoint();
 	this.bottomAnchor = undefined;//new NGUI.AnchorPoint();
 	this.topAnchor = undefined;//new NGUI.AnchorPoint();
-
 	this.finalAlpha = 1;
+	
 	this.mSides = [];
 	this.mCam = undefined;
 	this.mUpdateAnchors = true;
 	this.mUpdateFrame = -1;
 	this.mAnchorsCached = false;
+	this.mChanged = false;
 };
 
 Object.assign(NGUI.UIRect.prototype = Object.create(UnityEngine.MonoBehaviour.prototype), {
@@ -36,6 +37,7 @@ Object.assign(NGUI.UIRect.prototype = Object.create(UnityEngine.MonoBehaviour.pr
 		if (json.ra !== undefined) this.rightAnchor = new NGUI.AnchorPoint(json.ra);
 		if (json.ba !== undefined) this.bottomAnchor = new NGUI.AnchorPoint(json.ba);
 		if (json.ta !== undefined) this.topAnchor = new NGUI.AnchorPoint(json.ta);
+		this.mChanged = true;
 	},
 	GetSides: function(relativeTo) {
 		if (this.mCam !== undefined) return this.mCam.GetSides(this.cameraRayDistance(), relativeTo);
