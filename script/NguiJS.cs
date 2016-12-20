@@ -92,7 +92,25 @@ public class NguiJS
         else if (comp is UICamera) return Export((UICamera)comp);
         else if (comp is UIPanel) return Export((UIPanel)comp);
         else if (comp is UIRoot) return Export((UIRoot)comp);
+        else if (comp is UILabel) return Export((UILabel)comp);
         return null;
+    }
+
+    public static void ExportWidget(LitJson.JsonData data, UIWidget widget)
+    {
+        Export(data, "p", (int)widget.pivot, (int)UIWidget.Pivot.Center);
+        Export(data, "a", widget.aspectRatio, 1.0f);
+        Export(data, "k", (int)widget.keepAspectRatio, (int)UIWidget.AspectRatioSource.Free);
+        Export(data, "w", widget.width, 100);
+        Export(data, "h", widget.height, 100);
+        Export(data, "d", widget.depth, 0);
+        if (widget.isAnchored)
+        {
+            if (widget.leftAnchor.target) data["la"] = Export(widget.leftAnchor);
+            if (widget.rightAnchor.target) data["ra"] = Export(widget.rightAnchor);
+            if (widget.bottomAnchor.target) data["ba"] = Export(widget.bottomAnchor);
+            if (widget.topAnchor.target) data["ta"] = Export(widget.topAnchor);
+        }
     }
 
     public static LitJson.JsonData Export(UISprite sprite)
@@ -108,19 +126,7 @@ public class NguiJS
         Export(data, "fd", (int)sprite.fillDirection, (int)UIBasicSprite.FillDirection.Radial360);
         Export(data, "fa", sprite.fillAmount, 1.0f);
         Export(data, "fi", sprite.invert, false);
-        Export(data, "p", (int)sprite.pivot, (int)UIWidget.Pivot.Center);
-        Export(data, "k", (int)sprite.keepAspectRatio, (int)UIWidget.AspectRatioSource.Free);
-        Export(data, "a", sprite.aspectRatio, 1.0f);
-        Export(data, "w", sprite.width, 100);
-        Export(data, "h", sprite.height, 100);
-        Export(data, "d", sprite.depth, 0);
-        if (sprite.isAnchored)
-        {
-            if (sprite.leftAnchor.target) data["la"] = Export(sprite.leftAnchor);
-            if (sprite.rightAnchor.target) data["ra"] = Export(sprite.rightAnchor);
-            if (sprite.bottomAnchor.target) data["ba"] = Export(sprite.bottomAnchor);
-            if (sprite.topAnchor.target) data["ta"] = Export(sprite.topAnchor);
-        }
+        ExportWidget(data, sprite);
         return data;
     }
 
@@ -129,6 +135,23 @@ public class NguiJS
         mUsedFonts.Add(label.bitmapFont);
 
         var data = new LitJson.JsonData();
+        Export(data, "ft", label.bitmapFont.name, "");
+        Export(data, "fs", label.fontSize, 20);
+        Export(data, "tx", label.value, "");
+        Export(data, "of", (int)label.overflowMethod, (int)UILabel.Overflow.ShrinkContent);
+        Export(data, "al", (int)label.alignment, (int)NGUIText.Alignment.Automatic);
+        Export(data, "gt", label.gradientTop, Color.white);
+        Export(data, "gb", label.gradientBottom, Color.white);
+        Export(data, "es", (int)label.effectStyle, (int)UILabel.Effect.None);
+        Export(data, "ec", label.effectColor, Color.black);
+        Export(data, "ed", label.effectDistance, Vector2.one);
+        Export(data, "sx", label.spacingX, 0);
+        Export(data, "sy", label.spacingY, 0);
+        Export(data, "ml", label.maxLineCount, 0);
+        Export(data, "se", label.supportEncoding, false);
+        Export(data, "ss", (int)label.symbolStyle, (int)NGUIText.SymbolStyle.Normal);
+        Export(data, "st", (int)label.fontStyle, (int)FontStyle.Normal);
+        ExportWidget(data, label);
         return data;
     }
 
@@ -195,13 +218,14 @@ public class NguiJS
         var data = new LitJson.JsonData();
         data["atlas"] = font.atlas.name;
         data["symbols"] = Export(font.symbols);
+        data["font"] = Export(font.bmFont);
         return data;
     }
 
     public static LitJson.JsonData Export(List<BMSymbol> symbols)
     {
         var data = new LitJson.JsonData();
-        data.SetJsonType(LitJson.JsonType.Object);
+        data.SetJsonType(LitJson.JsonType.Array);
         symbols.ForEach(symbol => data.Add(Export(symbol)));
         return data;
     }
@@ -216,6 +240,25 @@ public class NguiJS
         data["w"] = symbol.width;
         data["h"] = symbol.height;
         data["a"] = symbol.advance;
+        return data;
+    }
+
+    public static LitJson.JsonData Export(BMFont font)
+    {
+        var data = new LitJson.JsonData();
+        Export(data, "charSize", font.charSize, 16);
+        Export(data, "baseOffset", font.baseOffset, 0);
+        Export(data, "texWidth", font.texWidth, 0);
+        Export(data, "texHeight", font.texHeight, 0);
+        Export(data, "spriteName", font.spriteName, "");
+        data["glyphs"] = Export(font.glyphs);
+        return data;
+    }
+    public static LitJson.JsonData Export(List<BMGlyph> glyphs)
+    {
+        var data = new LitJson.JsonData();
+        data.SetJsonType(LitJson.JsonType.Array);
+        glyphs.ForEach(glyph => data.Add(Export(glyph)));
         return data;
     }
 
@@ -332,6 +375,7 @@ public class NguiJS
         return data;
     }
 
+    public static void Export(LitJson.JsonData data, string name, Color value, Color def) { if (value != def) data[name] = Export(value); }
     public static void Export(LitJson.JsonData data, string name, string value, string def) { if (value != def) data[name] = value; }
     public static void Export(LitJson.JsonData data, string name, int value, int def) { if (value != def) data[name] = value; }
     public static void Export(LitJson.JsonData data, string name, float value, float def) { if (value != def) data[name] = System.Math.Round(value, 2); }
