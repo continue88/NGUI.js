@@ -144,7 +144,7 @@ Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 				tt = Mathf.Lerp(sides[3].y, sides[1].y, this.topAnchor.relative) + this.topAnchor.absolute;
 				this.mIsInFront = true;
 			} else { // Anchored to a single transform
-				var lp = this.GetLocalPos(leftAnchor, parent);
+				var lp = this.GetLocalPos(this.leftAnchor, parent);
 				lt = lp.x + this.leftAnchor.absolute;
 				bt = lp.y + this.bottomAnchor.absolute;
 				rt = lp.x + this.rightAnchor.absolute;

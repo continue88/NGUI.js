@@ -31,9 +31,11 @@ internal\UIWidget.js
 internal\UIBasicSprite.js
 webgl\GUIPlugin.js
 webgl\Renderer.js
+ui\UIFont.js
 ui\UIAtlas.js
 ui\UICamera.js
 ui\UIPanel.js
 ui\UIRoot.js
 ui\UISprite.js
 ui\UISpriteData.js
+ui\UILabel.js
