@@ -10,6 +10,21 @@ NGUIMath = {
 		}
 		return final;
 	},
+	ConvertToPixels: function(rect, width, height, round) {
+		var final = rect.clone();
+		if (round) {
+			final.xMin = Mathf.RoundToInt(rect.xMin * width);
+			final.xMax = Mathf.RoundToInt(rect.xMax * width);
+			final.yMin = Mathf.RoundToInt((1 - rect.yMax) * height);
+			final.yMax = Mathf.RoundToInt((1 - rect.yMin) * height);
+		} else {
+			final.xMin = rect.xMin * width;
+			final.xMax = rect.xMax * width;
+			final.yMin = (1 - rect.yMax) * height;
+			final.yMax = (1 - rect.yMin) * height;
+		}
+		return final;
+	},
 	GetPivotOffset: function(pv) {
 		var v = new UnityEngine.Vector2();
 		if (pv == WidgetPivot.Top || pv == WidgetPivot.Center || pv == WidgetPivot.Bottom) v.x = 0.5;
@@ -35,34 +50,34 @@ NGUIMath = {
 	},
 	HexToDecimal: function(ch) {
 		switch (ch) {
-			case '0': return 0x0;
-			case '1': return 0x1;
-			case '2': return 0x2;
-			case '3': return 0x3;
-			case '4': return 0x4;
-			case '5': return 0x5;
-			case '6': return 0x6;
-			case '7': return 0x7;
-			case '8': return 0x8;
-			case '9': return 0x9;
-			case 'a':
-			case 'A': return 0xA;
-			case 'b':
-			case 'B': return 0xB;
-			case 'c':
-			case 'C': return 0xC;
-			case 'd':
-			case 'D': return 0xD;
-			case 'e':
-			case 'E': return 0xE;
-			case 'f':
-			case 'F': return 0xF;
+			case CHAR_0: return 0x0;
+			case CHAR_1: return 0x1;
+			case CHAR_2: return 0x2;
+			case CHAR_3: return 0x3;
+			case CHAR_4: return 0x4;
+			case CHAR_5: return 0x5;
+			case CHAR_6: return 0x6;
+			case CHAR_7: return 0x7;
+			case CHAR_8: return 0x8;
+			case CHAR_9: return 0x9;
+			case CHAR_a:
+			case CHAR_A: return 0xA;
+			case CHAR_b:
+			case CHAR_B: return 0xB;
+			case CHAR_c:
+			case CHAR_C: return 0xC;
+			case CHAR_d:
+			case CHAR_D: return 0xD;
+			case CHAR_e:
+			case CHAR_E: return 0xE;
+			case CHAR_f:
+			case CHAR_F: return 0xF;
 		}
 		return 0xF;
 	},
 	DecimalToHex24: function(num) {
 		num &= 0xFFFFFF;
-		return num.ToString("X6");
+		return num.toString(16);
 	},
 	IntToColor: function(val) {
 		var inv = 1 / 255;

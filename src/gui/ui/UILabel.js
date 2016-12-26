@@ -171,7 +171,7 @@ Object.assign(NGUI.UILabel.prototype = Object.create(NGUI.UIWidget.prototype), {
 					this.mCalculatedSize = NGUIText.CalculatePrintedSize(this.mProcessedText);
 					this.mHeight = Math.max(this.minHeight, Mathf.RoundToInt(this.mCalculatedSize.y));
 					if (regionY != 1) this.mHeight = Mathf.RoundToInt(this.mHeight / regionY);
-					if ((mHeight & 1) == 1) ++this.mHeight;
+					if ((this.mHeight & 1) == 1) ++this.mHeight;
 				} else {
 					this.mCalculatedSize = NGUIText.CalculatePrintedSize(this.mProcessedText);
 				}

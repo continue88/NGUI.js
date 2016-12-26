@@ -19,6 +19,7 @@ NGUI.UISpriteData = function() {
 
 NGUI.UISpriteData.prototype = {
 	constructor: NGUI.UISpriteData,
+	get hasPadding() { return (this.paddingLeft | this.paddingRight | this.paddingTop | this.paddingBottom) != 0; },
 	Load: function(json) {
 		this.name = json.name;
 		this.x = json.x;

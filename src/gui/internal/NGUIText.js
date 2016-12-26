@@ -2,10 +2,26 @@
 const CHAR_SPACE = ' '.charCodeAt(0);
 const CHAR_SPACE2 = '\u2009'.charCodeAt(0);
 const CHAR_0 = '0'.charCodeAt(0);
+const CHAR_1 = '1'.charCodeAt(0);
+const CHAR_2 = '2'.charCodeAt(0);
+const CHAR_3 = '3'.charCodeAt(0);
+const CHAR_4 = '4'.charCodeAt(0);
+const CHAR_5 = '5'.charCodeAt(0);
+const CHAR_6 = '6'.charCodeAt(0);
+const CHAR_7 = '7'.charCodeAt(0);
+const CHAR_8 = '8'.charCodeAt(0);
 const CHAR_9 = '9'.charCodeAt(0);
 const CHAR_a = 'a'.charCodeAt(0);
-const CHAR_f = 'f'.charCodeAt(0);
 const CHAR_A = 'A'.charCodeAt(0);
+const CHAR_b = 'b'.charCodeAt(0);
+const CHAR_B = 'B'.charCodeAt(0);
+const CHAR_c = 'c'.charCodeAt(0);
+const CHAR_C = 'C'.charCodeAt(0);
+const CHAR_d = 'd'.charCodeAt(0);
+const CHAR_D = 'D'.charCodeAt(0);
+const CHAR_e = 'e'.charCodeAt(0);
+const CHAR_E = 'E'.charCodeAt(0);
+const CHAR_f = 'f'.charCodeAt(0);
 const CHAR_F = 'F'.charCodeAt(0);
 const CHAR_LEFT = '['.charCodeAt(0);
 const CHAR_RIGHT = ']'.charCodeAt(0);
@@ -47,11 +63,19 @@ NGUIText = {
 		return NGUIMath.DecimalToHex24(i);
 	},
 	ParseColor24: function(text, offset) {
-		var r = (NGUIMath.HexToDecimal(text[offset])     << 4) | NGUIMath.HexToDecimal(text[offset + 1]);
-		var g = (NGUIMath.HexToDecimal(text[offset + 2]) << 4) | NGUIMath.HexToDecimal(text[offset + 3]);
-		var b = (NGUIMath.HexToDecimal(text[offset + 4]) << 4) | NGUIMath.HexToDecimal(text[offset + 5]);
+		var r = (NGUIMath.HexToDecimal(text.charCodeAt(offset))     << 4) | NGUIMath.HexToDecimal(text.charCodeAt(offset + 1));
+		var g = (NGUIMath.HexToDecimal(text.charCodeAt(offset + 2)) << 4) | NGUIMath.HexToDecimal(text.charCodeAt(offset + 3));
+		var b = (NGUIMath.HexToDecimal(text.charCodeAt(offset + 4)) << 4) | NGUIMath.HexToDecimal(text.charCodeAt(offset + 5));
 		var f = 1 / 255;
 		return new UnityEngine.Color(f * r, f * g, f * b);
+	},
+	ParseColor32: function(text, offset) {
+		var r = (NGUIMath.HexToDecimal(text.charCodeAt(offset)) << 4) | NGUIMath.HexToDecimal(text.charCodeAt(offset + 1));
+		var g = (NGUIMath.HexToDecimal(text.charCodeAt(offset + 2)) << 4) | NGUIMath.HexToDecimal(text.charCodeAt(offset + 3));
+		var b = (NGUIMath.HexToDecimal(text.charCodeAt(offset + 4)) << 4) | NGUIMath.HexToDecimal(text.charCodeAt(offset + 5));
+		var a = (NGUIMath.HexToDecimal(text.charCodeAt(offset + 6)) << 4) | NGUIMath.HexToDecimal(text.charCodeAt(offset + 7));
+		var f = 1 / 255;
+		return new UnityEngine.Color(f * r, f * g, f * b, f * a);
 	},
     ParseSymbol: function(text, index, colors, premultiply) {
         var ret = {
@@ -67,7 +91,7 @@ NGUIText = {
 				ret.result = true;
                 return ret;
 			}
-			var sub3 = text.substring(ret.index, 3);
+			var sub3 = text.substr(ret.index, 3);
 			switch (sub3) {
             case "[b]":
                 ret.bold = true;
@@ -99,7 +123,7 @@ NGUIText = {
 
 		if (ret.index + 4 > length) return ret;
 		if (text.charCodeAt(ret.index + 3) === CHAR_RIGHT) {
-			var sub4 = text.substring(index, 4);
+			var sub4 = text.substr(index, 4);
 			switch (sub4) {
 			case "[/b]":
 				ret.bold = false;
@@ -142,7 +166,7 @@ NGUIText = {
 		}
 		if (ret.index + 5 > length) return ret;
 		if (text.charCodeAt(ret.index + 4) === CHAR_RIGHT) {
-			var sub5 = text.substring(ret.index, 5);
+			var sub5 = text.substr(ret.index, 5);
 			switch (sub5) {
 			case "[sub]":
 				ret.sub = 1;
@@ -158,7 +182,7 @@ NGUIText = {
 		}
 		if (ret.index + 6 > length) return ret;
 		if (text.charCodeAt(ret.index + 5) === CHAR_RIGHT) {
-			var sub6 = text.substring(index, 6);
+			var sub6 = text.substr(index, 6);
 			switch (sub6) {
 			case "[/sub]":
 				ret.sub = 0;
@@ -177,7 +201,7 @@ NGUIText = {
 			}
 		}
 
-		if (text.substring(ret.index + 1).startWith('url=')) {
+		if (text.substr(ret.index + 1, 4) === 'url=') {
 			var closingBracket = text.indexOf(']', ret.index + 4);
 			if (closingBracket != -1) {
 				ret.index = closingBracket + 1;
@@ -193,7 +217,7 @@ NGUIText = {
 		if (ret.index + 8 > length) return ret;
 		if (text.charCodeAt(ret.index + 7) === CHAR_RIGHT) {
 			var c = this.ParseColor24(text, ret.index + 1);
-			if (this.EncodeColor24(c) != text.substring(ret.index + 1, 6).toUpperCase())
+			if (this.EncodeColor24(c) != text.substr(ret.index + 1, 6).toUpperCase())
 				return ret;
 			if (colors != null) {
 				c.a = colors[colors.length - 1].a;
@@ -207,7 +231,7 @@ NGUIText = {
 		if (ret.index + 10 > length) return ret;
 		if (text.charCodeAt(ret.index + 9) === CHAR_RIGHT) {
 			var c = this.ParseColor32(text, ret.index + 1);
-			if (this.EncodeColor32(c) != text.substring(ret.index + 1, 8).toUpperCase())
+			if (this.EncodeColor32(c) != text.substr(ret.index + 1, 8).toUpperCase())
 				return ret;
 
 			if (colors !== undefined) {
@@ -223,7 +247,7 @@ NGUIText = {
     StripSymbols: function(text) {
 		if (text === undefined) text;
         for (var i = 0, imax = text.length; i < imax; ) {
-            var c = text[i];
+            var c = text.charCodeAt(i);
             var ret = this.ParseSymbol(text, i, null, false);
             if (c == '[' && ret.result === true) {
                 text = text.splice(i, ret.index - i);
@@ -246,7 +270,7 @@ NGUIText = {
 			if (symbolLength == 0 || textLength < symbolLength) continue;
 			var match = true;
 			for (var c = 0; c < symbolLength; ++c) {
-				if (text[offset + c] != sym.sequence[c]) {
+				if (text.charCodeAt(index + c) != sym.sequence.charCodeAt(c)) {
 					match = false;
 					break;
 				}
@@ -310,7 +334,7 @@ NGUIText = {
 			var x = 0, y = 0, maxX = 0;
 			var textLength = text.length, ch = 0, prev = 0;
 			for (var i = 0; i < textLength; ++i) {
-				ch = text[i];
+				ch = text.charCodeAt(i);
 				if (ch === '\n') {
 					if (x > maxX) maxX = x;
 					x = 0;
@@ -430,7 +454,7 @@ NGUIText = {
 		}
 
 		for (var i = 0; i < textLength; ++i) {
-			ch = text[i];
+			ch = text.charCodeAt(i);
 			prevX = x;
 			if (ch == '\n') {
 				if (x > maxX) maxX = x;
@@ -746,7 +770,7 @@ NGUIText = {
 				remainingWidth = regionWidth;
 
 				// Add the previous word to the final string
-				if (start < offset) sb.concat(text.substring(start, offset - start + 1));
+				if (start < offset) sb.concat(text.substr(start, offset - start + 1));
 				else sb.concat(ch);
 				lineIsEmpty = true;
 				++lineCount;
@@ -773,17 +797,17 @@ NGUIText = {
 			if (this.IsSpace(ch) && !eastern && start < offset) {
 				var end = offset - start + 1;
 				if (lineCount == maxLineCount && remainingWidth <= 0 && offset < textLength) {
-					var cho = text[offset];
-					if (cho < ' ' || this.IsSpace(cho)) --end;
+					var cho = text.charCodeAt(offset);
+					if (cho < CHAR_SPACE || this.IsSpace(cho)) --end;
 				}
-				sb.concat(text.substring(start, end));
+				sb.concat(text.substr(start, end));
 				lineIsEmpty = false;
 				start = offset + 1;
 				prev = ch;
 			}
 			if (Mathf.RoundToInt(remainingWidth) < 0) {
 				if (lineIsEmpty || lineCount == maxLineCount) {
-					sb.concat(text.substring(start, Mathf.Max(0, offset - start)));
+					sb.concat(text.substr(start, Math.max(0, offset - start)));
 					var space = this.IsSpace(ch);
 					if (!space && !eastern) fits = false;
 					if (lineCount++ == maxLineCount) {
@@ -821,7 +845,7 @@ NGUIText = {
 			}
 		}
 
-		if (start < offset) sb.concat(text.substring(start, offset - start));
+		if (start < offset) sb.concat(text.substr(start, offset - start));
 		ret.result = fits && ((offset == textLength) || (lineCount <= Math.min(maxLines, maxLineCount)));
 		ret.text = sb;
 		return ret;

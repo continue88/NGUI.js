@@ -53,7 +53,7 @@ NGUI.BMFont.prototype = {
     },
     Trim (xMin, yMin, xMax, yMax) {
 		for (var i in this.glyphs) {
-            var glyph = mSaved[i];
+            var glyph = this.glyphs[i];
             glyph.Trim(xMin, yMin, xMax, yMax);
 		}
 	},

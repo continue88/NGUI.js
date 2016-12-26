@@ -22,6 +22,7 @@ internal\AnchorPoint.js
 internal\BMFont.js
 internal\BMGlyph.js
 internal\BMSymbol.js
+internal\NGUIText.js
 internal\NGUIMath.js
 internal\NGUITools.js
 internal\UIDrawCall.js
@@ -29,7 +30,6 @@ internal\UIGeometry.js
 internal\UIRect.js
 internal\UIWidget.js
 internal\UIBasicSprite.js
-internal\NGUIText.js
 webgl\GUIPlugin.js
 webgl\Renderer.js
 ui\UIFont.js
