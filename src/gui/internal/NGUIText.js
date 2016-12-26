@@ -26,6 +26,7 @@ const CHAR_F = 'F'.charCodeAt(0);
 const CHAR_LEFT = '['.charCodeAt(0);
 const CHAR_RIGHT = ']'.charCodeAt(0);
 const CHAR_SUB = '-'.charCodeAt(0);
+const CHAR_RET = '\n'.charCodeAt(0);
 
 NGUIText = {
     glyph: {
@@ -40,7 +41,7 @@ NGUIText = {
     maxLines: 0,
     pixelDensity: 1,
     mColors: [],
-
+	sizeShrinkage: 0.75,
 	IsSpace: function(ch) { return (ch === CHAR_SPACE || ch === 0x200a || ch === 0x200b || ch === CHAR_SPACE2); },
 	IsHex: function(ch) { return (ch >= CHAR_0 && ch <= CHAR_9) || (ch >= CHAR_a && ch <= CHAR_f) || (ch >= CHAR_A && ch <= CHAR_F); },
     ReplaceSpaceWithNewline: function(s) {
@@ -84,7 +85,7 @@ NGUIText = {
         };
 		var length = text.length;
 		if (index + 3 > length || text.charCodeAt(index) !== CHAR_LEFT) return ret;
-		if (text.charCodeAt(ret.index + 2) == CHAR_RIGHT) {
+		if (text.charCodeAt(ret.index + 2) === CHAR_RIGHT) {
 			if (text.charCodeAt(ret.index + 1) === CHAR_SUB) {
 				if (colors !== undefined && colors.length > 1) colors.pop();
 				ret.index += 3;
@@ -249,7 +250,7 @@ NGUIText = {
         for (var i = 0, imax = text.length; i < imax; ) {
             var c = text.charCodeAt(i);
             var ret = this.ParseSymbol(text, i, null, false);
-            if (c == '[' && ret.result === true) {
+            if (c === '[' && ret.result === true) {
                 text = text.splice(i, ret.index - i);
                 imax = text.length;
                 continue;
@@ -262,12 +263,12 @@ NGUIText = {
     },
     GetSymbol: function(text, index, textLength) {
 		var uiFont = this.bitmapFont;
-        if (uiFont.mSymbols.length == 0) return;
+        if (uiFont.mSymbols.length === 0) return;
 		textLength -= index;
 		for (var i in uiFont.mSymbols) {
 			var sym = uiFont.mSymbols[i];
 			var symbolLength = sym.length;
-			if (symbolLength == 0 || textLength < symbolLength) continue;
+			if (symbolLength === 0 || textLength < symbolLength) continue;
 			var match = true;
 			for (var c = 0; c < symbolLength; ++c) {
 				if (text.charCodeAt(index + c) != sym.sequence.charCodeAt(c)) {
@@ -281,7 +282,7 @@ NGUIText = {
     },
     GetGlyph: function(ch, prev) {
         var thinSpace = false;
-        if (ch == '\u2009') {
+        if (ch === '\u2009') {
             thinSpace = true;
             ch = ' ';
         }
@@ -335,7 +336,7 @@ NGUIText = {
 			var textLength = text.length, ch = 0, prev = 0;
 			for (var i = 0; i < textLength; ++i) {
 				ch = text.charCodeAt(i);
-				if (ch === '\n') {
+				if (ch === CHAR_RET) {
 					if (x > maxX) maxX = x;
 					x = 0;
 					y += this.finalLineHeight;
@@ -343,7 +344,7 @@ NGUIText = {
 				}
 				if (ch < ' ') continue;
 				var symbol = this.useSymbols ? this.GetSymbol(text, i, textLength) : undefined;
-				if (symbol == null) {
+				if (symbol === null) {
 					var w = this.GetGlyphWidth(ch, prev);
 					if (w !== 0) {
 						w += this.finalSpacingX;
@@ -386,12 +387,12 @@ NGUIText = {
             if (padding < 0) return;
             var diff = Mathf.RoundToInt(this.rectWidth - printedWidth);
             var intWidth = Mathf.RoundToInt(this.rectWidth);
-            var oddDiff = (diff & 1) == 1;
-            var oddWidth = (intWidth & 1) == 1;
+            var oddDiff = (diff & 1) === 1;
+            var oddWidth = (intWidth & 1) === 1;
             if ((oddDiff && !oddWidth) || (!oddDiff && oddWidth))
-                padding += 0.5 * fontScale;
+                padding += 0.5 * this.fontScale;
             for (var i = indexOffset; i < verts.length; ++i)
-                verts.buffer[i].x += padding;
+                verts[i].x += padding;
             break;
         }
         case TextAlignment.Justified: {
@@ -456,7 +457,7 @@ NGUIText = {
 		for (var i = 0; i < textLength; ++i) {
 			ch = text.charCodeAt(i);
 			prevX = x;
-			if (ch == '\n') {
+			if (ch === CHAR_RET) {
 				if (x > maxX) maxX = x;
 				if (this.alignment != TextAlignment.Left) {
 					this.Align(verts, indexOffset, x - this.finalSpacingX);
@@ -467,31 +468,29 @@ NGUIText = {
 				prev = 0;
 				continue;
 			}
-			if (ch < ' ') {
+			if (ch < CHAR_SPACE) {
 				prev = ch;
 				continue;
 			}
 
             textProp = this.encoding ? this.ParseSymbol(text, i, this.mColors, this.premultiply) : {};
-			if (textProp.result) {
+			if (textProp.result === true) {
 				var fc;
-				if (textProp.ignoreColor) {
+				if (textProp.ignoreColor === true) {
 					fc = this.mColors[this.mColors.length - 1].clone();
 					fc.a *= this.mAlpha * this.tint.a;
 				} else {
-					fc = this.tint * this.mColors[this.mColors.length - 1];
+					fc = this.tint.clone().mul(this.mColors[this.mColors.length - 1]);
 					fc.a *= this.mAlpha;
 				}
 				uc = fc;
-
 				for (var b = 0, bmax = this.mColors.length - 2; b < bmax; ++b)
 					fc.a *= this.mColors[b].a;
-
-				if (this.gradient) {
-					gb = this.gradientBottom * fc;
-					gt = this.gradientTop * fc;
+				if (this.gradient === true) {
+					gb = this.gradientBottom.clone().mul(fc);
+					gt = this.gradientTop.clone().mul(fc);
 				}
-				--i;
+				i = textProp.index - 1;
 				continue;
 			}
 			var symbol = this.useSymbols ? this.GetSymbol(text, i, textLength) : undefined;
@@ -501,7 +500,7 @@ NGUIText = {
 				v1y = -(y + symbol.offsetY * this.fontScale);
 				v0y = v1y - symbol.height * this.fontScale;
 				if (Mathf.RoundToInt(x + symbol.advance * this.fontScale) > this.regionWidth) {
-					if (x == 0) return;
+					if (x === 0) return;
 					if (this.alignment != TextAlignment.Left && indexOffset < verts.length) {
 						this.Align(verts, indexOffset, x - this.finalSpacingX);
 						indexOffset = verts.length;
@@ -533,7 +532,7 @@ NGUIText = {
 					uvs.push(new UnityEngine.Vector2(u1x, u0y));
 				}
 				if (cols !== undefined) {
-					if (symbolStyle === SymbolStyle.Colored) {
+					if (this.symbolStyle === SymbolStyle.Colored) {
 						for (var b = 0; b < 4; ++b) cols.push(uc);
 					} else {
 						var col = new UnityEngine.Color(1, 1, 1, 1);
@@ -545,13 +544,13 @@ NGUIText = {
 				var glyph = this.GetGlyph(ch, prev);
 				if (glyph === undefined) continue;
 				prev = ch;
-				if (subscriptMode != 0) {
+				if (textProp.subscriptMode !== 0) {
 					glyph.v0.x *= this.sizeShrinkage;
 					glyph.v0.y *= this.sizeShrinkage;
 					glyph.v1.x *= this.sizeShrinkage;
 					glyph.v1.y *= this.sizeShrinkage;
 
-					if (subscriptMode == 1) {
+					if (textProp.subscriptMode === 1) {
 						glyph.v0.y -= this.fontScale * this.fontSize * 0.4;
 						glyph.v1.y -= this.fontScale * this.fontSize * 0.4;
 					} else {
@@ -566,8 +565,8 @@ NGUIText = {
 				var w = glyph.advance;
 				if (this.finalSpacingX < 0) w += this.finalSpacingX;
 				if (Mathf.RoundToInt(x + w) > this.regionWidth) {
-					if (x == 0) return;
-					if (alignment != TextAlignment.Left && indexOffset < verts.length) {
+					if (x === 0) return;
+					if (this.alignment !== TextAlignment.Left && indexOffset < verts.length) {
 						this.Align(verts, indexOffset, x - this.finalSpacingX);
 						indexOffset = verts.length;
 					}
@@ -580,12 +579,12 @@ NGUIText = {
 					prevX = 0;
 				}
 				if (this.IsSpace(ch)) {
-					if (underline)
+					if (textProp.underline === true)
 						ch = '_';
-					else if (strikethrough)
+					else if (textProp.strikethrough === true)
 						ch = '-';
 				}
-				x += (subscriptMode == 0) ? this.finalSpacingX + glyph.advance :
+				x += (textProp.subscriptMode === 0) ? this.finalSpacingX + glyph.advance :
 					(this.finalSpacingX + glyph.advance) * this.sizeShrinkage;
 				if (this.IsSpace(ch)) continue;
 				if (uvs !== undefined) {
@@ -595,7 +594,7 @@ NGUIText = {
 						glyph.u0.y = uvRect.yMax - invY * glyph.u0.y;
 						glyph.u1.y = uvRect.yMax - invY * glyph.u1.y;
 					}
-					for (var j = 0, jmax = (bold ? 4 : 1); j < jmax; ++j) {
+					for (var j = 0, jmax = (textProp.bold === true ? 4 : 1); j < jmax; ++j) {
 						if (glyph.rotatedUVs) {
 							uvs.push(glyph.u0);
 							uvs.push(new UnityEngine.Vector2(glyph.u1.x, glyph.u0.y));
@@ -610,22 +609,22 @@ NGUIText = {
 					}
 				}
 				if (cols != null) {
-					if (glyph.channel == 0 || glyph.channel == 15) {
-						if (gradient) {
+					if (glyph.channel === 0 || glyph.channel === 15) {
+						if (textProp.gradient === true) {
 							var min = sizePD + glyph.v0.y / fontScale;
 							var max = sizePD + glyph.v1.y / fontScale;
 							min /= sizePD;
 							max /= sizePD;
 							s_c0 = Color.Lerp(gb, gt, min);
 							s_c1 = Color.Lerp(gb, gt, max);
-							for (var j = 0, jmax = (bold ? 4 : 1); j < jmax; ++j) {
+							for (var j = 0, jmax = (textProp.bold === true ? 4 : 1); j < jmax; ++j) {
 								cols.push(s_c0);
 								cols.push(s_c1);
 								cols.push(s_c1);
 								cols.push(s_c0);
 							}
 						} else {
-							for (var j = 0, jmax = (bold ? 16 : 4); j < jmax; ++j)
+							for (var j = 0, jmax = (textProp.bold === true ? 16 : 4); j < jmax; ++j)
 								cols.push(uc);
 						}
 					} else {
@@ -638,12 +637,12 @@ NGUIText = {
 							case 8: col.a += 0.51; break;
 						}
 						var c = col;
-						for (var j = 0, jmax = (bold ? 16 : 4); j < jmax; ++j)
+						for (var j = 0, jmax = (textProp.bold === true ? 16 : 4); j < jmax; ++j)
 							cols.push(c);
 					}
 				}
-				if (!bold) {
-					if (!italic) {
+				if (textProp.bold !== true) {
+					if (textProp.italic !== true) {
 						verts.push(new UnityEngine.Vector3(v0x, v0y));
 						verts.push(new UnityEngine.Vector3(v0x, v1y));
 						verts.push(new UnityEngine.Vector3(v1x, v1y));
@@ -668,8 +667,8 @@ NGUIText = {
 				}
 
 				// Underline and strike-through contributed by Rudy Pangestu.
-				if (underline || strikethrough) {
-					var dash = this.GetGlyph(strikethrough ? '-' : '_', prev);
+				if (textProp.underline === true || textProp.strikethrough === true) {
+					var dash = this.GetGlyph(textProp.strikethrough ? '-' : '_', prev);
 					if (dash === undefined) continue;
 					if (uvs !== undefined) {
 						if (bitmapFont !== undefined) {
@@ -679,21 +678,21 @@ NGUIText = {
 							dash.u1.y = uvRect.yMax - invY * dash.u1.y;
 						}
 						var cx = (dash.u0.x + dash.u1.x) * 0.5;
-						for (var j = 0, jmax = (bold ? 4 : 1); j < jmax; ++j) {
+						for (var j = 0, jmax = (textProp.bold === true ? 4 : 1); j < jmax; ++j) {
 							uvs.push(new UnityEngine.Vector2(cx, dash.u0.y));
 							uvs.push(new UnityEngine.Vector2(cx, dash.u1.y));
 							uvs.push(new UnityEngine.Vector2(cx, dash.u1.y));
 							uvs.push(new UnityEngine.Vector2(cx, dash.u0.y));
 						}
 					}
-					if (subscript && strikethrough) {
+					if (subscript === true && textProp.strikethrough === true) {
 						v0y = (-y + dash.v0.y) * sizeShrinkage;
 						v1y = (-y + dash.v1.y) * sizeShrinkage;
 					} else {
 						v0y = (-y + dash.v0.y);
 						v1y = (-y + dash.v1.y);
 					}
-					if (bold) {
+					if (textProp.bold === true) {
 						for (var j = 0; j < 4; ++j) {
 							var a = this.mBoldOffset[j * 2];
 							var b = this.mBoldOffset[j * 2 + 1];
@@ -709,21 +708,21 @@ NGUIText = {
 						verts.push(new UnityEngine.Vector3(x, v0y));
 					}
 
-					if (gradient) {
+					if (textProp.gradient === true) {
 						var min = sizePD + dash.v0.y / this.fontScale;
 						var max = sizePD + dash.v1.y / this.fontScale;
 						min /= sizePD;
 						max /= sizePD;
-						s_c0 = Color.Lerp(gb, gt, min);
-						s_c1 = Color.Lerp(gb, gt, max);
-						for (var j = 0, jmax = (bold ? 4 : 1); j < jmax; ++j) {
+						s_c0 = UnityEngine.Color.Lerp(gb, gt, min);
+						s_c1 = UnityEngine.Color.Lerp(gb, gt, max);
+						for (var j = 0, jmax = (textProp.bold === true ? 4 : 1); j < jmax; ++j) {
 							cols.push(s_c0);
 							cols.push(s_c1);
 							cols.push(s_c1);
 							cols.push(s_c0);
 						}
 					} else {
-						for (var j = 0, jmax = (bold ? 16 : 4); j < jmax; ++j)
+						for (var j = 0, jmax = (textProp.bold === true ? 16 : 4); j < jmax; ++j)
 							cols.push(uc);
 					}
 				}
@@ -755,7 +754,7 @@ NGUIText = {
 
 		if (text.length === 0) text = " ";
 		this.Prepare(text);
-		var sb = "";
+		var sb = new StringBuilder();
 		var textLength = text.length;
 		var remainingWidth = regionWidth;
 		var start = 0, offset = 0, lineCount = 1, prev = 0;
@@ -765,13 +764,13 @@ NGUIText = {
 		for (; offset < textLength; ++offset) {
 			var ch = text.charCodeAt(offset);
 			if (ch > 12287) eastern = true;
-			if (ch == '\n'.charCodeAt(0)) {
-				if (lineCount == maxLineCount) break;
+			if (ch === CHAR_RET) {
+				if (lineCount === maxLineCount) break;
 				remainingWidth = regionWidth;
 
 				// Add the previous word to the final string
-				if (start < offset) sb.concat(text.substr(start, offset - start + 1));
-				else sb.concat(ch);
+				if (start < offset) sb.Append(text.substr(start, offset - start + 1));
+				else sb.Append(ch);
 				lineIsEmpty = true;
 				++lineCount;
 				start = offset + 1;
@@ -789,28 +788,28 @@ NGUIText = {
 			var glyphWidth;
 			if (symbol === undefined) {
 				var w = this.GetGlyphWidth(ch, prev);
-				if (w == 0) continue;
+				if (w === 0) continue;
 				glyphWidth = finalSpacingX + w;
 			}
 			else glyphWidth = finalSpacingX + symbol.advance * fontScale;
 			remainingWidth -= glyphWidth;
 			if (this.IsSpace(ch) && !eastern && start < offset) {
 				var end = offset - start + 1;
-				if (lineCount == maxLineCount && remainingWidth <= 0 && offset < textLength) {
+				if (lineCount === maxLineCount && remainingWidth <= 0 && offset < textLength) {
 					var cho = text.charCodeAt(offset);
 					if (cho < CHAR_SPACE || this.IsSpace(cho)) --end;
 				}
-				sb.concat(text.substr(start, end));
+				sb.Append(text.substr(start, end));
 				lineIsEmpty = false;
 				start = offset + 1;
 				prev = ch;
 			}
 			if (Mathf.RoundToInt(remainingWidth) < 0) {
-				if (lineIsEmpty || lineCount == maxLineCount) {
-					sb.concat(text.substr(start, Math.max(0, offset - start)));
+				if (lineIsEmpty || lineCount === maxLineCount) {
+					sb.Append(text.substr(start, Math.max(0, offset - start)));
 					var space = this.IsSpace(ch);
 					if (!space && !eastern) fits = false;
-					if (lineCount++ == maxLineCount) {
+					if (lineCount++ === maxLineCount) {
 						start = offset;
 						break;
 					}
@@ -830,7 +829,7 @@ NGUIText = {
 					remainingWidth = regionWidth;
 					offset = start - 1;
 					prev = 0;
-					if (lineCount++ == maxLineCount) break;
+					if (lineCount++ === maxLineCount) break;
 					if (keepCharCount) this.ReplaceSpaceWithNewline(sb);
 					else this.EndLine(sb);
 					continue;
@@ -845,9 +844,9 @@ NGUIText = {
 			}
 		}
 
-		if (start < offset) sb.concat(text.substr(start, offset - start));
-		ret.result = fits && ((offset == textLength) || (lineCount <= Math.min(maxLines, maxLineCount)));
-		ret.text = sb;
+		if (start < offset) sb.Append(text.substr(start, offset - start));
+		ret.result = fits && ((offset === textLength) || (lineCount <= Math.min(maxLines, maxLineCount)));
+		ret.text = sb.ToString();
 		return ret;
     },
 };

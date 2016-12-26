@@ -209,7 +209,7 @@ Object.assign(NGUI.UILabel.prototype = Object.create(NGUI.UIWidget.prototype), {
 			v.x += x;
 			v.y += y;
 			var uc = cols[i].clone();
-			if (uc.a !== 255) uc.a = (uc.a / 255 * c.a);
+			if (uc.a !== 255) uc.a = (uc.a / 255 * col.a);
 			verts.push(v);
 			uvs.push(uvs[i]);
 			cols.push(uc);

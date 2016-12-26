@@ -1,4 +1,5 @@
 gui.js
+base\StringBuilder.js
 unity3d\Color.js
 unity3d\Color32.js
 unity3d\Object.js
