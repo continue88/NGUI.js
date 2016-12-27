@@ -1949,8 +1949,8 @@ NGUIText = {
             this.glyph.channel = bmg.channel;
             this.glyph.rotatedUVs = false;
             if (this.fontScale !== 1) {
-                this.glyph.v0 *= this.fontScale;
-                this.glyph.v1 *= this.fontScale;
+                this.glyph.v0.multiplyScalar(this.fontScale);
+                this.glyph.v1.multiplyScalar(this.fontScale);
                 this.glyph.advance *= this.fontScale;
             }
             return this.glyph;
