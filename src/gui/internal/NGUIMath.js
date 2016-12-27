@@ -77,7 +77,7 @@ NGUIMath = {
 	},
 	DecimalToHex24: function(num) {
 		num &= 0xFFFFFF;
-		return num.toString(16);
+		return num.toString(16).toUpperCase();
 	},
 	IntToColor: function(val) {
 		var inv = 1 / 255;

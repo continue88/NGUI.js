@@ -70,7 +70,7 @@ NGUIText = {
 		var g = (NGUIMath.HexToDecimal(text.charCodeAt(offset + 2)) << 4) | NGUIMath.HexToDecimal(text.charCodeAt(offset + 3));
 		var b = (NGUIMath.HexToDecimal(text.charCodeAt(offset + 4)) << 4) | NGUIMath.HexToDecimal(text.charCodeAt(offset + 5));
 		var f = 1 / 255;
-		return new UnityEngine.Color(f * r, f * g, f * b);
+		return new UnityEngine.Color(f * r, f * g, f * b, 1);
 	},
 	ParseColor32: function(text, offset) {
 		var r = (NGUIMath.HexToDecimal(text.charCodeAt(offset)) << 4) | NGUIMath.HexToDecimal(text.charCodeAt(offset + 1));
