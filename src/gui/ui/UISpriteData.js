@@ -22,10 +22,10 @@ NGUI.UISpriteData.prototype = {
 	get hasPadding() { return (this.paddingLeft | this.paddingRight | this.paddingTop | this.paddingBottom) != 0; },
 	Load: function(json) {
 		this.name = json.name;
-		this.x = json.x;
-		this.y = json.y;
-		this.width = json.w;
-		this.height = json.h;
+		this.x = json.x || 0;
+		this.y = json.y || 0;
+		this.width = json.w || 0;
+		this.height = json.h || 0;
 		this.borderLeft = json.bl || 0;
 		this.borderRight = json.br || 0;
 		this.borderTop = json.bt || 0;

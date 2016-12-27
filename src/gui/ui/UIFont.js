@@ -14,6 +14,7 @@ NGUI.UIFont.prototype = {
     get texWidth() { return this.mFont !== undefined ? this.mFont.texWidth : 0; },
     get texHeight() { return this.mFont !== undefined ? this.mFont.texHeight : 0; },
     get uvRect() { return this.mUVRect; },
+    texture: function() { return this.mAtlas !== undefined ? this.mAtlas.texture : undefined; },
     defaultSize: function() { return this.mFont.charSize; },
     hasSymbols: function() { return this.mSymbols.length > 0; },
     Load: function(json) {

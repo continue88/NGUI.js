@@ -10,7 +10,7 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 		if (programInfos === undefined)
 			programInfos = createProgramInfos();
 
-		gl.clearColor(0, 0, 0, 1);
+		gl.clearColor(0.5, 0.5, 0.5, 1);
 		gl.clear(gl.COLOR_BUFFER_BIT);
 
 		gl.disable( gl.CULL_FACE );
@@ -41,13 +41,9 @@ WebGL.GUIPlugin = function(renderer, uiRoot) {
 				gl.useProgram( programInfo.program ); // setup shader programs.
 				mesh.SetupVertexAttribs(gl, programInfo.attributes); // setup vertex data.
 
-				var mvp = UnityEngine.Matrix4x4.Temp;// TODO: setup the UNITY_MATRIX_MVP (ModelViewProj)
+				var mvp = UnityEngine.Matrix4x4.Temp;
 				mvp.MultiplyMatrices(camera.worldToCameraMatrix, drawCall.localToWorldMatrix);
 				mvp.MultiplyMatrices(camera.projectionMatrix, mvp);
-				//console.log(drawCall.localToWorldMatrix.elements);
-				//console.log(camera.projectionMatrix.elements);
-				//console.log(camera.worldToCameraMatrix.elements);
-				//console.log(mvp.elements);
 				gl.uniformMatrix4fv(programInfo.uniforms.UNITY_MATRIX_MVP, false, mvp.elements);
 				if (programInfo.uniforms._ClipRange0 !== undefined) {
 					var clipRange = drawCall.ClipRange[0],

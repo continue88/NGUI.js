@@ -26,6 +26,7 @@ const CHAR_F = 'F'.charCodeAt(0);
 const CHAR_LEFT = '['.charCodeAt(0);
 const CHAR_RIGHT = ']'.charCodeAt(0);
 const CHAR_SUB = '-'.charCodeAt(0);
+const CHAR_UND = '_'.charCodeAt(0);
 const CHAR_RET = '\n'.charCodeAt(0);
 
 NGUIText = {
@@ -42,6 +43,7 @@ NGUIText = {
     pixelDensity: 1,
     mColors: [],
 	sizeShrinkage: 0.75,
+	mBoldOffset: [-0.25, 0, 0.25, 0, 0, -0.25, 0, 0.25],
 	IsSpace: function(ch) { return (ch === CHAR_SPACE || ch === 0x200a || ch === 0x200b || ch === CHAR_SPACE2); },
 	IsHex: function(ch) { return (ch >= CHAR_0 && ch <= CHAR_9) || (ch >= CHAR_a && ch <= CHAR_f) || (ch >= CHAR_A && ch <= CHAR_F); },
     ReplaceSpaceWithNewline: function(s) {
@@ -51,7 +53,7 @@ NGUIText = {
     EndLine: function(s) {
 		var i = s.Length - 1;
 		if (i > 0 && this.IsSpace(s.charCodeAt(i))) s.splice(i, 1, '\n');
-		else s.concat('\n');
+		else s.Append('\n');
 	},
     Update: function(request) {
         this.finalSize = Mathf.RoundToInt(this.fontSize / this.pixelDensity);
@@ -78,79 +80,65 @@ NGUIText = {
 		var f = 1 / 255;
 		return new UnityEngine.Color(f * r, f * g, f * b, f * a);
 	},
-    ParseSymbol: function(text, index, colors, premultiply) {
-        var ret = {
-            result: false,
-            index: index,
-        };
+    ParseSymbol: function(text, index, colors, premultiply, ret) {
 		var length = text.length;
-		if (index + 3 > length || text.charCodeAt(index) !== CHAR_LEFT) return ret;
+        ret.index = index;
+		if (index + 3 > length || text.charCodeAt(index) !== CHAR_LEFT) return false;
 		if (text.charCodeAt(ret.index + 2) === CHAR_RIGHT) {
 			if (text.charCodeAt(ret.index + 1) === CHAR_SUB) {
 				if (colors !== undefined && colors.length > 1) colors.pop();
 				ret.index += 3;
-				ret.result = true;
-                return ret;
+                return true;
 			}
 			var sub3 = text.substr(ret.index, 3);
 			switch (sub3) {
             case "[b]":
                 ret.bold = true;
                 ret.index += 3;
-                ret.result = true;
-                return ret;
+                return true;
             case "[i]":
 				ret.italic = true;
 				ret.index += 3;
-				ret.result = true;
-                return ret;
+                return true;
             case "[u]":
 				ret.underline = true;
 				ret.index += 3;
-				ret.result = true;
-                return ret;
+                return true;
 			case "[s]":
 				ret.strike = true;
 				ret.index += 3;
-				ret.result = true;
-                return ret;
+                return true;
 			case "[c]":
 				ret.ignoreColor = true;
 				ret.index += 3;
-				ret.result = true;
-                return ret;
+                return true;
 			}
 		}
 
-		if (ret.index + 4 > length) return ret;
+		if (ret.index + 4 > length) return false;
 		if (text.charCodeAt(ret.index + 3) === CHAR_RIGHT) {
 			var sub4 = text.substr(index, 4);
 			switch (sub4) {
 			case "[/b]":
 				ret.bold = false;
 				ret.index += 4;
-				ret.result = true;
-                return ret;
+                return true;
             case "[/i]":
 				ret.italic = false;
 				ret.index += 4;
-				ret.result = true;
-                return ret;
+                return true;
             case "[/u]":
 				ret.underline = false;
 				ret.index += 4;
-				ret.result = true;
-                return ret;
+                return true;
             case "[/s]":
 				ret.strike = false;
 				ret.index += 4;
-				ret.result = true;
-                return ret;
+                return true;
             case "[/c]":
 				ret.ignoreColor = false;
 				ret.index += 4;
-				ret.result = true;
-                return ret;
+                return true;
             default: {
 				var ch0 = text.charCodeAt(ret.index + 1);
 				var ch1 = text.charCodeAt(ret.index + 2);
@@ -158,47 +146,41 @@ NGUIText = {
 						var a = (NGUIMath.HexToDecimal(ch0) << 4) | NGUIMath.HexToDecimal(ch1);
 						this.mAlpha = a / 255;
 						ret.index += 4;
-                        ret.result = true;
-                        return ret;
+                        return true;
 					}
 				}
 				break;
 			}
 		}
-		if (ret.index + 5 > length) return ret;
+		if (ret.index + 5 > length) return false;
 		if (text.charCodeAt(ret.index + 4) === CHAR_RIGHT) {
 			var sub5 = text.substr(ret.index, 5);
 			switch (sub5) {
 			case "[sub]":
 				ret.sub = 1;
 				ret.index += 5;
-				ret.result = true;
-                return ret;
+                return true;
 			case "[sup]":
 				ret.sub = 2;
 				ret.index += 5;
-				ret.result = true;
-                return ret;
+                return true;
 			}
 		}
-		if (ret.index + 6 > length) return ret;
+		if (ret.index + 6 > length) return false;
 		if (text.charCodeAt(ret.index + 5) === CHAR_RIGHT) {
 			var sub6 = text.substr(index, 6);
 			switch (sub6) {
 			case "[/sub]":
 				ret.sub = 0;
 				ret.index += 6;
-				ret.result = true;
-                return ret;
+                return true;
 			case "[/sup]":
 				ret.sub = 0;
 				ret.index += 6;
-				ret.result = true;
-                return ret;
+                return true;
 			case "[/url]":
 				ret.index += 6;
-				ret.result = true;
-                return ret;
+                return true;
 			}
 		}
 
@@ -206,20 +188,18 @@ NGUIText = {
 			var closingBracket = text.indexOf(']', ret.index + 4);
 			if (closingBracket != -1) {
 				ret.index = closingBracket + 1;
-				ret.result = true;
-                return ret;
+                return true;
 			} else {
 				ret.index = text.Length;
-				ret.result = true;
-                return ret;
+                return true;
 			}
 		}
 
-		if (ret.index + 8 > length) return ret;
+		if (ret.index + 8 > length) return false;
 		if (text.charCodeAt(ret.index + 7) === CHAR_RIGHT) {
 			var c = this.ParseColor24(text, ret.index + 1);
 			if (this.EncodeColor24(c) != text.substr(ret.index + 1, 6).toUpperCase())
-				return ret;
+				return false;
 			if (colors != null) {
 				c.a = colors[colors.length - 1].a;
 				if (premultiply && c.a != 1)
@@ -229,12 +209,11 @@ NGUIText = {
 			ret.index += 8;
 			return true;
 		}
-		if (ret.index + 10 > length) return ret;
+		if (ret.index + 10 > length) return false;
 		if (text.charCodeAt(ret.index + 9) === CHAR_RIGHT) {
 			var c = this.ParseColor32(text, ret.index + 1);
 			if (this.EncodeColor32(c) != text.substr(ret.index + 1, 8).toUpperCase())
-				return ret;
-
+				return false;
 			if (colors !== undefined) {
 				if (premultiply && c.a != 1)
 					c = UnityEngine.Color.Lerp(this.mInvisible, c, c.a);
@@ -243,15 +222,14 @@ NGUIText = {
 			ret.index += 10;
 			return true;
 		}
-		return ret;
+		return false;
     },
     StripSymbols: function(text) {
 		if (text === undefined) text;
+        var ret = {};
         for (var i = 0, imax = text.length; i < imax; ) {
-            var c = text.charCodeAt(i);
-            var ret = this.ParseSymbol(text, i, null, false);
-            if (c === '[' && ret.result === true) {
-                text = text.splice(i, ret.index - i);
+            if (text.charCodeAt(i) === CHAR_LEFT && this.ParseSymbol(text, i, undefined, false, ret)) {
+                text = text.substr(0, i) + text.substr(i + ret.index - i);//.Remove(i, ret.index - i);
                 imax = text.length;
                 continue;
             }
@@ -282,9 +260,9 @@ NGUIText = {
     },
     GetGlyph: function(ch, prev) {
         var thinSpace = false;
-        if (ch === '\u2009') {
+        if (ch === CHAR_SPACE2) {
             thinSpace = true;
-            ch = ' ';
+            ch = CHAR_SPACE;
         }
         var bmg = this.bitmapFont.bmFont.GetGlyph(ch);
         if (bmg !== undefined) {
@@ -317,9 +295,9 @@ NGUIText = {
     GetGlyphWidth: function(ch, prev) {
 		if (this.bitmapFont === undefined) return 0;
         var thinSpace = false;
-        if (ch === '\u2009'.charCodeAt(0)) {
+        if (ch === CHAR_SPACE2) {
             thinSpace = true;
-            ch = ' ';
+            ch = CHAR_SPACE;
         }
         var bmg = this.bitmapFont.mFont.GetGlyph(ch);
         if (bmg === undefined) return 0;
@@ -329,7 +307,7 @@ NGUIText = {
     },
     CalculatePrintedSize: function(text) {
 		var v = new UnityEngine.Vector2(0, 0);
-		if (text === "") {
+		if (text !== "") {
 			if (this.encoding) text = this.StripSymbols(text);
 			this.Prepare(text);
 			var x = 0, y = 0, maxX = 0;
@@ -342,9 +320,9 @@ NGUIText = {
 					y += this.finalLineHeight;
 					continue;
 				}
-				if (ch < ' ') continue;
+				if (ch < CHAR_SPACE) continue;
 				var symbol = this.useSymbols ? this.GetSymbol(text, i, textLength) : undefined;
-				if (symbol === null) {
+				if (symbol === undefined) {
 					var w = this.GetGlyphWidth(ch, prev);
 					if (w !== 0) {
 						w += this.finalSpacingX;
@@ -434,9 +412,9 @@ NGUIText = {
 		var x = 0, y = 0, maxX = 0;
 		var sizeF = this.finalSize;
 
-		var gb = this.tint.clone().mul(this.gradientBottom);
-		var gt = this.tint.clone().mul(this.gradientTop);
-		var uc = this.tint.clone();
+		var gb = this.tint.clone().mul(this.gradientBottom).get32();
+		var gt = this.tint.clone().mul(this.gradientTop).get32();
+		var uc = this.tint.clone().get32();
 		var textLength = text.length;
 
 		var uvRect = new UnityEngine.Rect(0, 0, 1, 1);
@@ -444,7 +422,14 @@ NGUIText = {
 		var sizePD = sizeF * this.pixelDensity;
 
 		var subscript = false;
-        var textProp;
+        var textProp = {
+			subscriptMode: 0,
+			bold: false,
+			italic: false,
+			underline: false,
+			strikethrough: false,
+			ignoreColor: false,
+		};
         var sizeShrinkage = 0.75;
 
 		var v0x, v1x, v1y, v0y, prevX = 0;
@@ -473,8 +458,7 @@ NGUIText = {
 				continue;
 			}
 
-            textProp = this.encoding ? this.ParseSymbol(text, i, this.mColors, this.premultiply) : {};
-			if (textProp.result === true) {
+			if (this.encoding && this.ParseSymbol(text, i, this.mColors, this.premultiply, textProp)) {
 				var fc;
 				if (textProp.ignoreColor === true) {
 					fc = this.mColors[this.mColors.length - 1].clone();
@@ -483,12 +467,12 @@ NGUIText = {
 					fc = this.tint.clone().mul(this.mColors[this.mColors.length - 1]);
 					fc.a *= this.mAlpha;
 				}
-				uc = fc;
+				uc = fc.get32();
 				for (var b = 0, bmax = this.mColors.length - 2; b < bmax; ++b)
 					fc.a *= this.mColors[b].a;
 				if (this.gradient === true) {
-					gb = this.gradientBottom.clone().mul(fc);
-					gt = this.gradientTop.clone().mul(fc);
+					gb = this.gradientBottom.clone().mul(fc).get32();
+					gt = this.gradientTop.clone().mul(fc).get32();
 				}
 				i = textProp.index - 1;
 				continue;
@@ -535,7 +519,7 @@ NGUIText = {
 					if (this.symbolStyle === SymbolStyle.Colored) {
 						for (var b = 0; b < 4; ++b) cols.push(uc);
 					} else {
-						var col = new UnityEngine.Color(1, 1, 1, 1);
+						var col = new UnityEngine.Color32(255, 255, 255, 255);
 						col.a = uc.a;
 						for (var b = 0; b < 4; ++b) cols.push(col);
 					}
@@ -580,9 +564,9 @@ NGUIText = {
 				}
 				if (this.IsSpace(ch)) {
 					if (textProp.underline === true)
-						ch = '_';
+						ch = CHAR_UND;
 					else if (textProp.strikethrough === true)
-						ch = '-';
+						ch = CHAR_SUB;
 				}
 				x += (textProp.subscriptMode === 0) ? this.finalSpacingX + glyph.advance :
 					(this.finalSpacingX + glyph.advance) * this.sizeShrinkage;
@@ -596,14 +580,14 @@ NGUIText = {
 					}
 					for (var j = 0, jmax = (textProp.bold === true ? 4 : 1); j < jmax; ++j) {
 						if (glyph.rotatedUVs) {
-							uvs.push(glyph.u0);
+							uvs.push(glyph.u0.clone());
 							uvs.push(new UnityEngine.Vector2(glyph.u1.x, glyph.u0.y));
-							uvs.push(glyph.u1);
+							uvs.push(glyph.u1.clone());
 							uvs.push(new UnityEngine.Vector2(glyph.u0.x, glyph.u1.y));
 						} else {
-							uvs.push(glyph.u0);
+							uvs.push(glyph.u0.clone());
 							uvs.push(new UnityEngine.Vector2(glyph.u0.x, glyph.u1.y));
-							uvs.push(glyph.u1);
+							uvs.push(glyph.u1.clone());
 							uvs.push(new UnityEngine.Vector2(glyph.u1.x, glyph.u0.y));
 						}
 					}
@@ -629,16 +613,15 @@ NGUIText = {
 						}
 					} else {
 						var col = uc.clone();
-						col *= 0.49;
+						col.mul(0.49);
 						switch (glyph.channel) {
 							case 1: col.b += 0.51; break;
 							case 2: col.g += 0.51; break;
 							case 4: col.r += 0.51; break;
 							case 8: col.a += 0.51; break;
 						}
-						var c = col;
 						for (var j = 0, jmax = (textProp.bold === true ? 16 : 4); j < jmax; ++j)
-							cols.push(c);
+							cols.push(col);
 					}
 				}
 				if (textProp.bold !== true) {
@@ -658,7 +641,7 @@ NGUIText = {
 					for (var j = 0; j < 4; ++j) {
 						var a = this.mBoldOffset[j * 2];
 						var b = this.mBoldOffset[j * 2 + 1];
-						var slant = (italic ? this.fontSize * 0.1 * ((v1y - v0y) / this.fontSize) : 0);
+						var slant = (textProp.italic ? this.fontSize * 0.1 * ((v1y - v0y) / this.fontSize) : 0);
 						verts.push(new UnityEngine.Vector3(v0x + a - slant, v0y + b));
 						verts.push(new UnityEngine.Vector3(v0x + a + slant, v1y + b));
 						verts.push(new UnityEngine.Vector3(v1x + a + slant, v1y + b));
@@ -668,10 +651,10 @@ NGUIText = {
 
 				// Underline and strike-through contributed by Rudy Pangestu.
 				if (textProp.underline === true || textProp.strikethrough === true) {
-					var dash = this.GetGlyph(textProp.strikethrough ? '-' : '_', prev);
+					var dash = this.GetGlyph(textProp.strikethrough ? CHAR_SUB : CHAR_UND, prev);
 					if (dash === undefined) continue;
 					if (uvs !== undefined) {
-						if (bitmapFont !== undefined) {
+						if (this.bitmapFont !== undefined) {
 							dash.u0.x = uvRect.xMin + invX * dash.u0.x;
 							dash.u1.x = uvRect.xMin + invX * dash.u1.x;
 							dash.u0.y = uvRect.yMax - invY * dash.u0.y;
@@ -761,6 +744,7 @@ NGUIText = {
 		var lineIsEmpty = true;
 		var fits = true;
 		var eastern = false;
+		var textSymbols = {};
 		for (; offset < textLength; ++offset) {
 			var ch = text.charCodeAt(offset);
 			if (ch > 12287) eastern = true;
@@ -777,12 +761,9 @@ NGUIText = {
 				prev = 0;
 				continue;
 			}
-			if (this.encoding) {
-                var ret = this.ParseSymbol(text, offset);
-                if (ret.result) {
-                     offset = ret.index - 1;
-                     continue; 
-                }
+			if (this.encoding && this.ParseSymbol(text, offset, undefined, false, textSymbols)) {
+				offset = textSymbols.index - 1;
+				continue;
             }
 			var symbol = this.useSymbols ? this.GetSymbol(text, offset, textLength) : undefined;
 			var glyphWidth;

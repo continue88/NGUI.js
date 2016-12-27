@@ -68,6 +68,7 @@ FontStyle = {
 
 Object.assign(NGUI.UILabel.prototype = Object.create(NGUI.UIWidget.prototype), {
 	constructor: NGUI.UILabel,
+	texture: function() { return (this.bitmapFont !== undefined) ? this.bitmapFont.texture() : undefined; },
     defaultFontSize: function() { return (this.bitmapFont !== undefined) ? this.bitmapFont.defaultSize() : 16; },
     processedText: function() {
         if (this.mLastWidth !== this.mWidth || this.mLastHeight !== this.mHeight) {

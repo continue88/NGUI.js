@@ -32,6 +32,13 @@ UnityEngine.Color.prototype = {
 		this.a = a * COLOR_FROM_32;
 		return this;
 	},
+	get32: function() {
+		return new UnityEngine.Color32(
+			this.r * 255,
+			this.g * 255,
+			this.b * 255,
+			this.a * 255);
+	},
 	add: function(v) {
 		this.r += v.r;
 		this.g += v.g;
