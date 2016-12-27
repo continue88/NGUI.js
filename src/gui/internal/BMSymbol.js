@@ -24,7 +24,7 @@ NGUI.BMSymbol.prototype = {
         this.width = json.w;
         this.height = json.h;
         this.advance = json.a;
-        this.length = this.spriteName.length;
+        this.length = this.sequence.length;
     },
     MarkAsChanged: function() { this.mIsValid = false; },
     Validate: function(atlas) {
@@ -47,5 +47,6 @@ NGUI.BMSymbol.prototype = {
                 }
             }
         }
+        return this.mIsValid;
     },
 };

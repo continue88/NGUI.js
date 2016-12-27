@@ -247,14 +247,8 @@ NGUIText = {
 			var sym = uiFont.mSymbols[i];
 			var symbolLength = sym.length;
 			if (symbolLength === 0 || textLength < symbolLength) continue;
-			var match = true;
-			for (var c = 0; c < symbolLength; ++c) {
-				if (text.charCodeAt(index + c) != sym.sequence.charCodeAt(c)) {
-					match = false;
-					break;
-				}
-			}
-			if (match && sym.Validate(uiFont.atlas)) 
+			var match = text.substr(index, symbolLength) === sym.sequence;
+			if (match && sym.Validate(uiFont.mAtlas)) 
                 return sym;
 		}
     },
