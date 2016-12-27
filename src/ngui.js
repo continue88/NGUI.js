@@ -131,6 +131,13 @@ UnityEngine.Color32 = function(r, g, b, a) {
 UnityEngine.Color32.prototype = {
 	constructor: UnityEngine.Color32,
 	clone: function() { return new this.constructor(this.r, this.g, this.b, this.a); },
+	set: function(r, g, b, a) {
+		this.r = r;
+		this.g = g;
+		this.b = b;
+		this.a = a;
+		return this;
+	},
 }
 
 //
@@ -510,6 +517,7 @@ Mathf = UnityEngine.Mathf = {
 	Rad2Deg: 57.29578,
 	FloorToInt: function(v) { return Math.floor(v); },
 	RoundToInt: function(v) { return Math.floor(v + 0.5); },
+	Round: function(v) { return Math.floor(v + 0.5); },
 	Lerp: function(a, b, t) {
 		return a + t * (b - a);
 	},
@@ -2046,8 +2054,8 @@ NGUIText = {
             var progressPerChar = 1 / (chars - 1);
             var scale = this.rectWidth / printedWidth;
             for (var i = indexOffset + 4, charIndex = 1; i < verts.length; ++charIndex) {
-                var x0 = verts.buffer[i].x;
-                var x1 = verts.buffer[i + 2].x;
+                var x0 = verts[i].x;
+                var x1 = verts[i + 2].x;
                 var w = x1 - x0;
                 var x0a = x0 * scale;
                 var x1a = x0a + w;
@@ -2382,13 +2390,12 @@ NGUIText = {
 		}
 		this.mColors.length = 0;
     },
-    WrapText: function(text, keepCharCount) {
+    WrapText: function(text, keepCharCount, ret) {
         var regionWidth = this.regionWidth;
         var regionHeight = this.regionHeight;
         var finalLineHeight = this.finalLineHeight;
-		var ret = { result: false, text: "" };
 		if (regionWidth < 1 || regionHeight < 1 || finalLineHeight < 1)
-			return ret;
+			return false;
 
         var maxLines = this.maxLines;
         var fontScale = this.fontScale;
@@ -2397,7 +2404,7 @@ NGUIText = {
 		var maxLineCount = (maxLines > 0) ? maxLines : 1000000;
 		maxLineCount = Mathf.FloorToInt(Math.min(maxLineCount, height / finalLineHeight) + 0.01);
 		if (maxLineCount === 0)
-            return ret;
+            return false;
 
 		if (text.length === 0) text = " ";
 		this.Prepare(text);
@@ -2490,9 +2497,8 @@ NGUIText = {
 		}
 
 		if (start < offset) sb.Append(text.substr(start, offset - start));
-		ret.result = fits && ((offset === textLength) || (lineCount <= Math.min(maxLines, maxLineCount)));
 		ret.text = sb.ToString();
-		return ret;
+		return fits && ((offset === textLength) || (lineCount <= Math.min(maxLines, maxLineCount)));
     },
 };
 
@@ -4738,12 +4744,12 @@ Object.assign(NGUI.UILabel.prototype = Object.create(NGUI.UIWidget.prototype), {
 			NGUIText.regionHeight = 1000000;
 		}
 		if (this.mPrintedSize > 0) {
+			var result = { text: "" };
 			for (var ps = this.mPrintedSize; ps > 0; --ps) {
                 this.mScale = ps / this.mPrintedSize;
                 NGUIText.fontScale = (this.fontSize / this.bitmapFont.defaultSize()) * this.mScale;
 				NGUIText.Update(false);
-                var result = NGUIText.WrapText(this.value, true); 
-				var fits = result.fits;
+				var fits = NGUIText.WrapText(this.value, true, result);
                 this.mProcessedText = result.text.replace("\\n", "\n");
 				if (this.overflowMethod == LabelOverflow.ShrinkContent && fits !== true) {
 					if (--ps > 1) continue;
@@ -4791,17 +4797,23 @@ Object.assign(NGUI.UILabel.prototype = Object.create(NGUI.UIWidget.prototype), {
 		return new UnityEngine.Vector2(fx, fy);
 	},
     ApplyShadow: function(verts, uvs, cols, start, end, x, y) {
-		var col = this.effectColor;
+		var col = this.effectColor.get32();
 		col.a *= this.finalAlpha;
 		for (var i = start; i < end; ++i) {
 			var v = verts[i].clone();
+			var uc = cols[i].clone();
+			verts.push(v.clone());
+			uvs.push(uvs[i]);
+			cols.push(uc.clone());
 			v.x += x;
 			v.y += y;
-			var uc = cols[i].clone();
-			if (uc.a !== 255) uc.a = (uc.a / 255 * col.a);
-			verts.push(v);
-			uvs.push(uvs[i]);
-			cols.push(uc);
+			if (uc.a === 255) {
+				uc.set(col.r, col.g, col.b, col.a);
+			} else {
+				uc.set(col.r, col.g, col.b, uc.a / 255 * col.a);
+			}
+			verts[i] = v;
+			cols[i] = uc;
 		}
     },
 	OnFill: function(verts, uvs, cols) {

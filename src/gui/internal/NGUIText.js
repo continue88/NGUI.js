@@ -382,8 +382,8 @@ NGUIText = {
             var progressPerChar = 1 / (chars - 1);
             var scale = this.rectWidth / printedWidth;
             for (var i = indexOffset + 4, charIndex = 1; i < verts.length; ++charIndex) {
-                var x0 = verts.buffer[i].x;
-                var x1 = verts.buffer[i + 2].x;
+                var x0 = verts[i].x;
+                var x1 = verts[i + 2].x;
                 var w = x1 - x0;
                 var x0a = x0 * scale;
                 var x1a = x0a + w;
@@ -718,13 +718,12 @@ NGUIText = {
 		}
 		this.mColors.length = 0;
     },
-    WrapText: function(text, keepCharCount) {
+    WrapText: function(text, keepCharCount, ret) {
         var regionWidth = this.regionWidth;
         var regionHeight = this.regionHeight;
         var finalLineHeight = this.finalLineHeight;
-		var ret = { result: false, text: "" };
 		if (regionWidth < 1 || regionHeight < 1 || finalLineHeight < 1)
-			return ret;
+			return false;
 
         var maxLines = this.maxLines;
         var fontScale = this.fontScale;
@@ -733,7 +732,7 @@ NGUIText = {
 		var maxLineCount = (maxLines > 0) ? maxLines : 1000000;
 		maxLineCount = Mathf.FloorToInt(Math.min(maxLineCount, height / finalLineHeight) + 0.01);
 		if (maxLineCount === 0)
-            return ret;
+            return false;
 
 		if (text.length === 0) text = " ";
 		this.Prepare(text);
@@ -826,8 +825,7 @@ NGUIText = {
 		}
 
 		if (start < offset) sb.Append(text.substr(start, offset - start));
-		ret.result = fits && ((offset === textLength) || (lineCount <= Math.min(maxLines, maxLineCount)));
 		ret.text = sb.ToString();
-		return ret;
+		return fits && ((offset === textLength) || (lineCount <= Math.min(maxLines, maxLineCount)));
     },
 };

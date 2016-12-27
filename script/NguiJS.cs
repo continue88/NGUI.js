@@ -3,13 +3,18 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.IO;
 
-public class NguiJS
+public static class NguiJS
 {
     const string JsPrefix = "_data_=";
     static HashSet<UIFont> mUsedFonts = new HashSet<UIFont>();
     static HashSet<UIAtlas> mUsedAtlas = new HashSet<UIAtlas>();
     static HashSet<string> mAtlasImages = new HashSet<string>();
     static Transform mRootTrans;
+
+    static void ForEach<T>(this HashSet<T> hashSet, System.Action<T> action)
+    {
+        foreach (var a in hashSet) action(a);
+    }
 
     [MenuItem("NGUI.js/Test")]
     public static void Test()
@@ -29,6 +34,7 @@ public class NguiJS
         mUsedAtlas.Clear();
         mAtlasImages.Clear();
         mUsedFonts.Clear();
+
 
         File.WriteAllText(EditorUtility.SaveFilePanel("Save As", "", go.name, "js"), JsPrefix + Export(go).ToJson());
         mUsedFonts.ForEach(font => File.WriteAllText(EditorUtility.SaveFilePanel("Save As", "", font.name, "js"), JsPrefix + Export(font).ToJson()));
@@ -93,6 +99,7 @@ public class NguiJS
         else if (comp is UIPanel) return Export((UIPanel)comp);
         else if (comp is UIRoot) return Export((UIRoot)comp);
         else if (comp is UILabel) return Export((UILabel)comp);
+        else if (comp is UIWidget) return Export((UIWidget)comp);
         return null;
     }
 
@@ -111,6 +118,13 @@ public class NguiJS
             if (widget.bottomAnchor.target) data["ba"] = Export(widget.bottomAnchor);
             if (widget.topAnchor.target) data["ta"] = Export(widget.topAnchor);
         }
+    }
+
+    public static LitJson.JsonData Export(UIWidget widget)
+    {
+        var data = new LitJson.JsonData();
+        ExportWidget(data, widget);
+        return data;
     }
 
     public static LitJson.JsonData Export(UISprite sprite)

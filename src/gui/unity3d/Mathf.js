@@ -4,6 +4,7 @@ Mathf = UnityEngine.Mathf = {
 	Rad2Deg: 57.29578,
 	FloorToInt: function(v) { return Math.floor(v); },
 	RoundToInt: function(v) { return Math.floor(v + 0.5); },
+	Round: function(v) { return Math.floor(v + 0.5); },
 	Lerp: function(a, b, t) {
 		return a + t * (b - a);
 	},

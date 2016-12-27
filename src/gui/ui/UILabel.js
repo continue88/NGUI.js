@@ -150,12 +150,12 @@ Object.assign(NGUI.UILabel.prototype = Object.create(NGUI.UIWidget.prototype), {
 			NGUIText.regionHeight = 1000000;
 		}
 		if (this.mPrintedSize > 0) {
+			var result = { text: "" };
 			for (var ps = this.mPrintedSize; ps > 0; --ps) {
                 this.mScale = ps / this.mPrintedSize;
                 NGUIText.fontScale = (this.fontSize / this.bitmapFont.defaultSize()) * this.mScale;
 				NGUIText.Update(false);
-                var result = NGUIText.WrapText(this.value, true); 
-				var fits = result.fits;
+				var fits = NGUIText.WrapText(this.value, true, result);
                 this.mProcessedText = result.text.replace("\\n", "\n");
 				if (this.overflowMethod == LabelOverflow.ShrinkContent && fits !== true) {
 					if (--ps > 1) continue;
@@ -203,17 +203,23 @@ Object.assign(NGUI.UILabel.prototype = Object.create(NGUI.UIWidget.prototype), {
 		return new UnityEngine.Vector2(fx, fy);
 	},
     ApplyShadow: function(verts, uvs, cols, start, end, x, y) {
-		var col = this.effectColor;
+		var col = this.effectColor.get32();
 		col.a *= this.finalAlpha;
 		for (var i = start; i < end; ++i) {
 			var v = verts[i].clone();
+			var uc = cols[i].clone();
+			verts.push(v.clone());
+			uvs.push(uvs[i]);
+			cols.push(uc.clone());
 			v.x += x;
 			v.y += y;
-			var uc = cols[i].clone();
-			if (uc.a !== 255) uc.a = (uc.a / 255 * col.a);
-			verts.push(v);
-			uvs.push(uvs[i]);
-			cols.push(uc);
+			if (uc.a === 255) {
+				uc.set(col.r, col.g, col.b, col.a);
+			} else {
+				uc.set(col.r, col.g, col.b, uc.a / 255 * col.a);
+			}
+			verts[i] = v;
+			cols[i] = uc;
 		}
     },
 	OnFill: function(verts, uvs, cols) {
