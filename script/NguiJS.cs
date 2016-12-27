@@ -111,6 +111,7 @@ public static class NguiJS
         Export(data, "w", widget.width, 100);
         Export(data, "h", widget.height, 100);
         Export(data, "d", widget.depth, 0);
+        data["c"] = Export(widget.color);
         if (widget.isAnchored)
         {
             if (widget.leftAnchor.target) data["la"] = Export(widget.leftAnchor);
@@ -134,7 +135,6 @@ public static class NguiJS
         var data = new LitJson.JsonData();
         data["l"] = sprite.atlas.name;
         data["s"] = sprite.spriteName;
-        data["c"] = Export(sprite.color);
         Export(data, "t", (int)sprite.type, (int)UIBasicSprite.Type.Simple);
         Export(data, "f", (int)sprite.flip, (int)UIBasicSprite.Flip.Nothing);
         Export(data, "fd", (int)sprite.fillDirection, (int)UIBasicSprite.FillDirection.Radial360);
