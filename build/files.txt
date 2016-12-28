@@ -15,6 +15,7 @@ unity3d\Mesh.js
 unity3d\MonoBehaviour.js
 unity3d\Physics.js
 unity3d\Quaternion.js
+unity3d\Ray.js
 unity3d\Rect.js
 unity3d\Resources.js
 unity3d\Texture2D.js

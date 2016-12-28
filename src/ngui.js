@@ -257,6 +257,51 @@ Object.assign(UnityEngine.BoxCollider.prototype = Object.create(UnityEngine.Coll
         if (json.c !== undefined) this.center.set(json.c.x || 0, json.c.y || 0, json.c.z || 0);
         if (json.s !== undefined) this.size.set(json.s.x || 0, json.s.y || 0, json.s.z || 0);
 	},
+    Raycast: function(ray, hitInfo, distance) {
+        var min = float.MinValue;
+        var max = float.MaxValue;
+        var p = this.center.clone().sub(ray.origin);
+        var h = this.size.clone().multiplyScalar(0.5);
+        var dirMax = 0;
+        var dirMin = 0;
+        var dir = 0;
+        var matrixVec = [
+            this.transform.TransformDirection(UnityEngine.Vector3.right),
+            this.transform.TransformDirection(UnityEngine.Vector3.up),
+            this.transform.TransformDirection(UnityEngine.Vector3.back)];
+        var vectorFloat = [h.x, h.y, h.z];
+        for (dir = 0; dir < 3; dir++) {
+            var e = matrixVec[dir].dot(p);
+            var f = matrixVec[dir].dot(ray.direction);
+            if (Math.abs(f) > 0.001) {
+                var t1 = (e + vectorFloat[dir]) / f;
+                var t2 = (e - vectorFloat[dir]) / f;
+                if (t1 > t2) { var tmp = t1;t1 = t2; t2 = tmp; }
+                if (t1 > min) { min = t1; dirMin = dir; }
+                if (t2 < max) { max = t2; dirMax = dir; }
+                if (min > max) return false;
+                if (max < 0.0) return false;
+            }
+            else if((-e-vectorFloat[dir] > 0.0) || (-e + vectorFloat[dir] < 0.0))
+                return false;
+        }
+
+        if (min > 0.0) {
+            dir = dirMin;
+            fracOut = min;
+        } else {
+            dir = dirMax;
+            fracOut = max;
+        }
+
+        hitInfo.fracOut = Mathf.Clamp01(fracOut);
+        hitInfo.posOut = ray.GetPoint(fracOut);
+        if (matrixVec[dir].dot(ray.direction) > 0)
+            hitInfo.normalOut = matrixVec[dir].multiplyScalar(-1);
+        else
+            hitInfo.normalOut = matrixVec[dir];
+        return true;
+    },
 });
 
 
@@ -375,10 +420,11 @@ Object.assign(UnityEngine.Camera.prototype = Object.create(UnityEngine.Component
 		return screenPos;
 	},
 	ScreenPointToRay: function(screenPoint) {
-		var ray = { 
-			direction: this.transform.TransformDirection(new UnityEngine.Vector3(0, 0, 1)), 
-			origin: this.transform.position.clone(), 
-		}; 
+		var pos = this.transform.position;
+		var dir = this.transform.TransformDirection(new UnityEngine.Vector3(0, 0, 1));
+		var ray = new UnityEngine.Ray();
+		ray.origin.set(pos.x, pos.y, pos.z);
+		ray.direction.set(dir.x, dir.y, dir.z);
 		return ray;
 	},
 });
@@ -1031,6 +1077,25 @@ UnityEngine.Quaternion.prototype = {
 };
 
 //
+// ..\src\gui\unity3d\Ray.js
+//
+
+UnityEngine.Ray = function() {
+    this.direction = new UnityEngine.Vector3();
+    this.origin = new UnityEngine.Vector3();
+};
+
+UnityEngine.Ray.prototype = {
+    constructor: UnityEngine.Ray,
+    GetPoint: function(distance) {
+        return new UnityEngine.Vector3(
+            this.origin.x + this.direction.x * distance,
+            this.origin.y + this.direction.y * distance,
+            this.origin.z + this.direction.z * distance);
+    },
+};
+
+//
 // ..\src\gui\unity3d\Rect.js
 //
 
@@ -1363,6 +1428,15 @@ UnityEngine.Vector3.SqrMagnitude = function(v1, v2) {
 		z = v1.z - v2.z;
 	return x * x + y * y + z * z;
 }
+
+UnityEngine.Vector3.back = new UnityEngine.Vector3(0, 0, -1);
+UnityEngine.Vector3.down = new UnityEngine.Vector3(0, -1, 0);
+UnityEngine.Vector3.forward = new UnityEngine.Vector3(0, 0, 1);
+UnityEngine.Vector3.left = new UnityEngine.Vector3(1, 0, 0);
+UnityEngine.Vector3.one = new UnityEngine.Vector3(1, 1, 1);
+UnityEngine.Vector3.right = new UnityEngine.Vector3(-1, 0, 0);
+UnityEngine.Vector3.up = new UnityEngine.Vector3(0, 1, 0);
+UnityEngine.Vector3.zero = new UnityEngine.Vector3(0, 0, 0);
 
 UnityEngine.Vector3.prototype = {
 	constructor: UnityEngine.Vector3,
@@ -2862,7 +2936,7 @@ Object.assign(NGUI.UIRect.prototype = Object.create(UnityEngine.MonoBehaviour.pr
 		if (cam.isOrthoGraphic)
 			return (cam.nearClipPlane + cam.farClipPlane) * 0.5;
 		var vec = this.transform.position.clone().sub(cam.transform.position);
-		var forward = cam.transform.TransformDirection(new UnityEngine.Vector3(0, 0, 1));
+		var forward = cam.transform.TransformDirection(UnityEngine.Vector3.forward);
 		return forward.dot(vec);
 	},
 	anchorCamera: function() {

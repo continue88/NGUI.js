@@ -110,10 +110,11 @@ Object.assign(UnityEngine.Camera.prototype = Object.create(UnityEngine.Component
 		return screenPos;
 	},
 	ScreenPointToRay: function(screenPoint) {
-		var ray = { 
-			direction: this.transform.TransformDirection(new UnityEngine.Vector3(0, 0, 1)), 
-			origin: this.transform.position.clone(), 
-		}; 
+		var pos = this.transform.position;
+		var dir = this.transform.TransformDirection(new UnityEngine.Vector3(0, 0, 1));
+		var ray = new UnityEngine.Ray();
+		ray.origin.set(pos.x, pos.y, pos.z);
+		ray.direction.set(dir.x, dir.y, dir.z);
 		return ray;
 	},
 });

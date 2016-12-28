@@ -14,6 +14,15 @@ UnityEngine.Vector3.SqrMagnitude = function(v1, v2) {
 	return x * x + y * y + z * z;
 }
 
+UnityEngine.Vector3.back = new UnityEngine.Vector3(0, 0, -1);
+UnityEngine.Vector3.down = new UnityEngine.Vector3(0, -1, 0);
+UnityEngine.Vector3.forward = new UnityEngine.Vector3(0, 0, 1);
+UnityEngine.Vector3.left = new UnityEngine.Vector3(1, 0, 0);
+UnityEngine.Vector3.one = new UnityEngine.Vector3(1, 1, 1);
+UnityEngine.Vector3.right = new UnityEngine.Vector3(-1, 0, 0);
+UnityEngine.Vector3.up = new UnityEngine.Vector3(0, 1, 0);
+UnityEngine.Vector3.zero = new UnityEngine.Vector3(0, 0, 0);
+
 UnityEngine.Vector3.prototype = {
 	constructor: UnityEngine.Vector3,
 	set: function(x, y, z) { this.x = x; this.y = y; this.z = z; },

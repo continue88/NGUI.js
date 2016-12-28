@@ -24,7 +24,7 @@ Object.assign(NGUI.UIRect.prototype = Object.create(UnityEngine.MonoBehaviour.pr
 		if (cam.isOrthoGraphic)
 			return (cam.nearClipPlane + cam.farClipPlane) * 0.5;
 		var vec = this.transform.position.clone().sub(cam.transform.position);
-		var forward = cam.transform.TransformDirection(new UnityEngine.Vector3(0, 0, 1));
+		var forward = cam.transform.TransformDirection(UnityEngine.Vector3.forward);
 		return forward.dot(vec);
 	},
 	anchorCamera: function() {
