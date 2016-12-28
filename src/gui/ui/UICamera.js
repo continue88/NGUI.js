@@ -17,4 +17,7 @@ Object.assign(NGUI.UICamera.prototype = Object.create(UnityEngine.MonoBehaviour.
         }
         NGUI.UICamera.current = this;
     },
+    Raycast: function(inPos) {
+        var pos = this.camera.ScreenToViewportPoint(inPos);
+    },
 });

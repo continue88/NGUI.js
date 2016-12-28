@@ -226,6 +226,41 @@ Object.assign(UnityEngine.Component.prototype = Object.create(UnityEngine.Object
 });
 
 //
+// ..\src\gui\unity3d\Collider.js
+//
+
+UnityEngine.Collider = function(gameObject) {
+    UnityEngine.Component.call(this, gameObject);
+};
+
+Object.assign(UnityEngine.Collider.prototype = Object.create(UnityEngine.Component.prototype), {
+	constructor: UnityEngine.Collider,
+	Load: function(json) {
+		UnityEngine.Component.prototype.Load.call(this, json);
+	},
+});
+
+//
+// ..\src\gui\unity3d\BoxCollider.js
+//
+
+UnityEngine.BoxCollider = function(gameObject) {
+    UnityEngine.Collider.call(this, gameObject);
+    this.center = new UnityEngine.Vector3(0, 0, 0);
+    this.size = new UnityEngine.Vector3(0, 0, 0);
+};
+
+Object.assign(UnityEngine.BoxCollider.prototype = Object.create(UnityEngine.Collider.prototype), {
+	constructor: UnityEngine.BoxCollider,
+	Load: function(json) {
+		UnityEngine.Collider.prototype.Load.call(this, json);
+        if (json.c !== undefined) this.center.set(json.c.x || 0, json.c.y || 0, json.c.z || 0);
+        if (json.s !== undefined) this.size.set(json.s.x || 0, json.s.y || 0, json.s.z || 0);
+	},
+});
+
+
+//
 // ..\src\gui\unity3d\Camera.js
 //
 
@@ -324,6 +359,9 @@ Object.assign(UnityEngine.Camera.prototype = Object.create(UnityEngine.Component
 		}
 		return mSides;
 	},
+	ScreenToViewportPoint: function(position) {
+		return position;
+	},
 	ViewportToWorldPoint: function(screenPoint) {
 		screenPoint.x = 2 * screenPoint.x - 1;
 		screenPoint.y = 1 - 2 * screenPoint.y;
@@ -335,6 +373,13 @@ Object.assign(UnityEngine.Camera.prototype = Object.create(UnityEngine.Component
 		screenPos.x = (screenPos.x + 1) * 0.5;
 		screenPos.y = (1 - screenPos.y) * 0.5;
 		return screenPos;
+	},
+	ScreenPointToRay: function(screenPoint) {
+		var ray = { 
+			direction: this.transform.TransformDirection(new UnityEngine.Vector3(0, 0, 1)), 
+			origin: this.transform.position.clone(), 
+		}; 
+		return ray;
 	},
 });
 
@@ -921,6 +966,15 @@ Object.assign(UnityEngine.MonoBehaviour.prototype = Object.create(UnityEngine.Co
 });
 
 //
+// ..\src\gui\unity3d\Physics.js
+//
+
+UnityEngine.Physics = {
+    RaycastAll: function(ray, distance, layerMask) {
+    },
+};
+
+//
 // ..\src\gui\unity3d\Quaternion.js
 //
 
@@ -1130,6 +1184,27 @@ UnityEngine.Texture2D.prototype = {
 		gl.activeTexture(gl.TEXTURE0 + slot);
 		gl.bindTexture(gl.TEXTURE_2D, this.glTexture);
 	}
+};
+
+//
+// ..\src\gui\unity3d\Time.js
+//
+
+UnityEngine.Time = {
+    captureFramerate: -1,
+    deltaTime: 0,
+    fixedDeltaTime: 0,
+    fixedTime: 0,
+    frameCount: 0,
+    maximumDeltaTime: 0,
+    realtimeSinceStartup: 0,
+    renderedFrameCount: 0,
+    smoothDeltaTime: 0,
+    time: 0,
+    timeScale: 0,
+    timeSinceLevelLoad: 0,
+    unscaledDeltaTime: 0,
+    unscaledTime: 0,
 };
 
 //
@@ -2825,11 +2900,12 @@ Object.assign(NGUI.UIRect.prototype = Object.create(UnityEngine.MonoBehaviour.pr
 		//FindCameraFor(rightAnchor);
 		//FindCameraFor(topAnchor);
 		this.mUpdateAnchors = true;
-		if (update) this.UpdateAnchors();
+		if (update) this.UpdateAnchors(UnityEngine.Time.frameCount);
 	},
 	UpdateAnchors: function(frame) {
-		var anchored = false;
+		if (this.mUpdateFrame === frame) return;
 		this.mUpdateFrame = frame;
+		var anchored = false;
 		if (this.leftAnchor !== undefined) {
 			anchored = true;
 			if (this.leftAnchor.rect !== undefined)
@@ -4087,6 +4163,9 @@ Object.assign(NGUI.UICamera.prototype = Object.create(UnityEngine.MonoBehaviour.
         }
         NGUI.UICamera.current = this;
     },
+    Raycast: function(inPos) {
+        var pos = this.camera.ScreenToViewportPoint(inPos);
+    },
 });
 
 //
@@ -4801,11 +4880,13 @@ Object.assign(NGUI.UILabel.prototype = Object.create(NGUI.UIWidget.prototype), {
 		var col = this.effectColor.get32();
 		col.a *= this.finalAlpha;
 		for (var i = start; i < end; ++i) {
-			var v = verts[i].clone();
-			var uc = cols[i].clone();
-			verts.push(v.clone());
+			var v = verts[i];
+			var uc = cols[i];
+			verts.push(v);
 			uvs.push(uvs[i]);
-			cols.push(uc.clone());
+			cols.push(uc);
+			v = v.clone();
+			uc = uc.clone();
 			v.x += x;
 			v.y += y;
 			if (uc.a === 255) {

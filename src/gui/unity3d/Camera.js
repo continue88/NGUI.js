@@ -94,6 +94,9 @@ Object.assign(UnityEngine.Camera.prototype = Object.create(UnityEngine.Component
 		}
 		return mSides;
 	},
+	ScreenToViewportPoint: function(position) {
+		return position;
+	},
 	ViewportToWorldPoint: function(screenPoint) {
 		screenPoint.x = 2 * screenPoint.x - 1;
 		screenPoint.y = 1 - 2 * screenPoint.y;
@@ -105,5 +108,12 @@ Object.assign(UnityEngine.Camera.prototype = Object.create(UnityEngine.Component
 		screenPos.x = (screenPos.x + 1) * 0.5;
 		screenPos.y = (1 - screenPos.y) * 0.5;
 		return screenPos;
+	},
+	ScreenPointToRay: function(screenPoint) {
+		var ray = { 
+			direction: this.transform.TransformDirection(new UnityEngine.Vector3(0, 0, 1)), 
+			origin: this.transform.position.clone(), 
+		}; 
+		return ray;
 	},
 });
