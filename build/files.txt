@@ -15,6 +15,7 @@ unity3d\Quaternion.js
 unity3d\Rect.js
 unity3d\Resources.js
 unity3d\Texture2D.js
+unity3d\Time.js
 unity3d\Transform.js
 unity3d\Vector2.js
 unity3d\Vector3.js

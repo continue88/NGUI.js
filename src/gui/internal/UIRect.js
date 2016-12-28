@@ -62,11 +62,12 @@ Object.assign(NGUI.UIRect.prototype = Object.create(UnityEngine.MonoBehaviour.pr
 		//FindCameraFor(rightAnchor);
 		//FindCameraFor(topAnchor);
 		this.mUpdateAnchors = true;
-		if (update) this.UpdateAnchors();
+		if (update) this.UpdateAnchors(UnityEngine.Time.frameCount);
 	},
 	UpdateAnchors: function(frame) {
-		var anchored = false;
+		if (this.mUpdateFrame === frame) return;
 		this.mUpdateFrame = frame;
+		var anchored = false;
 		if (this.leftAnchor !== undefined) {
 			anchored = true;
 			if (this.leftAnchor.rect !== undefined)
