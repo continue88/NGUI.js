@@ -100,6 +100,7 @@ public static class NguiJS
         else if (comp is UIRoot) return Export((UIRoot)comp);
         else if (comp is UILabel) return Export((UILabel)comp);
         else if (comp is UIWidget) return Export((UIWidget)comp);
+        else if (comp is BoxCollider) return Export((BoxCollider)comp);
         return null;
     }
 
@@ -330,6 +331,14 @@ public static class NguiJS
         Export(data, "pr", sprite.paddingRight, 0);
         Export(data, "pt", sprite.paddingTop, 0);
         Export(data, "pb", sprite.paddingBottom, 0);
+        return data;
+    }
+
+    public static LitJson.JsonData Export(BoxCollider collider)
+    {
+        var data = new LitJson.JsonData();
+        Export(data, "c", collider.center, Vector3.zero);
+        Export(data, "s", collider.size, Vector3.zero);
         return data;
     }
 
