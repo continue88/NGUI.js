@@ -206,11 +206,13 @@ Object.assign(NGUI.UILabel.prototype = Object.create(NGUI.UIWidget.prototype), {
 		var col = this.effectColor.get32();
 		col.a *= this.finalAlpha;
 		for (var i = start; i < end; ++i) {
-			var v = verts[i].clone();
-			var uc = cols[i].clone();
-			verts.push(v.clone());
+			var v = verts[i];
+			var uc = cols[i];
+			verts.push(v);
 			uvs.push(uvs[i]);
-			cols.push(uc.clone());
+			cols.push(uc);
+			v = v.clone();
+			uc = uc.clone();
 			v.x += x;
 			v.y += y;
 			if (uc.a === 255) {
