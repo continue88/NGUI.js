@@ -21,6 +21,7 @@ UnityEngine.Object.RegisterObject = function(obj) {
     if (map[id] !== undefined)
         console.warn('Object with id already register, override it: ' + id);
     map[id] = obj;
+    if (obj.Awake !== undefined) obj.Awake();
 }
 UnityEngine.Object.FindObjectWithId = function(id) {
     return UnityEngine.Object.Map[id];

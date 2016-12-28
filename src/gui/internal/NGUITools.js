@@ -12,6 +12,9 @@ NGUITools = {
 		}
 		return comp;
 	},
+	CalculateRaycastDepth: function(go) {
+		return 0;
+	},
 	FindCameraForLayer: function(layer) {
 		// TODO: add layer supported.
 		return NGUI.UICamera.current.camera;

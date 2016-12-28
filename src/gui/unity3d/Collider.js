@@ -5,6 +5,12 @@ UnityEngine.Collider = function(gameObject) {
 
 Object.assign(UnityEngine.Collider.prototype = Object.create(UnityEngine.Component.prototype), {
 	constructor: UnityEngine.Collider,
+	Awake: function() {
+		UnityEngine.Physics.Add(this);
+	},
+	OnDestroy: function() {
+		UnityEngine.Physics.Remove(this);
+	},
 	Load: function(json) {
 		UnityEngine.Component.prototype.Load.call(this, json);
 	},

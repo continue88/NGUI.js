@@ -12,6 +12,9 @@ Object.assign(UnityEngine.BoxCollider.prototype = Object.create(UnityEngine.Coll
         if (json.c !== undefined) this.center.set(json.c.x || 0, json.c.y || 0, json.c.z || 0);
         if (json.s !== undefined) this.size.set(json.s.x || 0, json.s.y || 0, json.s.z || 0);
 	},
+    RayTest: function(ray, distance) {
+        return false;
+    },
     Raycast: function(ray, hitInfo, distance) {
         var min = float.MinValue;
         var max = float.MaxValue;

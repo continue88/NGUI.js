@@ -18,6 +18,28 @@ Object.assign(NGUI.UICamera.prototype = Object.create(UnityEngine.MonoBehaviour.
         NGUI.UICamera.current = this;
     },
     Raycast: function(inPos) {
-        var pos = this.camera.ScreenToViewportPoint(inPos);
+        var currentCamera = this.camera;
+        var dist = currentCamera.farClipPlane - currentCamera.nearClipPlane;
+        var ray = currentCamera.ScreenPointToRay(inPos);
+        var hits = UnityEngine.Physics.RaycastAll(ray, dist, mask);
+        if (hits.length > 1) {
+            for (var i in hits) {
+                var go = hits[i].gameObject;
+                var w = go.GetComponent("UIWidget");
+                if (w !== undefined) {
+                    if (w.isVisible() !== true) continue;
+                } else {
+                    //var rect = NGUITools.FindInParents(go, 'UIRect');
+                }
+                var depth = NGUITools.CalculateRaycastDepth(go);
+                if (depth !== undefined) {
+                    
+                }
+            }
+        } else if (hits.length == 1) {
+
+        } else {
+
+        }
     },
 });
