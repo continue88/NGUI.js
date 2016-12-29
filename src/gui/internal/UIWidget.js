@@ -54,6 +54,9 @@ Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 	isVisible: function() { return this.mIsVisibleByAlpha && this.mIsVisibleByPanel && this.mIsInFront && this.finalAlpha > 0.001; },
 	hasVertices: function() { return this.geometry.hasVertices(); },
 	border: function() { return new UnityEngine.Vector4(0, 0, 0, 0); },
+	raycastDepth: function() {
+		return (this.panel !== undefined) ? this.mDepth + this.panel.mDepth * 1000 : this.mDepth;
+	},
 	drawingDimensions: function() {
 		var offset = this.pivotOffset();
 		var x0 = -offset.x * this.mWidth;

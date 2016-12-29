@@ -13,13 +13,13 @@ Object.assign(UnityEngine.BoxCollider.prototype = Object.create(UnityEngine.Coll
         if (json.s !== undefined) this.size.set(json.s.x || 0, json.s.y || 0, json.s.z || 0);
 	},
     RayTest: function(ray, distance) {
-        return false;
+        return this.Raycast(ray, undefined, distance);
     },
     Raycast: function(ray, hitInfo, distance) {
-        var min = float.MinValue;
-        var max = float.MaxValue;
-        var p = this.center.clone().sub(ray.origin);
-        var h = this.size.clone().multiplyScalar(0.5);
+        var max = 100000;
+        var min = -max;
+        var p = this.transform.TransformPoint(this.center).sub(ray.origin);
+        var h = this.size.clone().multiply(this.transform.lossyScale).multiplyScalar(0.5);
         var dirMax = 0;
         var dirMin = 0;
         var dir = 0;
@@ -31,7 +31,7 @@ Object.assign(UnityEngine.BoxCollider.prototype = Object.create(UnityEngine.Coll
         for (dir = 0; dir < 3; dir++) {
             var e = matrixVec[dir].dot(p);
             var f = matrixVec[dir].dot(ray.direction);
-            if (Math.abs(f) > 0.001) {
+            if (Math.abs(f) > 0.00001) {
                 var t1 = (e + vectorFloat[dir]) / f;
                 var t2 = (e - vectorFloat[dir]) / f;
                 if (t1 > t2) { var tmp = t1;t1 = t2; t2 = tmp; }
@@ -43,6 +43,7 @@ Object.assign(UnityEngine.BoxCollider.prototype = Object.create(UnityEngine.Coll
             else if((-e-vectorFloat[dir] > 0.0) || (-e + vectorFloat[dir] < 0.0))
                 return false;
         }
+        if (hitInfo === undefined) return true;
 
         if (min > 0.0) {
             dir = dirMin;

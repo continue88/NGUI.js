@@ -166,6 +166,7 @@ UnityEngine.Object.RegisterObject = function(obj) {
     if (map[id] !== undefined)
         console.warn('Object with id already register, override it: ' + id);
     map[id] = obj;
+    if (obj.Awake !== undefined) obj.Awake();
 }
 UnityEngine.Object.FindObjectWithId = function(id) {
     return UnityEngine.Object.Map[id];
@@ -235,6 +236,12 @@ UnityEngine.Collider = function(gameObject) {
 
 Object.assign(UnityEngine.Collider.prototype = Object.create(UnityEngine.Component.prototype), {
 	constructor: UnityEngine.Collider,
+	Awake: function() {
+		UnityEngine.Physics.Add(this);
+	},
+	OnDestroy: function() {
+		UnityEngine.Physics.Remove(this);
+	},
 	Load: function(json) {
 		UnityEngine.Component.prototype.Load.call(this, json);
 	},
@@ -257,11 +264,14 @@ Object.assign(UnityEngine.BoxCollider.prototype = Object.create(UnityEngine.Coll
         if (json.c !== undefined) this.center.set(json.c.x || 0, json.c.y || 0, json.c.z || 0);
         if (json.s !== undefined) this.size.set(json.s.x || 0, json.s.y || 0, json.s.z || 0);
 	},
+    RayTest: function(ray, distance) {
+        return this.Raycast(ray, undefined, distance);
+    },
     Raycast: function(ray, hitInfo, distance) {
-        var min = float.MinValue;
-        var max = float.MaxValue;
-        var p = this.center.clone().sub(ray.origin);
-        var h = this.size.clone().multiplyScalar(0.5);
+        var max = 100000;
+        var min = -max;
+        var p = this.transform.TransformPoint(this.center).sub(ray.origin);
+        var h = this.size.clone().multiply(this.transform.lossyScale).multiplyScalar(0.5);
         var dirMax = 0;
         var dirMin = 0;
         var dir = 0;
@@ -273,7 +283,7 @@ Object.assign(UnityEngine.BoxCollider.prototype = Object.create(UnityEngine.Coll
         for (dir = 0; dir < 3; dir++) {
             var e = matrixVec[dir].dot(p);
             var f = matrixVec[dir].dot(ray.direction);
-            if (Math.abs(f) > 0.001) {
+            if (Math.abs(f) > 0.00001) {
                 var t1 = (e + vectorFloat[dir]) / f;
                 var t2 = (e - vectorFloat[dir]) / f;
                 if (t1 > t2) { var tmp = t1;t1 = t2; t2 = tmp; }
@@ -285,6 +295,7 @@ Object.assign(UnityEngine.BoxCollider.prototype = Object.create(UnityEngine.Coll
             else if((-e-vectorFloat[dir] > 0.0) || (-e + vectorFloat[dir] < 0.0))
                 return false;
         }
+        if (hitInfo === undefined) return true;
 
         if (min > 0.0) {
             dir = dirMin;
@@ -1016,7 +1027,21 @@ Object.assign(UnityEngine.MonoBehaviour.prototype = Object.create(UnityEngine.Co
 //
 
 UnityEngine.Physics = {
+    Colliders: [],
+    Add: function(collider) {
+        this.Colliders.push(collider);
+    },
+    Remove: function(collider) {
+        var index = this.Colliders.indexOf(collider);
+        if (index >= 0) this.Colliders.splice(index, 1);
+    },
     RaycastAll: function(ray, distance, layerMask) {
+        var ret = [];
+        for (var i in this.Colliders) {
+            var collider = this.Colliders[i];
+            if (collider.RayTest(ray, distance)) ret.push(collider);
+        }
+        return ret;
     },
 };
 
@@ -2773,6 +2798,9 @@ NGUITools = {
 		}
 		return comp;
 	},
+	CalculateRaycastDepth: function(go) {
+		return 0;
+	},
 	FindCameraForLayer: function(layer) {
 		// TODO: add layer supported.
 		return NGUI.UICamera.current.camera;
@@ -4238,7 +4266,26 @@ Object.assign(NGUI.UICamera.prototype = Object.create(UnityEngine.MonoBehaviour.
         NGUI.UICamera.current = this;
     },
     Raycast: function(inPos) {
-        var pos = this.camera.ScreenToViewportPoint(inPos);
+        var currentCamera = this.camera;
+        var dist = currentCamera.farClipPlane - currentCamera.nearClipPlane;
+        var ray = currentCamera.ScreenPointToRay(inPos);
+        var hits = UnityEngine.Physics.RaycastAll(ray, dist, mask);
+        if (hits.length > 1) {
+            for (var i in hits) {
+                var go = hits[i].gameObject;
+                var w = go.GetComponent("UIWidget");
+                if (w !== undefined && w.isVisible() !== true)
+                    continue;
+                var depth = NGUITools.CalculateRaycastDepth(go);
+                if (depth !== undefined) {
+                    
+                }
+            }
+        } else if (hits.length == 1) {
+
+        } else {
+
+        }
     },
 });
 

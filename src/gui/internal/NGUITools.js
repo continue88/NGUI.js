@@ -13,7 +13,16 @@ NGUITools = {
 		return comp;
 	},
 	CalculateRaycastDepth: function(go) {
-		return 0;
+		var w = go.GetComponent('UIWidget');
+		if (w !== undefined) return w.raycastDepth();
+		var widgets = go.GetComponentsInChildren('UIWidget');
+		if (widgets.length == 0) return 0;
+		var depth = 1000000;
+		for (var i in widgets) {
+			w = widgets[i];
+			if (w.enabled === true) depth = Math.min(depth, w.raycastDepth());
+		}
+		return depth;
 	},
 	FindCameraForLayer: function(layer) {
 		// TODO: add layer supported.

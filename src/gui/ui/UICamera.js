@@ -17,6 +17,13 @@ Object.assign(NGUI.UICamera.prototype = Object.create(UnityEngine.MonoBehaviour.
         }
         NGUI.UICamera.current = this;
     },
+    Update: function() {
+        // Test hit...
+        ProcessMouse();
+    },
+    ProcessMouse: function() {
+        
+    },
     Raycast: function(inPos) {
         var currentCamera = this.camera;
         var dist = currentCamera.farClipPlane - currentCamera.nearClipPlane;
@@ -26,20 +33,15 @@ Object.assign(NGUI.UICamera.prototype = Object.create(UnityEngine.MonoBehaviour.
             for (var i in hits) {
                 var go = hits[i].gameObject;
                 var w = go.GetComponent("UIWidget");
-                if (w !== undefined) {
-                    if (w.isVisible() !== true) continue;
-                } else {
-                    //var rect = NGUITools.FindInParents(go, 'UIRect');
-                }
+                if (w !== undefined && w.isVisible() !== true)
+                    continue;
                 var depth = NGUITools.CalculateRaycastDepth(go);
                 if (depth !== undefined) {
                     
                 }
             }
         } else if (hits.length == 1) {
-
         } else {
-
         }
     },
 });
