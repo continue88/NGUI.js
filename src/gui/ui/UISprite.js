@@ -6,8 +6,14 @@ NGUI.UISprite = function(gameObject) {
 	this.mSprite = undefined; // refrence to UISpriteData
 };
 
-Object.assign(NGUI.UISprite.prototype = Object.create(NGUI.UIBasicSprite.prototype), {
+Object.extend(NGUI.UISprite.prototype = Object.create(NGUI.UIBasicSprite.prototype), {
 	constructor: NGUI.UISprite,
+	get spriteName() { return this.mSpriteName; }, 
+	set spriteName(sp) {
+		this.mSpriteName = sp;
+		this.mSprite = undefined;
+		this.mChanged = true;
+	},
 	texture: function() { return this.mAtlas ? this.mAtlas.texture : undefined; },
 	border: function() {
 		var sp = this.GetAtlasSprite();
@@ -20,7 +26,7 @@ Object.assign(NGUI.UISprite.prototype = Object.create(NGUI.UIBasicSprite.prototy
 		this.mSpriteName = json.s;
 	},
 	GetAtlasSprite: function() {
-		if (this.mAtlas !== undefined && this.mSprite === undefined) 
+		if (this.mAtlas !== undefined && this.mSprite === undefined && this.mSpriteName) 
 			this.mSprite = this.mAtlas.GetSprite(this.mSpriteName);
 		return this.mSprite;
 	},

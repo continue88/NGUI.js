@@ -19,6 +19,17 @@ public static class NguiJS
     [MenuItem("NGUI.js/Test")]
     public static void Test()
     {
+        Debug.Log(UnityEngine.Color.black);// = new UnityEngine.Color(1, 1, 1, 1);
+        Debug.Log(UnityEngine.Color.blue);//  = new UnityEngine.Color(1, 1, 1, 1);
+        Debug.Log(UnityEngine.Color.clear);//  = new UnityEngine.Color(1, 1, 1, 1);
+        Debug.Log(UnityEngine.Color.cyan);//  = new UnityEngine.Color(1, 1, 1, 1);
+        Debug.Log(UnityEngine.Color.gray);//  = new UnityEngine.Color(1, 1, 1, 1);
+        Debug.Log(UnityEngine.Color.green);//  = new UnityEngine.Color(1, 1, 1, 1);
+        Debug.Log(UnityEngine.Color.grey);//  = new UnityEngine.Color(1, 1, 1, 1);
+        Debug.Log(UnityEngine.Color.magenta);// );//  = new UnityEngine.Color(1, 1, 1, 1);
+        Debug.Log(UnityEngine.Color.red);//  = new UnityEngine.Color(1, 1, 1, 1);
+        Debug.Log(UnityEngine.Color.yellow);//  = new UnityEngine.Color(1, 1, 1, 1);
+        Debug.Log(UnityEngine.Color.white);//  = new UnityEngine.Color(1, 1, 1, 1);
         Debug.Log(1.23456.ToString("0.##"));
         Debug.Log(123456.ToString("0.##"));
     }
@@ -40,6 +51,49 @@ public static class NguiJS
         mUsedFonts.ForEach(font => File.WriteAllText(EditorUtility.SaveFilePanel("Save As", "", font.name, "js"), JsPrefix + Export(font).ToJson()));
         mUsedAtlas.ForEach(atlas => File.WriteAllText(EditorUtility.SaveFilePanel("Save As", "", atlas.name, "js"), JsPrefix + Export(atlas).ToJson()));
         mAtlasImages.ForEach(path => File.Copy(path, EditorUtility.SaveFilePanel("Save As", "", Path.GetFileName(path), Path.GetExtension(path)), true));
+    }
+
+    public static LitJson.JsonData Export(Component comp)
+    {
+        if (comp is UISprite) return Export((UISprite)comp);
+        else if (comp is Camera) return Export((Camera)comp);
+        else if (comp is UICamera) return Export((UICamera)comp);
+        else if (comp is UIPanel) return Export((UIPanel)comp);
+        else if (comp is UIRoot) return Export((UIRoot)comp);
+        else if (comp is UILabel) return Export((UILabel)comp);
+        else if (comp is UIWidget) return Export((UIWidget)comp);
+        else if (comp is BoxCollider) return Export((BoxCollider)comp);
+        else if (comp is UIButton) return Export((UIButton)comp);
+        else if (comp is UIToggle) return Export((UIToggle)comp);
+        return null;
+    }
+
+    public static LitJson.JsonData Export(UIButton button)
+    {
+        var data = new LitJson.JsonData();
+        if (button.tweenTarget && button.tweenTarget != button.gameObject)
+            Export(data, "t", button.tweenTarget.GetInstanceID(), 0);
+        Export(data, "d", button.duration, 0.2f);
+        Export(data, "cn", button.defaultColor, Color.white);
+        Export(data, "ch", button.hover, new Color(225f / 255f, 200f / 255f, 150f / 255f, 1f));
+        Export(data, "cp", button.pressed, new Color(183f / 255f, 163f / 255f, 123f / 255f, 1f));
+        Export(data, "cd", button.disabledColor, Color.grey);
+        Export(data, "sn", button.normalSprite, "");
+        Export(data, "sh", button.hoverSprite, "");
+        Export(data, "sp", button.pressedSprite, "");
+        Export(data, "sd", button.disabledSprite, "");
+        return data;
+    }
+
+    public static LitJson.JsonData Export(UIToggle toogle)
+    {
+        var data = new LitJson.JsonData();
+        Export(data, "g", toogle.group, 0);
+        if (toogle.activeSprite) Export(data, "as", toogle.activeSprite.GetInstanceID(), 0);
+        Export(data, "sa", toogle.startsActive, false);
+        Export(data, "it", toogle.instantTween, false);
+        Export(data, "cn", toogle.optionCanBeNone, false);
+        return data;
     }
 
     public static LitJson.JsonData Export(GameObject go)
@@ -89,19 +143,6 @@ public static class NguiJS
             }
         }
         return data;
-    }
-
-    public static LitJson.JsonData Export(Component comp)
-    {
-        if (comp is UISprite) return Export((UISprite)comp);
-        else if (comp is Camera) return Export((Camera)comp);
-        else if (comp is UICamera) return Export((UICamera)comp);
-        else if (comp is UIPanel) return Export((UIPanel)comp);
-        else if (comp is UIRoot) return Export((UIRoot)comp);
-        else if (comp is UILabel) return Export((UILabel)comp);
-        else if (comp is UIWidget) return Export((UIWidget)comp);
-        else if (comp is BoxCollider) return Export((BoxCollider)comp);
-        return null;
     }
 
     public static void ExportWidget(LitJson.JsonData data, UIWidget widget)

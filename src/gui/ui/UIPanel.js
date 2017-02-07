@@ -17,6 +17,7 @@ NGUI.UIPanel = function(gameObject) {
 	this.mMax = new UnityEngine.Vector2();
 	this.mClipping = Clipping.None;
 	this.mSortWidgets = false;
+	this.mAlphaFrameID = -1;
 
 	this.startingRenderQueue = 3000;
 	this.drawCallClipRange = new UnityEngine.Vector4(0, 0, 1, 1);
@@ -74,7 +75,7 @@ NGUI.UIPanel.Foreach = function(action) {
 	for (var i in list) action(list[i]);
 };
 
-Object.assign(NGUI.UIPanel.prototype = Object.create(NGUI.UIRect.prototype), {
+Object.extend(NGUI.UIPanel.prototype = Object.create(NGUI.UIRect.prototype), {
 	constructor: NGUI.UIPanel,
 	hasClipping: function() { return this.mClipping === Clipping.SoftClip;  },
 	getViewSize: function() {
@@ -110,6 +111,13 @@ Object.assign(NGUI.UIPanel.prototype = Object.create(NGUI.UIRect.prototype), {
 		this.startingRenderQueue = json.startingRenderQueue || 3000;
 		this.mRebuild = true;
 		this.FindParent();
+	},
+	CalculateFinalAlpha: function(frameID) {
+		if (this.mAlphaFrameID !== frameID) {
+			this.mAlphaFrameID = frameID;
+			this.finalAlpha = this.parentPanel ? this.parentPanel.CalculateFinalAlpha(frameID) * this.mAlpha : this.mAlpha; 
+		}
+		return this.finalAlpha;
 	},
 	AddWidget: function(w) {
 		this.widgets.push(w);
@@ -189,8 +197,6 @@ Object.assign(NGUI.UIPanel.prototype = Object.create(NGUI.UIRect.prototype), {
 		}
 		this.mResized = false;
 	},
-	FindDrawCall: function(w) {
-	},
 	UpdateDrawCalls: function() {
 		var trans = this.transform;
 		if (this.mClipping != Clipping.None) {
@@ -247,21 +253,59 @@ Object.assign(NGUI.UIPanel.prototype = Object.create(NGUI.UIRect.prototype), {
 					dc.depthStart = w.mDepth;
 					dc.depthEnd = dc.depthStart;
 				} else {
-					var rd = w.depth;
+					var rd = w.mDepth;
 					if (rd < dc.depthStart) dc.depthStart = rd;
 					if (rd > dc.depthEnd) dc.depthEnd = rd;
 				}
 				w.drawCall = dc;
-
 				++count;
 				w.WriteToBuffers(dc.verts, dc.uvs, dc.cols);
 			}
 		}
 
-		if (dc !== undefined && dc.verts.length !== 0) {
+		if (dc !== undefined && dc.verts.Length !== 0) {
 			this.drawCalls.push(dc);
 			dc.UpdateGeometry(count);
 		}
+	},
+	FindDrawCall: function(w) {
+		var mat = w.texture();
+		var depth = w.mDepth;
+		for (var i in this.drawCalls) {
+			var dc = this.drawCalls[i];
+			var dcStart = (i == 0) ? -10000 : this.drawCalls[i - 1].depthEnd + 1;
+			var dcEnd = (i + 1 == this.drawCalls.length) ? 10000 : this.drawCalls[i + 1].depthStart - 1;
+			if (dcStart <= depth && dcEnd >= depth) {
+				if (dc.texture === mat) {
+					if (w.isVisible()) {
+						w.drawCall = dc;
+						if (w.hasVertices()) dc.isDirty = true;
+						return dc;
+					}
+				}
+				else this.mRebuild = true;
+				return;
+			}
+		}
+		this.mRebuild = true;
+	},
+	FillDrawCall: function(dc) {
+		dc.isDirty = false;
+		var count = 0;
+		for (var  i in this.widgets) {
+			var w = this.widgets[i];
+			if (w.drawCall !== dc) continue;
+			if (w.isVisible() && w.hasVertices()) {
+				++count;
+				w.WriteToBuffers(dc.verts, dc.uvs, dc.cols, null, null);
+			}
+			else w.drawCall = undefined;
+		}
+		if (dc.verts.Length !== 0) {
+			dc.UpdateGeometry(count);
+			return true;
+		}
+		return false;
 	},
 	GetSides: function(relativeTo) {
 		if (this.mClipping !== Clipping.None) {

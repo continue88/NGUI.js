@@ -3,7 +3,7 @@ UnityEngine.Collider = function(gameObject) {
     UnityEngine.Component.call(this, gameObject);
 };
 
-Object.assign(UnityEngine.Collider.prototype = Object.create(UnityEngine.Component.prototype), {
+Object.extend(UnityEngine.Collider.prototype = Object.create(UnityEngine.Component.prototype), {
 	constructor: UnityEngine.Collider,
 	Awake: function() {
 		UnityEngine.Physics.Add(this);

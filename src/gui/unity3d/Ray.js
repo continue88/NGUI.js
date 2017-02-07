@@ -12,4 +12,7 @@ UnityEngine.Ray.prototype = {
             this.origin.y + this.direction.y * distance,
             this.origin.z + this.direction.z * distance);
     },
+	toString: function() {
+		return "{origin:" + this.origin + ",dir:" + this.direction + "}";
+	},
 };

@@ -8,7 +8,6 @@ NGUI.UIRect = function(gameObject) {
 	this.topAnchor = undefined;//new NGUI.AnchorPoint();
 	this.finalAlpha = 1;
 	
-	this.mSides = [];
 	this.mCam = undefined;
 	this.mUpdateAnchors = true;
 	this.mUpdateFrame = -1;
@@ -16,7 +15,9 @@ NGUI.UIRect = function(gameObject) {
 	this.mChanged = false;
 };
 
-Object.assign(NGUI.UIRect.prototype = Object.create(UnityEngine.MonoBehaviour.prototype), {
+NGUI.UIRect.mSides = [];
+
+Object.extend(NGUI.UIRect.prototype = Object.create(UnityEngine.MonoBehaviour.prototype), {
 	constructor: NGUI.UIRect,
 	cameraRayDistance: function() {
 		var cam = this.mCam;
@@ -39,15 +40,18 @@ Object.assign(NGUI.UIRect.prototype = Object.create(UnityEngine.MonoBehaviour.pr
 		if (json.ta !== undefined) this.topAnchor = new NGUI.AnchorPoint(json.ta);
 		this.mChanged = true;
 	},
+	Invalidate: function(includeChildren) {
+	},
 	GetSides: function(relativeTo) {
 		if (this.mCam !== undefined) return this.mCam.GetSides(this.cameraRayDistance(), relativeTo);
+		var sides = NGUI.UIRect.mSides;
 		var pos = this.transform.position;
-		for (var i = 0; i < 4; ++i) this.mSides[i] = pos;
+		for (var i = 0; i < 4; ++i) sides[i].set(pos.x, pos.y, pos.z);
 		if (relativeTo !== undefined) {
-			for (var i = 0; i < 4; ++i)
-				this.mSides[i] = relativeTo.InverseTransformPoint(this.mSides[i]);
+			var worldToLocal = relativeTo.worldToLocalMatrix;
+			for (var i in sides) sides[i].ApplyTransform(worldToLocal);
 		}
-		return this.mSides;
+		return sides;
 	},
 	OnAnchor: function() { },
 	ResetAnchors: function(update) {

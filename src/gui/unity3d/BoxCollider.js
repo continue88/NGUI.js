@@ -5,7 +5,7 @@ UnityEngine.BoxCollider = function(gameObject) {
     this.size = new UnityEngine.Vector3(0, 0, 0);
 };
 
-Object.assign(UnityEngine.BoxCollider.prototype = Object.create(UnityEngine.Collider.prototype), {
+Object.extend(UnityEngine.BoxCollider.prototype = Object.create(UnityEngine.Collider.prototype), {
 	constructor: UnityEngine.BoxCollider,
 	Load: function(json) {
 		UnityEngine.Collider.prototype.Load.call(this, json);
@@ -26,7 +26,7 @@ Object.assign(UnityEngine.BoxCollider.prototype = Object.create(UnityEngine.Coll
         var matrixVec = [
             this.transform.TransformDirection(UnityEngine.Vector3.right),
             this.transform.TransformDirection(UnityEngine.Vector3.up),
-            this.transform.TransformDirection(UnityEngine.Vector3.back)];
+            this.transform.TransformDirection(UnityEngine.Vector3.forward)];
         var vectorFloat = [h.x, h.y, h.z];
         for (dir = 0; dir < 3; dir++) {
             var e = matrixVec[dir].dot(p);

@@ -10,9 +10,9 @@ NGUI.UIDrawCall = function (name, panel, texture) {
 	this.manager = panel;
 	this.panel = panel; // NGUI.UIPanel
 	
-	this.verts = [];// Vector3
-	this.uvs = [];// Vector2
-	this.cols = [];// Vector3
+	this.verts = new NGUI.BetterList();
+	this.uvs = new NGUI.BetterList();
+	this.cols = new NGUI.BetterList();
 
 	this.mMesh = undefined;
 	this.mSortingOrder = panel.mSortingOrder;
@@ -47,19 +47,21 @@ NGUI.UIDrawCall.prototype = {
 	},
 	UpdateGeometry: function(count) {
 		this.mMesh = new UnityEngine.Mesh();
-		this.mMesh.CopyVertexData(this.verts, this.uvs, this.cols, this.BuildTriangles(this.verts.length));
+		this.mMesh.CopyVertexData(this.verts, this.uvs, this.cols, this.BuildTriangles(this.verts.Length));
 		// clean.
-		this.verts.length = 0;
-		this.uvs.length = 0;
-		this.cols.length = 0;
+		this.verts.Clear();
+		this.uvs.Clear();
+		this.cols.Clear();
 	},
 	SetClipping: function(index, cr, soft, angle) {
 		angle *= -Mathf.Deg2Rad;
 		var sharpness = new UnityEngine.Vector2(1000.0, 1000.0);
 		if (soft.x > 0) sharpness.x = cr.z / soft.x;
 		if (soft.y > 0) sharpness.y = cr.w / soft.y;
-		this.ClipRange[index] = new UnityEngine.Vector4(-cr.x / cr.z, -cr.y / cr.w, 1 / cr.z, 1 / cr.w);
-		this.ClipArgs[index] = new UnityEngine.Vector4(sharpness.x, sharpness.y, Math.sin(angle), Math.cos(angle));
+		var clipRange = this.ClipRange[index] || new UnityEngine.Vector4();
+		var clipArgs = this.ClipArgs[index] || new UnityEngine.Vector4();
+		clipRange.set(-cr.x / cr.z, -cr.y / cr.w, 1 / cr.z, 1 / cr.w);
+		clipArgs.set(sharpness.x, sharpness.y, Math.sin(angle), Math.cos(angle));
 	},
 	OnWillRenderObject: function() {
 		var currentPanel = this.panel;

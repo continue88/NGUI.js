@@ -3,9 +3,9 @@ UnityEngine.Transform = function(gameObject) {
 	UnityEngine.Component.call(this, gameObject);
 
 	this.transform = this;
-	this.position = new UnityEngine.Vector3(0, 0, 0);
-	this.rotation = new UnityEngine.Quaternion();
-	this.lossyScale = new UnityEngine.Vector3(1, 1, 1);
+	this.mPosition = new UnityEngine.Vector3(0, 0, 0);
+	this.mRotation = new UnityEngine.Quaternion();
+	this.mLossyScale = new UnityEngine.Vector3(1, 1, 1);
 
 	this.localPosition = new UnityEngine.Vector3(0, 0, 0);
 	this.localRotation = new UnityEngine.Quaternion();
@@ -20,8 +20,15 @@ UnityEngine.Transform = function(gameObject) {
 	this.hasChanged = false;
 };
 
-Object.assign(UnityEngine.Transform.prototype = Object.create(UnityEngine.Component.prototype), {
+Object.extend(UnityEngine.Transform.prototype = Object.create(UnityEngine.Component.prototype), {
 	constructor: UnityEngine.Transform,
+	get position() { return this.mPosition; },
+	set position(v) {
+		this.localPosition.setv(v).ApplyTransform(this.worldToLocalMatrix);
+		this.setNeedUpdate(true);
+	},
+	get rotation() { return this.mRotation; },
+	get lossyScale() { return this.mLossyScale; },
 	exec: function(action, recursive) {
 		action(this); // do this action.
 		if (recursive) { for (var i in this.children) this.children[i].exec(action); }
@@ -59,15 +66,15 @@ Object.assign(UnityEngine.Transform.prototype = Object.create(UnityEngine.Compon
 		if (this.parent === undefined) {
 			this.localToWorldMatrix = localMatrix;
 			this.worldToLocalMatrix.getInverse(this.localToWorldMatrix);
-			this.position = this.localPosition.clone();
-			this.rotation = this.localRotation.clone();
-			this.lossyScale = this.localScale.clone();
+			this.mPosition.setv(this.localPosition);
+			this.mRotation.setv(this.localRotation);
+			this.mLossyScale.setv(this.localScale);
 		} else {
 			this.localToWorldMatrix.MultiplyMatrices(this.parent.localToWorldMatrix, localMatrix);
 			this.worldToLocalMatrix.getInverse(this.localToWorldMatrix);
-			this.position = this.parent.localToWorldMatrix.MultiplyPoint3x4(this.localPosition);
-			this.rotation.multiply(this.parent.rotation, this.localRotation);
-			this.lossyScale = this.parent.lossyScale.clone().multiply(this.localScale);
+			this.mPosition.setv(this.localPosition).ApplyTransform(this.parent.localToWorldMatrix);
+			this.mRotation.multiply(this.parent.mRotation, this.localRotation);
+			this.mLossyScale.setv(this.parent.mLossyScale).multiply(this.localScale);
 		}
 		for (var i in this.children)
 			this.children[i].Update();
@@ -75,5 +82,5 @@ Object.assign(UnityEngine.Transform.prototype = Object.create(UnityEngine.Compon
 	InverseTransformPoint: function(pos) { return this.worldToLocalMatrix.MultiplyPoint3x4(pos); },
 	InverseTransformDirection: function(dir) { return this.worldToLocalMatrix.MultiplyVector(dir); },
 	TransformPoint: function(pos) { return this.localToWorldMatrix.MultiplyPoint3x4(pos); },
-	TransformDirection: function(dir) { return this.localToWorldMatrix.MultiplyVector(dir); },
+	TransformDirection: function(dir) { return this.mRotation.multiplyVector(dir); },
 });

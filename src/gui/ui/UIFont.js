@@ -6,6 +6,11 @@ NGUI.UIFont = function() {
     this.mSprite = undefined;
     this.mUVRect = new UnityEngine.Rect(0, 0, 1, 1);
 
+    // dynamic font.
+    this.mDynamicFont = undefined;
+    this.mDynamicFontSize = 16;
+    this.mDynamicFontStyle = UnityEngine.FontStyle.Normal;
+
     this.bmFont = this.mFont;
 }
 
@@ -14,10 +19,14 @@ NGUI.UIFont.prototype = {
     get texWidth() { return this.mFont !== undefined ? this.mFont.texWidth : 0; },
     get texHeight() { return this.mFont !== undefined ? this.mFont.texHeight : 0; },
     get uvRect() { return this.mUVRect; },
+    get dynamicFont() { return this.mDynamicFont; },
+    get dynamicFontStyle() { return this.mDynamicFontStyle; },
+    get isDynamic() { return this.mDynamicFont !== undefined; },
+    get defaultSize() { return this.isDynamic ? this.mDynamicFontSize : this.mFont.charSize; },
+    get hasSymbols() { return this.mSymbols.length > 0; },
     texture: function() { return this.mAtlas !== undefined ? this.mAtlas.texture : undefined; },
-    defaultSize: function() { return this.mFont.charSize; },
-    hasSymbols: function() { return this.mSymbols.length > 0; },
     Load: function(json) {
+        //if (json.dynamic) this.mDynamicFont
         if (json.font !== undefined) this.mFont.Load(json.font);
         if (json.symbols !== undefined) {
             for (var i in json.symbols) {

@@ -40,7 +40,7 @@ Flip = {
 gTempPos = [new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngine.Vector2()];
 gTempUVs = [new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngine.Vector2()];
 
-Object.assign(NGUI.UIBasicSprite.prototype = Object.create(NGUI.UIWidget.prototype), {
+Object.extend(NGUI.UIBasicSprite.prototype = Object.create(NGUI.UIWidget.prototype), {
 	constructor: NGUI.UIBasicSprite,
 	pixelSize: function() { return 1; },
 	texture: function() { return undefined; },
@@ -92,18 +92,18 @@ Object.assign(NGUI.UIBasicSprite.prototype = Object.create(NGUI.UIWidget.prototy
 		var v = this.drawingDimensions();
 		var u = this.drawingUVs();
 		var c = this.drawingColor();
-		verts.push(new UnityEngine.Vector3(v.x, v.y));
-		verts.push(new UnityEngine.Vector3(v.x, v.w));
-		verts.push(new UnityEngine.Vector3(v.z, v.w));
-		verts.push(new UnityEngine.Vector3(v.z, v.y));
-		uvs.push(new UnityEngine.Vector2(u.x, u.y));
-		uvs.push(new UnityEngine.Vector2(u.x, u.w));
-		uvs.push(new UnityEngine.Vector2(u.z, u.w));
-		uvs.push(new UnityEngine.Vector2(u.z, u.y));
-		cols.push(c);
-		cols.push(c);
-		cols.push(c);
-		cols.push(c);
+		verts.AddVector3(v.x, v.y, 0);
+		verts.AddVector3(v.x, v.w, 0);
+		verts.AddVector3(v.z, v.w, 0);
+		verts.AddVector3(v.z, v.y, 0);
+		uvs.AddVector2(u.x, u.y);
+		uvs.AddVector2(u.x, u.w);
+		uvs.AddVector2(u.z, u.w);
+		uvs.AddVector2(u.z, u.y);
+		cols.AddColor32(c);
+		cols.AddColor32(c);
+		cols.AddColor32(c);
+		cols.AddColor32(c);
 	},
 	SlicedFill: function(verts, uvs, cols) {
 		var br = this.border().multiplyScalar(this.pixelSize());
@@ -113,10 +113,8 @@ Object.assign(NGUI.UIBasicSprite.prototype = Object.create(NGUI.UIWidget.prototy
 		var c = this.drawingColor();
 		var v = this.drawingDimensions();
 
-		gTempPos[0].x = v.x;
-		gTempPos[0].y = v.y;
-		gTempPos[3].x = v.z;
-		gTempPos[3].y = v.w;
+		gTempPos[0].set(v.x, v.y);
+		gTempPos[3].set(v.z, v.w);
 
 		if (this.mFlip == Flip.Horizontally || 
 			this.mFlip == Flip.Both) {
@@ -160,18 +158,18 @@ Object.assign(NGUI.UIBasicSprite.prototype = Object.create(NGUI.UIWidget.prototy
 				if (this.centerType == AdvancedType.Invisible && x == 1 && y == 1)
 					continue;
 				var y2 = y + 1;
-				verts.push(new UnityEngine.Vector3(gTempPos[x].x, gTempPos[y].y));
-				verts.push(new UnityEngine.Vector3(gTempPos[x].x, gTempPos[y2].y));
-				verts.push(new UnityEngine.Vector3(gTempPos[x2].x, gTempPos[y2].y));
-				verts.push(new UnityEngine.Vector3(gTempPos[x2].x, gTempPos[y].y));
-				uvs.push(new UnityEngine.Vector2(gTempUVs[x].x, gTempUVs[y].y));
-				uvs.push(new UnityEngine.Vector2(gTempUVs[x].x, gTempUVs[y2].y));
-				uvs.push(new UnityEngine.Vector2(gTempUVs[x2].x, gTempUVs[y2].y));
-				uvs.push(new UnityEngine.Vector2(gTempUVs[x2].x, gTempUVs[y].y));
-				cols.push(c);
-				cols.push(c);
-				cols.push(c);
-				cols.push(c);
+				verts.AddVector3(gTempPos[x].x, gTempPos[y].y, 0);
+				verts.AddVector3(gTempPos[x].x, gTempPos[y2].y, 0);
+				verts.AddVector3(gTempPos[x2].x, gTempPos[y2].y, 0);
+				verts.AddVector3(gTempPos[x2].x, gTempPos[y].y, 0);
+				uvs.AddVector2(gTempUVs[x].x, gTempUVs[y].y);
+				uvs.AddVector2(gTempUVs[x].x, gTempUVs[y2].y);
+				uvs.AddVector2(gTempUVs[x2].x, gTempUVs[y2].y);
+				uvs.AddVector2(gTempUVs[x2].x, gTempUVs[y].y);
+				cols.AddColor32(c);
+				cols.AddColor32(c);
+				cols.AddColor32(c);
+				cols.AddColor32(c);
 			}
 		}
 	},
@@ -206,21 +204,21 @@ Object.assign(NGUI.UIBasicSprite.prototype = Object.create(NGUI.UIWidget.prototy
 			}
 		}
 
-		gTempPos[0] = new UnityEngine.Vector2(v.x, v.y);
-		gTempPos[1] = new UnityEngine.Vector2(v.x, v.w);
-		gTempPos[2] = new UnityEngine.Vector2(v.z, v.w);
-		gTempPos[3] = new UnityEngine.Vector2(v.z, v.y);
+		gTempPos[0].set(v.x, v.y);
+		gTempPos[1].set(v.x, v.w);
+		gTempPos[2].set(v.z, v.w);
+		gTempPos[3].set(v.z, v.y);
 
-		gTempUVs[0] = new UnityEngine.Vector2(u.x, u.y);
-		gTempUVs[1] = new UnityEngine.Vector2(u.x, u.w);
-		gTempUVs[2] = new UnityEngine.Vector2(u.z, u.w);
-		gTempUVs[3] = new UnityEngine.Vector2(u.z, u.y);
+		gTempUVs[0].set(u.x, u.y);
+		gTempUVs[1].set(u.x, u.w);
+		gTempUVs[2].set(u.z, u.w);
+		gTempUVs[3].set(u.z, u.y);
 
 		if (this.mFillAmount < 1) {
 			if (this.mFillDirection == FillDirection.Radial90) {
 				if (NGUI.UIBasicSprite.RadialCut(gTempPos, gTempUVs, this.mFillAmount, this.mInvert, 0)) {
 					for (var i = 0; i < 4; ++i) {
-						verts.push(gTempPos[i]);
+						verts.AddVector3(gTempPos[i]);
 						uvs.push(gTempUVs[i]);
 						cols.push(c);
 					}
@@ -309,9 +307,9 @@ Object.assign(NGUI.UIBasicSprite.prototype = Object.create(NGUI.UIWidget.prototy
 
 					if (NGUI.UIBasicSprite.RadialCut(gTempPos, gTempUVs, Mathf.Clamp01(val), this.mInvert, NGUIMath.RepeatIndex(corner + 2, 4))) {
 						for (var i = 0; i < 4; ++i) {
-							verts.push(gTempPos[i]);
-							uvs.push(gTempUVs[i]);
-							cols.push(c);
+							verts.AddVector3(gTempPos[i].x, gTempPos[i].y, 0);
+							uvs.AddVector2(gTempUVs[i].x, gTempUVs[i].y);
+							cols.AddColor32(c);
 						}
 					}
 				}
@@ -321,9 +319,9 @@ Object.assign(NGUI.UIBasicSprite.prototype = Object.create(NGUI.UIWidget.prototy
 
 		// Fill the buffer with the quad for the sprite
 		for (var i = 0; i < 4; ++i) {
-			verts.push(gTempPos[i]);
-			uvs.push(gTempUVs[i]);
-			cols.push(c);
+			verts.AddVector3(gTempPos[i].x, gTempPos[i].y, 0);
+			uvs.AddVector2(gTempUVs[i].x, gTempUVs[i].y);
+			cols.AddColor32(c);
 		}
 	},
 	TiledFill: function(verts, uvs, cols) {
@@ -371,18 +369,18 @@ Object.assign(NGUI.UIBasicSprite.prototype = Object.create(NGUI.UIWidget.prototy
 					u1 = Mathf.Lerp(u.x, u.z, (v.z - x0) / size.x);
 					x1 = v.z;
 				}
-				verts.push(new UnityEngine.Vector3(x0, y0));
-				verts.push(new UnityEngine.Vector3(x0, y1));
-				verts.push(new UnityEngine.Vector3(x1, y1));
-				verts.push(new UnityEngine.Vector3(x1, y0));
-				uvs.push(new UnityEngine.Vector2(u0, v0));
-				uvs.push(new UnityEngine.Vector2(u0, v1));
-				uvs.push(new UnityEngine.Vector2(u1, v1));
-				uvs.push(new UnityEngine.Vector2(u1, v0));
-				cols.push(c);
-				cols.push(c);
-				cols.push(c);
-				cols.push(c);
+				verts.AddVector3(x0, y0, 0);
+				verts.AddVector3(x0, y1, 0);
+				verts.AddVector3(x1, y1, 0);
+				verts.AddVector3(x1, y0, 0);
+				uvs.AddVector2(u0, v0);
+				uvs.AddVector2(u0, v1);
+				uvs.AddVector2(u1, v1);
+				uvs.AddVector2(u1, v0);
+				cols.AddColor32(c);
+				cols.AddColor32(c);
+				cols.AddColor32(c);
+				cols.AddColor32(c);
 				x0 += size.x;
 			}
 			y0 += size.y;

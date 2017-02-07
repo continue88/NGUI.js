@@ -59,7 +59,7 @@ NGUIText = {
         this.finalSize = Mathf.RoundToInt(this.fontSize / this.pixelDensity);
         this.finalSpacingX = this.spacingX * this.fontScale;
         this.finalLineHeight = (this.fontSize + this.spacingY) * this.fontScale;
-        this.useSymbols = (this.bitmapFont !== undefined && this.bitmapFont.hasSymbols()) && this.encoding && this.symbolStyle != SymbolStyle.None;
+        this.useSymbols = (this.bitmapFont !== undefined && this.bitmapFont.hasSymbols) && this.encoding && this.symbolStyle != SymbolStyle.None;
     },
 	EncodeColor24: function(c) {
 		var i = 0xFFFFFF & (NGUIMath.ColorToInt(c) >> 8);
@@ -346,12 +346,13 @@ NGUIText = {
 		return v;
     },
     Align: function(verts, indexOffset, printedWidth) {
+		var vData = verts.Data;
 		switch (this.alignment) {
         case TextAlignment.Right: {
             var padding = this.rectWidth - printedWidth;
             if (padding < 0) return;
-            for (var i = indexOffset; i < verts.length; ++i)
-                verts[i].x += padding;
+            for (var i = indexOffset, l = verts.Length; i < l; i++)
+                vData[i * 3] += padding;
             break;
         }
         case TextAlignment.Center: {
@@ -363,21 +364,21 @@ NGUIText = {
             var oddWidth = (intWidth & 1) === 1;
             if ((oddDiff && !oddWidth) || (!oddDiff && oddWidth))
                 padding += 0.5 * this.fontScale;
-            for (var i = indexOffset; i < verts.length; ++i)
-                verts[i].x += padding;
+            for (var i = indexOffset, l = verts.Length; i < l; i++)
+                vData[i*3] += padding;
             break;
         }
         case TextAlignment.Justified: {
             if (printedWidth < this.rectWidth * 0.65) return;
             var padding = (this.rectWidth - printedWidth) * 0.5;
             if (padding < 1) return;
-            var chars = (verts.length - indexOffset) / 4;
+            var chars = (verts.Length - indexOffset) / 4;
             if (chars < 1) return;
             var progressPerChar = 1 / (chars - 1);
             var scale = this.rectWidth / printedWidth;
-            for (var i = indexOffset + 4, charIndex = 1; i < verts.length; ++charIndex) {
-                var x0 = verts[i].x;
-                var x1 = verts[i + 2].x;
+            for (var i = indexOffset + 4, charIndex = 1; i < verts.Length; ++charIndex) {
+                var x0 = vData[i * 3];
+                var x1 = vData[(i + 2) * 3];
                 var w = x1 - x0;
                 var x0a = x0 * scale;
                 var x1a = x0a + w;
@@ -388,16 +389,16 @@ NGUIText = {
                 x1 = Mathf.Lerp(x1a, x1b, progress);
                 x0 = Mathf.Round(x0);
                 x1 = Mathf.Round(x1);
-                verts[i++].x = x0;
-                verts[i++].x = x0;
-                verts[i++].x = x1;
-                verts[i++].x = x1;
+                vData[(i++)*3] = x0;
+                vData[(i++)*3] = x0;
+                vData[(i++)*3] = x1;
+                vData[(i++)*3] = x1;
             }
             break;
         }}
     },
     Print: function(text, verts, uvs, cols) {
-		var indexOffset = verts.length;
+		var indexOffset = verts.Length;
 		this.Prepare(text);
 		this.mColors.push(new UnityEngine.Color(1, 1, 1, 1));
 		this.mAlpha = 1;
@@ -440,7 +441,7 @@ NGUIText = {
 				if (x > maxX) maxX = x;
 				if (this.alignment != TextAlignment.Left) {
 					this.Align(verts, indexOffset, x - this.finalSpacingX);
-					indexOffset = verts.length;
+					indexOffset = verts.Length;
 				}
 				x = 0;
 				y += this.finalLineHeight;
@@ -479,9 +480,9 @@ NGUIText = {
 				v0y = v1y - symbol.height * this.fontScale;
 				if (Mathf.RoundToInt(x + symbol.advance * this.fontScale) > this.regionWidth) {
 					if (x === 0) return;
-					if (this.alignment != TextAlignment.Left && indexOffset < verts.length) {
+					if (this.alignment != TextAlignment.Left && indexOffset < verts.Length) {
 						this.Align(verts, indexOffset, x - this.finalSpacingX);
-						indexOffset = verts.length;
+						indexOffset = verts.Length;
 					}
 					v0x -= x;
 					v1x -= x;
@@ -491,10 +492,10 @@ NGUIText = {
 					y += this.finalLineHeight;
 					prevX = 0;
 				}
-				verts.push(new UnityEngine.Vector3(v0x, v0y));
-				verts.push(new UnityEngine.Vector3(v0x, v1y));
-				verts.push(new UnityEngine.Vector3(v1x, v1y));
-				verts.push(new UnityEngine.Vector3(v1x, v0y));
+				verts.AddVector3(v0x, v0y, 0);
+				verts.AddVector3(v0x, v1y, 0);
+				verts.AddVector3(v1x, v1y, 0);
+				verts.AddVector3(v1x, v0y, 0);
 				x += this.finalSpacingX + symbol.advance * this.fontScale;
 				i += symbol.length - 1;
 				prev = 0;
@@ -504,18 +505,18 @@ NGUIText = {
 					var u0y = uv.yMin;
 					var u1x = uv.xMax;
 					var u1y = uv.yMax;
-					uvs.push(new UnityEngine.Vector2(u0x, u0y));
-					uvs.push(new UnityEngine.Vector2(u0x, u1y));
-					uvs.push(new UnityEngine.Vector2(u1x, u1y));
-					uvs.push(new UnityEngine.Vector2(u1x, u0y));
+					uvs.AddVector2(u0x, u0y);
+					uvs.AddVector2(u0x, u1y);
+					uvs.AddVector2(u1x, u1y);
+					uvs.AddVector2(u1x, u0y);
 				}
 				if (cols !== undefined) {
 					if (this.symbolStyle === SymbolStyle.Colored) {
-						for (var b = 0; b < 4; ++b) cols.push(uc);
+						for (var b = 0; b < 4; ++b) cols.AddColor32(uc);
 					} else {
 						var col = new UnityEngine.Color32(255, 255, 255, 255);
 						col.a = uc.a;
-						for (var b = 0; b < 4; ++b) cols.push(col);
+						for (var b = 0; b < 4; ++b) cols.AddColor32(col);
 					}
 				}
 			} else {
@@ -544,9 +545,9 @@ NGUIText = {
 				if (this.finalSpacingX < 0) w += this.finalSpacingX;
 				if (Mathf.RoundToInt(x + w) > this.regionWidth) {
 					if (x === 0) return;
-					if (this.alignment !== TextAlignment.Left && indexOffset < verts.length) {
+					if (this.alignment !== TextAlignment.Left && indexOffset < verts.Length) {
 						this.Align(verts, indexOffset, x - this.finalSpacingX);
-						indexOffset = verts.length;
+						indexOffset = verts.Length;
 					}
 					v0x -= x;
 					v1x -= x;
@@ -574,15 +575,15 @@ NGUIText = {
 					}
 					for (var j = 0, jmax = (textProp.bold === true ? 4 : 1); j < jmax; ++j) {
 						if (glyph.rotatedUVs) {
-							uvs.push(glyph.u0.clone());
-							uvs.push(new UnityEngine.Vector2(glyph.u1.x, glyph.u0.y));
-							uvs.push(glyph.u1.clone());
-							uvs.push(new UnityEngine.Vector2(glyph.u0.x, glyph.u1.y));
+							uvs.AddVector2(glyph.u0.x, glyph.u0.y);
+							uvs.AddVector2(glyph.u1.x, glyph.u0.y);
+							uvs.AddVector2(glyph.u1.x, glyph.u1.y);
+							uvs.AddVector2(glyph.u0.x, glyph.u1.y);
 						} else {
-							uvs.push(glyph.u0.clone());
-							uvs.push(new UnityEngine.Vector2(glyph.u0.x, glyph.u1.y));
-							uvs.push(glyph.u1.clone());
-							uvs.push(new UnityEngine.Vector2(glyph.u1.x, glyph.u0.y));
+							uvs.AddVector2(glyph.u0.x, glyph.u0.y);
+							uvs.AddVector2(glyph.u0.x, glyph.u1.y);
+							uvs.AddVector2(glyph.u1.x, glyph.u1.y);
+							uvs.AddVector2(glyph.u1.x, glyph.u0.y);
 						}
 					}
 				}
@@ -596,14 +597,14 @@ NGUIText = {
 							s_c0 = Color.Lerp(gb, gt, min);
 							s_c1 = Color.Lerp(gb, gt, max);
 							for (var j = 0, jmax = (textProp.bold === true ? 4 : 1); j < jmax; ++j) {
-								cols.push(s_c0);
-								cols.push(s_c1);
-								cols.push(s_c1);
-								cols.push(s_c0);
+								cols.AddColor32(s_c0);
+								cols.AddColor32(s_c1);
+								cols.AddColor32(s_c1);
+								cols.AddColor32(s_c0);
 							}
 						} else {
 							for (var j = 0, jmax = (textProp.bold === true ? 16 : 4); j < jmax; ++j)
-								cols.push(uc);
+								cols.AddColor32(uc);
 						}
 					} else {
 						var col = uc.clone();
@@ -615,31 +616,31 @@ NGUIText = {
 							case 8: col.a += 0.51; break;
 						}
 						for (var j = 0, jmax = (textProp.bold === true ? 16 : 4); j < jmax; ++j)
-							cols.push(col);
+							cols.AddColor32(col);
 					}
 				}
 				if (textProp.bold !== true) {
 					if (textProp.italic !== true) {
-						verts.push(new UnityEngine.Vector3(v0x, v0y));
-						verts.push(new UnityEngine.Vector3(v0x, v1y));
-						verts.push(new UnityEngine.Vector3(v1x, v1y));
-						verts.push(new UnityEngine.Vector3(v1x, v0y));
+						verts.AddVector3(v0x, v0y, 0);
+						verts.AddVector3(v0x, v1y, 0);
+						verts.AddVector3(v1x, v1y, 0);
+						verts.AddVector3(v1x, v0y, 0);
 					} else {
 						var slant = this.fontSize * 0.1 * ((v1y - v0y) / this.fontSize);
-						verts.push(new UnityEngine.Vector3(v0x - slant, v0y));
-						verts.push(new UnityEngine.Vector3(v0x + slant, v1y));
-						verts.push(new UnityEngine.Vector3(v1x + slant, v1y));
-						verts.push(new UnityEngine.Vector3(v1x - slant, v0y));
+						verts.AddVector3(v0x - slant, v0y, 0);
+						verts.AddVector3(v0x + slant, v1y, 0);
+						verts.AddVector3(v1x + slant, v1y, 0);
+						verts.AddVector3(v1x - slant, v0y, 0);
 					}
 				} else {
 					for (var j = 0; j < 4; ++j) {
 						var a = this.mBoldOffset[j * 2];
 						var b = this.mBoldOffset[j * 2 + 1];
 						var slant = (textProp.italic ? this.fontSize * 0.1 * ((v1y - v0y) / this.fontSize) : 0);
-						verts.push(new UnityEngine.Vector3(v0x + a - slant, v0y + b));
-						verts.push(new UnityEngine.Vector3(v0x + a + slant, v1y + b));
-						verts.push(new UnityEngine.Vector3(v1x + a + slant, v1y + b));
-						verts.push(new UnityEngine.Vector3(v1x + a - slant, v0y + b));
+						verts.AddVector3(v0x + a - slant, v0y + b, 0);
+						verts.AddVector3(v0x + a + slant, v1y + b, 0);
+						verts.AddVector3(v1x + a + slant, v1y + b, 0);
+						verts.AddVector3(v1x + a - slant, v0y + b, 0);
 					}
 				}
 
@@ -656,10 +657,10 @@ NGUIText = {
 						}
 						var cx = (dash.u0.x + dash.u1.x) * 0.5;
 						for (var j = 0, jmax = (textProp.bold === true ? 4 : 1); j < jmax; ++j) {
-							uvs.push(new UnityEngine.Vector2(cx, dash.u0.y));
-							uvs.push(new UnityEngine.Vector2(cx, dash.u1.y));
-							uvs.push(new UnityEngine.Vector2(cx, dash.u1.y));
-							uvs.push(new UnityEngine.Vector2(cx, dash.u0.y));
+							uvs.AddVector2(cx, dash.u0.y);
+							uvs.AddVector2(cx, dash.u1.y);
+							uvs.AddVector2(cx, dash.u1.y);
+							uvs.AddVector2(cx, dash.u0.y);
 						}
 					}
 					if (subscript === true && textProp.strikethrough === true) {
@@ -673,16 +674,16 @@ NGUIText = {
 						for (var j = 0; j < 4; ++j) {
 							var a = this.mBoldOffset[j * 2];
 							var b = this.mBoldOffset[j * 2 + 1];
-							verts.push(new UnityEngine.Vector3(prevX + a, v0y + b));
-							verts.push(new UnityEngine.Vector3(prevX + a, v1y + b));
-							verts.push(new UnityEngine.Vector3(x + a, v1y + b));
-							verts.push(new UnityEngine.Vector3(x + a, v0y + b));
+							verts.AddVector3(prevX + a, v0y + b, 0);
+							verts.AddVector3(prevX + a, v1y + b, 0);
+							verts.AddVector3(x + a, v1y + b, 0);
+							verts.AddVector3(x + a, v0y + b, 0);
 						}
 					} else {
-						verts.push(new UnityEngine.Vector3(prevX, v0y));
-						verts.push(new UnityEngine.Vector3(prevX, v1y));
-						verts.push(new UnityEngine.Vector3(x, v1y));
-						verts.push(new UnityEngine.Vector3(x, v0y));
+						verts.AddVector3(prevX, v0y, 0);
+						verts.AddVector3(prevX, v1y, 0);
+						verts.AddVector3(x, v1y, 0);
+						verts.AddVector3(x, v0y, 0);
 					}
 
 					if (textProp.gradient === true) {
@@ -693,22 +694,22 @@ NGUIText = {
 						s_c0 = UnityEngine.Color.Lerp(gb, gt, min);
 						s_c1 = UnityEngine.Color.Lerp(gb, gt, max);
 						for (var j = 0, jmax = (textProp.bold === true ? 4 : 1); j < jmax; ++j) {
-							cols.push(s_c0);
-							cols.push(s_c1);
-							cols.push(s_c1);
-							cols.push(s_c0);
+							cols.AddColor32(s_c0);
+							cols.AddColor32(s_c1);
+							cols.AddColor32(s_c1);
+							cols.AddColor32(s_c0);
 						}
 					} else {
 						for (var j = 0, jmax = (textProp.bold === true ? 16 : 4); j < jmax; ++j)
-							cols.push(uc);
+							cols.AddColor32(uc);
 					}
 				}
 			}
 		}
 
-		if (this.alignment != TextAlignment.Left && indexOffset < verts.length) {
+		if (this.alignment != TextAlignment.Left && indexOffset < verts.Length) {
 			this.Align(verts, indexOffset, x - this.finalSpacingX);
-			indexOffset = verts.length;
+			indexOffset = verts.Length;
 		}
 		this.mColors.length = 0;
     },

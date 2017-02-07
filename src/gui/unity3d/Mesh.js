@@ -78,7 +78,7 @@ UnityEngine.Mesh.prototype = {
 		for (var i in this.attributes) {
 			var attrib = this.attributes[i];
 			// TODO: destroy attrib.glBuffer
-			gl.deleteBuffer(attrib.glBuffer);
+			WebGL.gl.deleteBuffer(attrib.glBuffer);
 		}
 	},
 	hasIndexBuffer: function() { return this.attributes.index !== undefined; },
@@ -114,11 +114,11 @@ UnityEngine.Mesh.prototype = {
 		this.colors32 = undefined;
 	},
 	CopyVertexData: function(verts, uvs, colors32, triangles) {
-		this.vertexCount = verts.length;
-		this.triangleCount = (triangles !== undefined) ? triangles.length / 3 : verts.length / 3;
-		this.vertices = CopyVector3sArray(verts);
-		this.uv = CopyVector2sArray(uvs);
-		this.colors32 = CopyColors32Array(colors32);
+		this.vertexCount = verts.Length;
+		this.triangleCount = (triangles !== undefined) ? triangles.length / 3 : verts.Length / 3;
+		this.vertices = verts.ToArray();//CopyVector3sArray(verts);
+		this.uv = uvs.ToArray();//CopyVector2sArray(uvs);
+		this.colors32 = colors32.ToArray();//CopyColors32Array(colors32);
 		this.triangles = triangles;
 	},
 	SetupVertexAttrib: function(gl, vertexAttrib, programAttrib) {

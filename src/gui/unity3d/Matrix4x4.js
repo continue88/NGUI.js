@@ -174,6 +174,12 @@ UnityEngine.Matrix4x4.prototype = {
 			e[ 1 ] * x + e[ 5 ] * y + e[ 9 ]  * z + e[ 13 ],
 			e[ 2 ] * x + e[ 6 ] * y + e[ 10 ] * z + e[ 14 ]);
 	},
+	MultiplyPoint3x4v: function(x, y, z, cb) {
+		var e = this.elements;
+		cb( e[ 0 ] * x + e[ 4 ] * y + e[ 8 ]  * z + e[ 12 ],
+			e[ 1 ] * x + e[ 5 ] * y + e[ 9 ]  * z + e[ 13 ],
+			e[ 2 ] * x + e[ 6 ] * y + e[ 10 ] * z + e[ 14 ]);
+	},
 	MultiplyVector: function(v) {
 		var x = v.x, y = v.y, z = v.z;
 		var e = this.elements;

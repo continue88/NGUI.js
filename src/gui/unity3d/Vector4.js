@@ -62,4 +62,7 @@ UnityEngine.Vector4.prototype = {
 	magnitude: function () {
 		return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w);
 	},
+	toString: function() {
+		return "{" + this.x + "," + this.y + "," + this.z + "," + this.z + "}";
+	},
 };

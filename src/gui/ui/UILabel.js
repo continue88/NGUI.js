@@ -66,10 +66,10 @@ FontStyle = {
     BoldAndItalic: 3,
 };
 
-Object.assign(NGUI.UILabel.prototype = Object.create(NGUI.UIWidget.prototype), {
+Object.extend(NGUI.UILabel.prototype = Object.create(NGUI.UIWidget.prototype), {
 	constructor: NGUI.UILabel,
 	texture: function() { return (this.bitmapFont !== undefined) ? this.bitmapFont.texture() : undefined; },
-    defaultFontSize: function() { return (this.bitmapFont !== undefined) ? this.bitmapFont.defaultSize() : 16; },
+    defaultFontSize: function() { return (this.bitmapFont !== undefined) ? this.bitmapFont.defaultSize : 16; },
     processedText: function() {
         if (this.mLastWidth !== this.mWidth || this.mLastHeight !== this.mHeight) {
             this.mLastWidth = this.mWidth;
@@ -153,7 +153,7 @@ Object.assign(NGUI.UILabel.prototype = Object.create(NGUI.UIWidget.prototype), {
 			var result = { text: "" };
 			for (var ps = this.mPrintedSize; ps > 0; --ps) {
                 this.mScale = ps / this.mPrintedSize;
-                NGUIText.fontScale = (this.fontSize / this.bitmapFont.defaultSize()) * this.mScale;
+                NGUIText.fontScale = (this.fontSize / this.bitmapFont.defaultSize) * this.mScale;
 				NGUIText.Update(false);
 				var fits = NGUIText.WrapText(this.value, true, result);
                 this.mProcessedText = result.text.replace("\\n", "\n");
@@ -196,60 +196,59 @@ Object.assign(NGUI.UILabel.prototype = Object.create(NGUI.UIWidget.prototype), {
 		var fy = Mathf.Lerp(this.mHeight, 0, po.y) + Mathf.Lerp((this.mCalculatedSize.y - this.mHeight), 0, po.y);
 		fx = Mathf.RoundToInt(fx);
 		fy = Mathf.RoundToInt(fy);
-		for (var i = start; i < verts.length; ++i) {
-			verts[i].x += fx;
-			verts[i].y += fy;
+		var vData = verts.Data;
+		for (var i = start, l = verts.Length; i < l; ++i) {
+			vData[i * 3] += fx;
+			vData[i * 3 + 1] += fy;
 		}
 		return new UnityEngine.Vector2(fx, fy);
 	},
     ApplyShadow: function(verts, uvs, cols, start, end, x, y) {
 		var col = this.effectColor.get32();
 		col.a *= this.finalAlpha;
+		var vData = verts.Data, uData = uvs.Data, cData = cols.Data;
 		for (var i = start; i < end; ++i) {
-			var v = verts[i];
-			var uc = cols[i];
-			verts.push(v);
-			uvs.push(uvs[i]);
-			cols.push(uc);
-			v = v.clone();
-			uc = uc.clone();
-			v.x += x;
-			v.y += y;
-			if (uc.a === 255) {
-				uc.set(col.r, col.g, col.b, col.a);
-			} else {
-				uc.set(col.r, col.g, col.b, uc.a / 255 * col.a);
-			}
-			verts[i] = v;
-			cols[i] = uc;
+			var vi = i * 3, ui = i * 2, ci = i * 4;
+			var vx = vData[vi], vy = vData[vi + 1], ua = cData[ci+3];
+			verts.AddVector3(vx, vy, 0);
+			uvs.AddVector2(uData[ui], uData[ui+1]);
+			cols.AddColor32v(cData[ci], cData[ci+1], cData[ci+2], ua);
+			vData = verts.Data;
+			uData = uvs.Data;
+			cData = cols.Data;
+			vData[vi] = vx + x;
+			vData[vi+1] = vy + y;
+			cData[ci] = col.r;
+			cData[ci+1] = col.g;
+			cData[ci+2] = col.b;
+			cData[ci+3] = (ua === 255) ? col.a : ua / 255 * col.a;
 		}
     },
 	OnFill: function(verts, uvs, cols) {
         if (this.bitmapFont === undefined) return;
-        var offset = verts.length;
+        var offset = verts.Length;
 		var col = this.mColor;
 		col.a = this.finalAlpha;
 		var text = this.processedText();
-		var start = verts.length;
+		var start = verts.Length;
 		this.UpdateNGUIText();
 		NGUIText.tint = col;
 		NGUIText.Print(text, verts, uvs, cols);
 		NGUIText.bitmapFont = null;
 		var pos = this.ApplyOffset(verts, start);
 		if (this.effectStyle !== LabelEffect.None) {
-			var end = verts.length;
-			pos.x = this.effectDistance.x;
-			pos.y = this.effectDistance.y;
+			var end = verts.Length;
+			pos.set(this.effectDistance.x, this.effectDistance.y);
 			this.ApplyShadow(verts, uvs, cols, offset, end, pos.x, -pos.y);
 			if (this.effectStyle == LabelEffect.Outline) {
 				offset = end;
-				end = verts.length;
+				end = verts.Length;
 				this.ApplyShadow(verts, uvs, cols, offset, end, -pos.x, pos.y);
 				offset = end;
-				end = verts.length;
+				end = verts.Length;
 				this.ApplyShadow(verts, uvs, cols, offset, end, pos.x, pos.y);
 				offset = end;
-				end = verts.length;
+				end = verts.Length;
 				this.ApplyShadow(verts, uvs, cols, offset, end, -pos.x, -pos.y);
 			}
 		}

@@ -1,30 +1,32 @@
 
 NGUI.UIGeometry = function() {
-	this.verts = [];
-	this.uvs = [];
-	this.cols = [];
-	this.mRtpVerts = [];
+	this.verts = new NGUI.BetterList();
+	this.uvs = new NGUI.BetterList();
+	this.cols = new NGUI.BetterList();
+	this.mRtpVerts = new NGUI.BetterList();
 }
 
 NGUI.UIGeometry.prototype = {
 	constructor: NGUI.UIGeometry,
-	hasVertices: function() { return this.verts.length > 0; },
+	hasVertices: function() { return this.verts.Length > 0; },
 	Clear: function() {
-		this.verts.length = 0;
-		this.uvs.length = 0;
-		this.cols.length = 0;
-		this.mRtpVerts.length = 0;
+		this.verts.Clear();
+		this.uvs.Clear();
+		this.cols.Clear();
+		this.mRtpVerts.Clear();
 	},
 	ApplyTransform: function(widgetToPanel) {
-		this.mRtpVerts.length = 0;
-		for (var i in this.verts)
-			this.mRtpVerts.push(widgetToPanel.MultiplyPoint3x4(this.verts[i]));
+		var ptpVertes = this.mRtpVerts; 
+		ptpVertes.Clear();
+		this.verts.Foreach3(function(i, x, y, z) {
+			widgetToPanel.MultiplyPoint3x4v(x, y, z, function(x1, y1, z1){
+				ptpVertes.AddVector3(x1, y1, z1);
+			});
+		});
 	},
 	WriteToBuffers: function(v, u, c) {
-		for (var i in this.mRtpVerts) {
-			v.push(this.mRtpVerts[i]);
-			u.push(this.uvs[i]);
-			c.push(this.cols[i]);
-		}
+		v.AddList(this.mRtpVerts);
+		u.AddList(this.uvs);
+		c.AddList(this.cols);
 	},
 }

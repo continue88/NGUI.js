@@ -26,13 +26,13 @@ NGUIMath = {
 		return final;
 	},
 	GetPivotOffset: function(pv) {
-		var v = new UnityEngine.Vector2();
-		if (pv == WidgetPivot.Top || pv == WidgetPivot.Center || pv == WidgetPivot.Bottom) v.x = 0.5;
-		else if (pv == WidgetPivot.TopRight || pv == WidgetPivot.Right || pv == WidgetPivot.BottomRight) v.x = 1;
+		var v = UnityEngine.Vector2.temp;
+		if (pv === WidgetPivot.Top || pv === WidgetPivot.Center || pv === WidgetPivot.Bottom) v.x = 0.5;
+		else if (pv === WidgetPivot.TopRight || pv === WidgetPivot.Right || pv === WidgetPivot.BottomRight) v.x = 1;
 		else v.x = 0;
 
-		if (pv == WidgetPivot.Left || pv == WidgetPivot.Center || pv == WidgetPivot.Right) v.y = 0.5;
-		else if (pv == WidgetPivot.TopLeft || pv == WidgetPivot.Top || pv == WidgetPivot.TopRight) v.y = 1;
+		if (pv === WidgetPivot.Left || pv === WidgetPivot.Center || pv === WidgetPivot.Right) v.y = 0.5;
+		else if (pv === WidgetPivot.TopLeft || pv === WidgetPivot.Top || pv === WidgetPivot.TopRight) v.y = 1;
 		else v.y = 0;
 
 		return v;

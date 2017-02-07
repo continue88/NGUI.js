@@ -9,6 +9,8 @@ WebGL.Renderer = function (parameters) {
 	this.width = canvas.width;
 	this.height = canvas.height;
 	this.viewport = new UnityEngine.Vector4(0, 0, this.width, this.height );
+
+	WebGL.gl = this.gl; // assign to gloabl scope.
 	
 	function onContextLost(event) {
 	}
@@ -45,7 +47,7 @@ WebGL.Renderer = function (parameters) {
 				antialias: false,
 				premultipliedAlpha: true,
 				preserveDrawingBuffer: false };
-			Object.assign(attributes, parameters);
+			Object.extend(attributes, parameters);
 			glContext = canvas.getContext( 'webgl', attributes ) || canvas.getContext( 'experimental-webgl', attributes );
 			if (glContext === null) {
 				if (canvas.getContext( 'webgl' ) !== null ) {

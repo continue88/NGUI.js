@@ -48,4 +48,10 @@ UnityEngine.Vector2.prototype = {
 	magnitude: function () {
 		return Math.sqrt( this.x * this.x + this.y * this.y );
 	},
+	toString: function() {
+		return "{" + this.x + "," + this.y + "}";
+	},
 };
+
+UnityEngine.Vector2.zero = new UnityEngine.Vector2(0, 0);
+UnityEngine.Vector2.temp = new UnityEngine.Vector2(0, 0);

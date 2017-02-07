@@ -9,6 +9,7 @@ UnityEngine.Quaternion = function ( x, y, z, w ) {
 UnityEngine.Quaternion.prototype = {
 	constructor: UnityEngine.Quaternion,
 	set: function(x, y, z, w) { this.x = x; this.y = y; this.z = z; this.w = w; },
+	setv: function(v) { this.x = v.x; this.y = v.y; this.z = v.z; this.w = v.w; },
 	clone: function () { return new this.constructor( this.x, this.y, this.z, this.w ); },
 	euler: function(x, y, z) {
 		var c1 = Math.cos( x * 0.5 );
@@ -48,5 +49,13 @@ UnityEngine.Quaternion.prototype = {
 		this.z = qaz * qbw + qaw * qbz + qax * qby - qay * qbx;
 		this.w = qaw * qbw - qax * qbx - qay * qby - qaz * qbz;
 		return this;
+	},
+	multiplyVector: function(v) {
+		var qvec = new UnityEngine.Vector3(this.x, this.y, this.z);
+		var uv = qvec.cross(v);
+		var uuv = qvec.cross(uv);
+		uv.multiplyScalar(2 * this.w);
+		uuv.multiplyScalar(2);
+		return v.clone().add(uv).add(uuv);
 	},
 };

@@ -16,6 +16,7 @@ NGUI.UIWidget = function(gameObject) {
 	this.mOldV0 = new UnityEngine.Vector3();
 	this.mOldV1 = new UnityEngine.Vector3();
 	this.mCorners = [];//
+	this.mAlphaFrameID = 0;
 
 	// public variables.
 	this.minWidth = 2;
@@ -27,6 +28,8 @@ NGUI.UIWidget = function(gameObject) {
 	this.panel = undefined;
 	this.drawCall = undefined;
 	this.geometry = new NGUI.UIGeometry();
+
+	for (var i = 0; i < 4; i++) this.mCorners[i] = new UnityEngine.Vector3();
 };
 
 WidgetPivot = {
@@ -47,8 +50,12 @@ AspectRatioSource = {
 	BasedOnHeight: 2,
 }
 
-Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
+Object.extend(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 	constructor: NGUI.UIWidget,
+	setColor: function(value) { var alphaChanged = this.mColor.a != value.a; this.mColor = value; this.Invalidate(alphaChanged); },
+	getColor: function() { return this.mColor; },
+	getAlpha: function() { return this.mColor.a; },
+	setAlpha: function(a) { this.mColor.a = a; this.Invalidate(); },
 	pivotOffset: function() { return NGUIMath.GetPivotOffset(this.mPivot); },
 	texture: function() { return undefined; },
 	isVisible: function() { return this.mIsVisibleByAlpha && this.mIsVisibleByPanel && this.mIsInFront && this.finalAlpha > 0.001; },
@@ -82,6 +89,20 @@ Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 		this.mHeight = json.h || 100;
 		this.mDepth = json.d || 0;
 		this.CreatePanel(); // ensure we have a parent panel.
+	},
+	Invalidate: function(includeChildren) {
+		this.mChanged = true;
+		this.UpdateFinalAlpha(UnityEngine.Time.frameCount);
+	},
+	UpdateFinalAlpha: function(frameID) {
+		this.finalAlpha = this.panel ? (this.panel.CalculateFinalAlpha(frameID) * this.mColor.a) : this.mColor.a;
+	},
+	CalculateFinalAlpha: function(frameID) {
+		if (this.mAlphaFrameID !== frameID) {
+			this.mAlphaFrameID = frameID;
+			this.UpdateFinalAlpha();
+		}
+		return this.finalAlpha;
 	},
 	CreatePanel: function() {
 		if (this.panel === undefined) {
@@ -127,7 +148,7 @@ Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 		var trans = this.transform;
 		var parent = trans.parent;
 		var pos = trans.localPosition;
-		var pvt = this.pivotOffset();
+		var pvt = this.pivotOffset().clone();
 
 		// Attempt to fast-path if all anchors match
 		if (this.leftAnchor !== undefined && 
@@ -153,6 +174,7 @@ Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 				this.mIsInFront = (!this.hideIfOffScreen || lp.z >= 0);
 			}
 		} else {
+			pvt = pvt.clone();
 			this.mIsInFront = true;
 			if (this.leftAnchor !== undefined) { // Left anchor point
 				var sides = this.leftAnchor.GetSides(parent);
@@ -180,7 +202,7 @@ Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 			else bt = pos.y - pvt.y * this.mHeight;
 			if (this.topAnchor !== undefined) { // Top anchor point
 				var sides = this.topAnchor.GetSides(parent);
-				if (this.sides != null)
+				if (sides !== undefined)
 					tt = Mathf.Lerp(sides[3].y, sides[1].y, this.topAnchor.relative) + this.topAnchor.absolute;
 				else
 					tt = this.GetLocalPos(this.topAnchor, parent).y + this.topAnchor.absolute;
@@ -239,8 +261,7 @@ Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 			if (this.fillGeometry === true) this.geometry.Clear();
 			this.mMoved = false;
 			return true;
-		}
-		else if (this.mMoved === true && this.geometry.hasVertices() === true) {
+		} else if (this.mMoved === true && this.geometry.hasVertices() === true) {
 			this.mLocalToPanel.MultiplyMatrices(this.panel.worldToLocal, this.transform.localToWorldMatrix);
 			this.geometry.ApplyTransform(this.mLocalToPanel);
 			this.mMoved = false;
@@ -260,14 +281,15 @@ Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 		var y1 = y0 + this.mHeight;
 		var cx = (x0 + x1) * 0.5;
 		var cy = (y0 + y1) * 0.5;
-		var trans = this.transform;
-		this.mCorners[0] = trans.TransformPoint(new UnityEngine.Vector3(x0, cy, 0));
-		this.mCorners[1] = trans.TransformPoint(new UnityEngine.Vector3(cx, y1, 0));
-		this.mCorners[2] = trans.TransformPoint(new UnityEngine.Vector3(x1, cy, 0));
-		this.mCorners[3] = trans.TransformPoint(new UnityEngine.Vector3(cx, y0, 0));
+		var localToWorld = this.transform.localToWorldMatrix;
+		this.mCorners[0].set(x0, cy, 0).ApplyTransform(localToWorld);
+		this.mCorners[1].set(cx, y1, 0).ApplyTransform(localToWorld);
+		this.mCorners[2].set(x1, cy, 0).ApplyTransform(localToWorld);
+		this.mCorners[3].set(cx, y0, 0).ApplyTransform(localToWorld);
 		if (relativeTo !== undefined) {
+			var worldToLocal = relativeTo.worldToLocalMatrix;
 			for (var i in this.mCorners)
-				this.mCorners[i] = relativeTo.InverseTransformPoint(this.mCorners[i]);
+				this.mCorners[i].ApplyTransform(worldToLocal);
 		}
 		return this.mCorners;
 	}

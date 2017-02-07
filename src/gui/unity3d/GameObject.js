@@ -8,7 +8,7 @@ UnityEngine.GameObject = function () {
 	this.layer = 0;
 };
 
-Object.assign(UnityEngine.GameObject.prototype = Object.create(UnityEngine.Object.prototype), {
+Object.extend(UnityEngine.GameObject.prototype = Object.create(UnityEngine.Object.prototype), {
 	constructor: UnityEngine.GameObject,
 	GetComponent: function(typeName) {
 		var componentType = UnityEngine.GetType(typeName);

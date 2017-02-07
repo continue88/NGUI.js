@@ -61,3 +61,15 @@ UnityEngine.Color.prototype = {
 		return this;
 	},
 };
+
+UnityEngine.Color.black = new UnityEngine.Color(1,1,1,1);
+UnityEngine.Color.blue = new UnityEngine.Color(0,0,1,1);
+UnityEngine.Color.clear = new UnityEngine.Color(0,0,0,0);
+UnityEngine.Color.cyan = new UnityEngine.Color(0,1,1,1);
+UnityEngine.Color.gray = new UnityEngine.Color(0.5,0.5,0.5,1);
+UnityEngine.Color.green = new UnityEngine.Color(0,1,0,1);
+UnityEngine.Color.grey = new UnityEngine.Color(0.5,0.5,0.5,1);
+UnityEngine.Color.magenta = new UnityEngine.Color(1,0,1,1);
+UnityEngine.Color.red = new UnityEngine.Color(1,0,0,1);
+UnityEngine.Color.yellow = new UnityEngine.Color(1,0.922,0.016,1);
+UnityEngine.Color.white = new UnityEngine.Color(1,1,1,1);

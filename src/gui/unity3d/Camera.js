@@ -17,9 +17,10 @@ UnityEngine.Camera = function(gameObject) {
 	// cached matrix. 
 	this.viewProjMatrix = undefined;
 	this.invViewProjMatrix = undefined; 
+	this.invProjectionMatrix = undefined;
 };
 
-Object.assign(UnityEngine.Camera.prototype = Object.create(UnityEngine.Component.prototype), {
+Object.extend(UnityEngine.Camera.prototype = Object.create(UnityEngine.Component.prototype), {
 	constructor: UnityEngine.Camera,
 	getViewProjMatrix: function() {
 		if (this.viewProjMatrix === undefined) {
@@ -30,9 +31,12 @@ Object.assign(UnityEngine.Camera.prototype = Object.create(UnityEngine.Component
 	},
 	getInvViewProjMatrix: function() {
 		if (this.invViewProjMatrix === undefined) {
-			var viewProjMatrix = this.getViewProjMatrix();
+			this.invProjectionMatrix = new UnityEngine.Matrix4x4();
+			this.invProjectionMatrix.getInverse(this.projectionMatrix);
+
+			//var viewProjMatrix = this.getViewProjMatrix();
 			this.invViewProjMatrix = new UnityEngine.Matrix4x4();
-			this.invViewProjMatrix.getInverse(viewProjMatrix);
+			this.invViewProjMatrix.MultiplyMatrices(this.cameraToWorldMatrix, this.invProjectionMatrix);
 		}
 		return this.invViewProjMatrix;
 	},
@@ -95,13 +99,16 @@ Object.assign(UnityEngine.Camera.prototype = Object.create(UnityEngine.Component
 		return mSides;
 	},
 	ScreenToViewportPoint: function(position) {
-		return position;
+		return new UnityEngine.Vector3(
+			position.x / NGUITools.screenSize.x,
+			position.y / NGUITools.screenSize.y,
+			position.z);
 	},
-	ViewportToWorldPoint: function(screenPoint) {
-		screenPoint.x = 2 * screenPoint.x - 1;
-		screenPoint.y = 1 - 2 * screenPoint.y;
-		screenPoint.z = 0; // TODO: ViewportToWorldPoint
-		return this.getInvViewProjMatrix().MultiplyPoint(screenPoint);
+	ViewportToWorldPoint: function(viewportPoint) {
+		viewportPoint.x = 2 * viewportPoint.x - 1;
+		viewportPoint.y = 1 - 2 * viewportPoint.y;
+		viewportPoint.z = 1 // TODO: ViewportToWorldPoint
+		return this.getInvViewProjMatrix().MultiplyPoint(viewportPoint);
 	},
 	WorldToViewportPoint: function(worldPos) {
 		var screenPos = this.getViewProjMatrix(worldPos);
@@ -110,11 +117,18 @@ Object.assign(UnityEngine.Camera.prototype = Object.create(UnityEngine.Component
 		return screenPos;
 	},
 	ScreenPointToRay: function(screenPoint) {
-		var pos = this.transform.position;
-		var dir = this.transform.TransformDirection(new UnityEngine.Vector3(0, 0, 1));
+		var vPos = this.ScreenToViewportPoint(screenPoint),
+			pos = this.ViewportToWorldPoint(vPos), dir;
+		if (this.isOrthoGraphic) {
+			dir = this.transform.TransformDirection(UnityEngine.Vector3.forward);
+		} else {
+			var origin = this.transform.position;
+			dir = pos.clone().sub(origin).normalize();
+		}
 		var ray = new UnityEngine.Ray();
 		ray.origin.set(pos.x, pos.y, pos.z);
 		ray.direction.set(dir.x, dir.y, dir.z);
+        //console.log('inPos:' + screenPoint + ",pos=" + vPos + ",ray:" + ray);
 		return ray;
 	},
 });

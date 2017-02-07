@@ -10,7 +10,30 @@ UnityEngine={
         if (typeof(typeName) === 'function') return typeName; 
         var type = NGUI[typeName] || UnityEngine[typeName];
         if (typeof(type) === 'function') return type;
-    }
+    },
+    Update: function() {
+        UnityEngine.Time.Update();
+        UnityEngine.Object.Update();
+    },
+};
+
+Object.extend = function(target, ...sources) {
+  sources.forEach(source => {
+    let descriptors = Object.keys(source).reduce((descriptors, key) => {
+      descriptors[key] = Object.getOwnPropertyDescriptor(source, key);
+      return descriptors;
+    }, {});
+
+    // Object.assign 默认也会拷贝可枚举的Symbols
+    Object.getOwnPropertySymbols(source).forEach(sym => {
+      let descriptor = Object.getOwnPropertyDescriptor(source, sym);
+      if (descriptor.enumerable) {
+        descriptors[sym] = descriptor;
+      }
+    });
+    Object.defineProperties(target, descriptors);
+  });
+  return target;
 };
 
 NGUI={
@@ -117,6 +140,19 @@ UnityEngine.Color.prototype = {
 	},
 };
 
+UnityEngine.Color.black = new UnityEngine.Color(1,1,1,1);
+UnityEngine.Color.blue = new UnityEngine.Color(0,0,1,1);
+UnityEngine.Color.clear = new UnityEngine.Color(0,0,0,0);
+UnityEngine.Color.cyan = new UnityEngine.Color(0,1,1,1);
+UnityEngine.Color.gray = new UnityEngine.Color(0.5,0.5,0.5,1);
+UnityEngine.Color.green = new UnityEngine.Color(0,1,0,1);
+UnityEngine.Color.grey = new UnityEngine.Color(0.5,0.5,0.5,1);
+UnityEngine.Color.magenta = new UnityEngine.Color(1,0,1,1);
+UnityEngine.Color.red = new UnityEngine.Color(1,0,0,1);
+UnityEngine.Color.yellow = new UnityEngine.Color(1,0.922,0.016,1);
+UnityEngine.Color.white = new UnityEngine.Color(1,1,1,1);
+
+
 //
 // ..\src\gui\unity3d\Color32.js
 //
@@ -141,495 +177,311 @@ UnityEngine.Color32.prototype = {
 }
 
 //
-// ..\src\gui\unity3d\Object.js
+// ..\src\gui\unity3d\Vector2.js
 //
-UnityEngine.Object = function() {
-    this.instanceID = UnityEngine.Object.StaticId++;
+
+UnityEngine.Vector2 = function ( x, y ) {
+	this.x = x || 0;
+	this.y = y || 0;
 };
 
-UnityEngine.Object.StaticId = 10000;
-UnityEngine.Object.Map = {};
-UnityEngine.Object.Destroy = function(obj) {
-    var id = obj.GetInstanceID();
-    var map = UnityEngine.Object.Map;
-    var obj = map[id];
-    if (obj === undefined)
-        return console.log('Could not delete object with id (Not found): ' + id);
-    if (obj.OnDestroy !== undefined) obj.OnDestroy(); // execute the [OnDestroy]
-    delete map[id];
-}
-UnityEngine.Object.RegisterObject = function(obj) {
-    var id = obj.GetInstanceID();
-    if (id === undefined)
-        return console.error('Register object failed with not id.' + obj);
-    var map = UnityEngine.Object.Map;
-    if (map[id] !== undefined)
-        console.warn('Object with id already register, override it: ' + id);
-    map[id] = obj;
-    if (obj.Awake !== undefined) obj.Awake();
-}
-UnityEngine.Object.FindObjectWithId = function(id) {
-    return UnityEngine.Object.Map[id];
-}
-UnityEngine.Object.FindObjectOfType = function(type) {
-    type = UnityEngine.GetType(type);
-    var map = UnityEngine.Object.Map;
-    for (var i in map) {
-        var obj = map[i];
-        if (obj instanceof type) return obj;
-    }
-}
-UnityEngine.Object.FindObjectsOfType = function(type) {
-    type = UnityEngine.GetType(type);
-    var map = UnityEngine.Object.Map;
-    var ret = [];
-    for (var i in map) {
-        var obj = map[i];
-        if (obj instanceof type) ret.push(obj);
-    }
-    return ret;
-}
-
-UnityEngine.Object.prototype = {
-    constructor: UnityEngine.Object,
-    GetInstanceID: function() { return this.instanceID; },
-    Load: function(json) {
-        if (json.meta_id != 0)
-            this.instanceID = json.meta_id;
-        else
-            console.warn('no id found!!!');
-        UnityEngine.Object.RegisterObject(this);
-    },
-    SendMessage: function(methodName, value) {
-        var func = this[methodName];
-        if (typeof(func) === 'function') func(value);
-     },
-};
-
-//
-// ..\src\gui\unity3d\Component.js
-//
-
-UnityEngine.Component = function(gameObject) {
-	UnityEngine.Object.call(this);
-	this.gameObject = gameObject;
-	this.transform = gameObject.transform; // UnityEngine.Transform
-};
-
-Object.assign(UnityEngine.Component.prototype = Object.create(UnityEngine.Object.prototype), {
-	constructor: UnityEngine.Component,
-	Load: function(json) {
-		UnityEngine.Object.prototype.Load.call(this, json);
+UnityEngine.Vector2.prototype = {
+	constructor: UnityEngine.Vector2,
+	set: function(x, y) { this.x = x; this.y = y; },
+	clone: function () { return new this.constructor( this.x, this.y ); },
+	add: function(v) {
+		this.x += v.x;
+		this.y += v.y;
 	},
-	GetComponent: function(type) { return this.gameObject.GetComponent(type); },
-	GetComponentInChildren: function(type) { return this.gameObject.GetComponentInChildren(type); },
-	GetComponentsInChildren: function(type) { return this.gameObject.GetComponentsInChildren(type); },
-});
-
-//
-// ..\src\gui\unity3d\Collider.js
-//
-
-UnityEngine.Collider = function(gameObject) {
-    UnityEngine.Component.call(this, gameObject);
-};
-
-Object.assign(UnityEngine.Collider.prototype = Object.create(UnityEngine.Component.prototype), {
-	constructor: UnityEngine.Collider,
-	Awake: function() {
-		UnityEngine.Physics.Add(this);
+	sub: function(v) {
+		this.x -= v.x;
+		this.y -= v.y;
 	},
-	OnDestroy: function() {
-		UnityEngine.Physics.Remove(this);
+	dot: function(v) {
+		return this.x * v.x + this.y * v.y;
 	},
-	Load: function(json) {
-		UnityEngine.Component.prototype.Load.call(this, json);
-	},
-});
-
-//
-// ..\src\gui\unity3d\BoxCollider.js
-//
-
-UnityEngine.BoxCollider = function(gameObject) {
-    UnityEngine.Collider.call(this, gameObject);
-    this.center = new UnityEngine.Vector3(0, 0, 0);
-    this.size = new UnityEngine.Vector3(0, 0, 0);
-};
-
-Object.assign(UnityEngine.BoxCollider.prototype = Object.create(UnityEngine.Collider.prototype), {
-	constructor: UnityEngine.BoxCollider,
-	Load: function(json) {
-		UnityEngine.Collider.prototype.Load.call(this, json);
-        if (json.c !== undefined) this.center.set(json.c.x || 0, json.c.y || 0, json.c.z || 0);
-        if (json.s !== undefined) this.size.set(json.s.x || 0, json.s.y || 0, json.s.z || 0);
-	},
-    RayTest: function(ray, distance) {
-        return this.Raycast(ray, undefined, distance);
-    },
-    Raycast: function(ray, hitInfo, distance) {
-        var max = 100000;
-        var min = -max;
-        var p = this.transform.TransformPoint(this.center).sub(ray.origin);
-        var h = this.size.clone().multiply(this.transform.lossyScale).multiplyScalar(0.5);
-        var dirMax = 0;
-        var dirMin = 0;
-        var dir = 0;
-        var matrixVec = [
-            this.transform.TransformDirection(UnityEngine.Vector3.right),
-            this.transform.TransformDirection(UnityEngine.Vector3.up),
-            this.transform.TransformDirection(UnityEngine.Vector3.back)];
-        var vectorFloat = [h.x, h.y, h.z];
-        for (dir = 0; dir < 3; dir++) {
-            var e = matrixVec[dir].dot(p);
-            var f = matrixVec[dir].dot(ray.direction);
-            if (Math.abs(f) > 0.00001) {
-                var t1 = (e + vectorFloat[dir]) / f;
-                var t2 = (e - vectorFloat[dir]) / f;
-                if (t1 > t2) { var tmp = t1;t1 = t2; t2 = tmp; }
-                if (t1 > min) { min = t1; dirMin = dir; }
-                if (t2 < max) { max = t2; dirMax = dir; }
-                if (min > max) return false;
-                if (max < 0.0) return false;
-            }
-            else if((-e-vectorFloat[dir] > 0.0) || (-e + vectorFloat[dir] < 0.0))
-                return false;
-        }
-        if (hitInfo === undefined) return true;
-
-        if (min > 0.0) {
-            dir = dirMin;
-            fracOut = min;
-        } else {
-            dir = dirMax;
-            fracOut = max;
-        }
-
-        hitInfo.fracOut = Mathf.Clamp01(fracOut);
-        hitInfo.posOut = ray.GetPoint(fracOut);
-        if (matrixVec[dir].dot(ray.direction) > 0)
-            hitInfo.normalOut = matrixVec[dir].multiplyScalar(-1);
-        else
-            hitInfo.normalOut = matrixVec[dir];
-        return true;
-    },
-});
-
-
-//
-// ..\src\gui\unity3d\Camera.js
-//
-
-UnityEngine.Camera = function(gameObject) {
-	UnityEngine.Component.call(this, gameObject);
-
-	this.isOrthoGraphic = false;
-	this.orthographicSize = 1;
-	this.aspect = 1;
-	this.fieldOfView = 1;
-	this.nearClipPlane = 0.1;
-	this.farClipPlane = 1000;
-	this.rect = new UnityEngine.Rect(0, 0, 1, 1);
-
-	this.projectionMatrix = new UnityEngine.Matrix4x4();
-	this.cameraToWorldMatrix = new UnityEngine.Matrix4x4();
-	this.worldToCameraMatrix = new UnityEngine.Matrix4x4();
-
-	// cached matrix. 
-	this.viewProjMatrix = undefined;
-	this.invViewProjMatrix = undefined; 
-};
-
-Object.assign(UnityEngine.Camera.prototype = Object.create(UnityEngine.Component.prototype), {
-	constructor: UnityEngine.Camera,
-	getViewProjMatrix: function() {
-		if (this.viewProjMatrix === undefined) {
-			this.viewProjMatrix = new UnityEngine.Matrix4x4();
-			this.viewProjMatrix.MultiplyMatrices(this.worldToCameraMatrix, this.projectionMatrix);
-		}
-		return this.viewProjMatrix;
-	},
-	getInvViewProjMatrix: function() {
-		if (this.invViewProjMatrix === undefined) {
-			var viewProjMatrix = this.getViewProjMatrix();
-			this.invViewProjMatrix = new UnityEngine.Matrix4x4();
-			this.invViewProjMatrix.getInverse(viewProjMatrix);
-		}
-		return this.invViewProjMatrix;
-	},
-	setAspect(aspect) {
-		this.aspect = aspect;
-		if (this.isOrthoGraphic === true)
-			this.projectionMatrix.Ortho(-this.aspect, this.aspect, 1, -1, this.nearClipPlane, this.farClipPlane);
-		else
-			this.projectionMatrix.Perspective(this.fieldOfView, this.aspect, this.nearClipPlane, this.farClipPlane);
-
-		this.cameraToWorldMatrix.SetTRS(this.transform.position, this.transform.rotation, new UnityEngine.Vector3(1, 1, 1));
-		this.worldToCameraMatrix.getInverse(this.cameraToWorldMatrix);
-		this.viewProjMatrix = undefined;
-		this.invViewProjMatrix = undefined;
-	},
-	Load: function(json) {
-		this.isOrthoGraphic = json.orth;
-		this.nearClipPlane = json.near;
-		this.farClipPlane = json.far;
-		this.aspect = json.aspect;
-		this.fieldOfView = json.fov;
-		this.setAspect(json.aspect);
-	},
-	GetSides: function(depth, relativeTo) {
-		var mSides = [];
-		if (this.isOrthoGraphic) {
-			var os = this.orthographicSize;
-				x0 = -os;
-				x1 = os;
-				y0 = -os;
-				y1 = os;
-			var rect = this.rect;
-			var size = NGUITools.screenSize;
-			var aspect = size.x / size.y;
-			aspect *= rect.width / rect.height;
-			x0 *= aspect;
-			x1 *= aspect;
-
-			// We want to ignore the scale, as scale doesn't affect the camera's view region in Unity
-			var t = this.transform;
-			var rot = t.rotation;
-			var pos = t.position;
-			var mat = UnityEngine.Matrix4x4.Temp;
-			mat.makeRotationFromQuaternion(rot);
-			mSides[0] = mat.MultiplyVector(new UnityEngine.Vector3(x0, 0, depth)).add(pos);
-			mSides[1] = mat.MultiplyVector(new UnityEngine.Vector3(0, y1, depth)).add(pos);
-			mSides[2] = mat.MultiplyVector(new UnityEngine.Vector3(x1, 0, depth)).add(pos);
-			mSides[3] = mat.MultiplyVector(new UnityEngine.Vector3(0, y0, depth)).add(pos);
-		} else {
-			mSides[0] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0, 0.5, depth));
-			mSides[1] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0.5, 1, depth));
-			mSides[2] = this.ViewportToWorldPoint(new UnityEngine.Vector3(1, 0.5, depth));
-			mSides[3] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0.5, 0, depth));
-		}
-		
-		if (relativeTo !== undefined) {
-			for (var i = 0; i < 4; ++i)
-				mSides[i] = relativeTo.InverseTransformPoint(mSides[i]);
-		}
-		return mSides;
-	},
-	ScreenToViewportPoint: function(position) {
-		return position;
-	},
-	ViewportToWorldPoint: function(screenPoint) {
-		screenPoint.x = 2 * screenPoint.x - 1;
-		screenPoint.y = 1 - 2 * screenPoint.y;
-		screenPoint.z = 0; // TODO: ViewportToWorldPoint
-		return this.getInvViewProjMatrix().MultiplyPoint(screenPoint);
-	},
-	WorldToViewportPoint: function(worldPos) {
-		var screenPos = this.getViewProjMatrix(worldPos);
-		screenPos.x = (screenPos.x + 1) * 0.5;
-		screenPos.y = (1 - screenPos.y) * 0.5;
-		return screenPos;
-	},
-	ScreenPointToRay: function(screenPoint) {
-		var pos = this.transform.position;
-		var dir = this.transform.TransformDirection(new UnityEngine.Vector3(0, 0, 1));
-		var ray = new UnityEngine.Ray();
-		ray.origin.set(pos.x, pos.y, pos.z);
-		ray.direction.set(dir.x, dir.y, dir.z);
-		return ray;
-	},
-});
-
-
-//
-// ..\src\gui\unity3d\EventDispatcher.js
-//
-
-UnityEngine.EventDispatcher = function() {
-    this._listeners = {};
-}
-
-UnityEngine.EventDispatcher.prototype = {
-    constructor: UnityEngine.EventDispatcher,
-	on: function(type, listener) {
-		var listeners = this._listeners;
-		if (listeners[ type ] === undefined) listeners[ type ] = [];
-		if (listeners[ type ].indexOf(listener) === - 1)
-			listeners[ type ].push(listener);
-	},
-	remove: function(type, listener) {
-		var listeners = this._listeners;
-		var listenerArray = listeners[ type ];
-		if (listenerArray !== undefined) {
-			var index = listenerArray.indexOf(listener);
-			if (index !== - 1)
-				listenerArray.splice(index, 1);
-		}
-	},
-	emit: function(event) {
-		var listeners = this._listeners;
-		var listenerArray = listeners[ event.type ];
-		if (listenerArray !== undefined) {
-			event.target = this;
-			var array = [], i = 0;
-			var length = listenerArray.length;
-			for (i = 0; i < length; i ++)
-				array[ i ] = listenerArray[ i ];
-			for (i = 0; i < length; i ++)
-				array[ i ].call(this, event);
-		}
-	}
-};
-
-//
-// ..\src\gui\unity3d\GameObject.js
-//
-
-UnityEngine.GameObject = function () {
-	UnityEngine.Object.call(this);
-	this.name = '';
-	this.transform = new UnityEngine.Transform(this);
-	this.components = [];
-	this.activeSelf = true;
-	this.layer = 0;
-};
-
-Object.assign(UnityEngine.GameObject.prototype = Object.create(UnityEngine.Object.prototype), {
-	constructor: UnityEngine.GameObject,
-	GetComponent: function(typeName) {
-		var componentType = UnityEngine.GetType(typeName);
-		for (var i in this.components) {
-			var comp = this.components[i];
-			if (comp instanceof componentType)
-				return comp;
-		}
-	},
-	GetComponentInChildren: function(typeName) {
-		var type = UnityEngine.GetType(typeName);
-		var comp = this.GetComponent(type);
-		if (comp !== undefined) return comp;
-		
-		var switchList = [];
-		var testList = [this.transform];
-		while (true) {
-			switchList.length = 0;
-			for (var i in testList) {
-				var transform = testList[i]; 
-				for (var c in transform.children) {
-					var child = transform.children[c];
-					var comp = child.gameObject.GetComponent(type);
-					if (comp !== undefined) return comp; // check child.
-					if (child.children.length > 0)
-						switchList.push(child);
-				}
-			}
-			if (switchList.length === 0) break;
-			var tmp = testList;
-			testList = switchList;
-			switchList = tmp;
-		}
-	},
-	GetComponentsInChildren: function(typeName) {
-		var foundList = [];
-		var type = UnityEngine.GetType(typeName);
-		var comp = this.GetComponent(type);
-		if (comp !== undefined) foundList.push(comp);
-
-		var switchList = [];
-		var testList = [this.transform];
-		while (true) {
-			switchList.length = 0;
-			for (var i in testList) {
-				var transform = testList[i]; 
-				for (var c in transform.children) {
-					var child = transform.children[c];
-					var comp = child.gameObject.GetComponent(type);
-					if (comp !== undefined) foundList.push(comp);
-					if (child.children.length > 0)
-						switchList.push(child);
-				}
-			}
-			if (switchList.length === 0) break;
-			var tmp = testList;
-			testList = switchList;
-			switchList = tmp;
-		}
-		return foundList;
-	},
-	LoadInternal: function(datas, onCreate, onLoad) {
-		if (datas === undefined) return;
-		var createList = [];
-		for (var i in datas) {
-			var data = datas[i];
-			var obj = onCreate(data);
-			if (obj !== undefined) {
-				obj._data_ = data;
-				createList.push(obj);
-			}
-		}
-		for (var i in createList) {
-			var obj = createList[i];
-			onLoad(obj, obj._data_);
-			obj._data_ = undefined;
-		}
-	},
-	Load: function(json) {
-		UnityEngine.Object.prototype.Load.call(this, json);
-		var self = this;
-		var trans = json.t;
-		var comps = json.c;
-		var child = json.q;
-		self.name = json.n;
-		if (trans !== undefined) self.transform.Load(trans);
-		this.LoadInternal(comps, function(data) {
-			var typeName = data.meta_type;
-			var componentType = UnityEngine.GetType(typeName);
-			if (componentType !== undefined) {
-				var component = new componentType(self);
-				self.components.push(component);
-				return component;
-			}
-		}, function(component, data) {
-			component.Load(data);
-		});
-		this.LoadInternal(child, function(data) {
-			var go = new UnityEngine.GameObject();
-			go.transform.setParent(self.transform);
-			return go;
-		}, function(go, data) {
-			go.Load(data);
-		});
+	multiply: function (v) {
+		this.x *= v.x;
+		this.y *= v.y;
 		return this;
 	},
-	SetActive: function(active) {
-		this.activeSelf = active;
+	multiplyScalar: function ( scalar ) {
+		if ( isFinite( scalar ) ) {
+			this.x *= scalar;
+			this.y *= scalar;
+		} else {
+			this.x = 0;
+			this.y = 0;
+		}
+		return this;
 	},
-    SendMessage: function(methodName, value) {
-		for (var i in this.components)
-			this.components[i].SendMessage(methodName, value);
-     },
-});
+	divide: function ( v ) {
+		this.x /= v.x;
+		this.y /= v.y;
+		return this;
+	},
+	divideScalar: function ( scalar ) {
+		return this.multiplyScalar( 1 / scalar );
+	},
+	sqrMagnitude: function () {
+		return this.x * this.x + this.y * this.y;
+	},
+	magnitude: function () {
+		return Math.sqrt( this.x * this.x + this.y * this.y );
+	},
+	toString: function() {
+		return "{" + this.x + "," + this.y + "}";
+	},
+};
+
+UnityEngine.Vector2.zero = new UnityEngine.Vector2(0, 0);
+UnityEngine.Vector2.temp = new UnityEngine.Vector2(0, 0);
 
 //
-// ..\src\gui\unity3d\Mathf.js
+// ..\src\gui\unity3d\Vector3.js
 //
 
-Mathf = UnityEngine.Mathf = {
-	Deg2Rad: 0.0174532924,
-	Rad2Deg: 57.29578,
-	FloorToInt: function(v) { return Math.floor(v); },
-	RoundToInt: function(v) { return Math.floor(v + 0.5); },
-	Round: function(v) { return Math.floor(v + 0.5); },
-	Lerp: function(a, b, t) {
-		return a + t * (b - a);
-	},
-	Clamp: function(val, min, max) {
-		return Math.min(Math.max(min, val), max);
-	},
-	Clamp01: function(val) {
-		return Math.min(Math.max(0, val), 1);
-	}
+UnityEngine.Vector3 = function ( x, y, z ) {
+	this.x = x || 0;
+	this.y = y || 0;
+	this.z = z || 0;
+};
+
+UnityEngine.Vector3.SqrMagnitude = function(v1, v2) {
+	if (v2 === undefined)
+		return v1.x * v1.x + v1.y * v1.y + v1.z * v1.z;
+	var x = v1.x - v2.x,
+		y = v1.y - v2.y,
+		z = v1.z - v2.z;
+	return x * x + y * y + z * z;
 }
+
+UnityEngine.Vector3.Distance = function(v1, v2) {
+	var x = v1.x - v2.x,
+		y = v1.y - v2.y,
+		z = v1.z - v2.z;
+	return Math.sqrt(x * x + y * y + z * z);
+}
+
+UnityEngine.Vector3.prototype = {
+	constructor: UnityEngine.Vector3,
+	set: function(x, y, z) { this.x = x; this.y = y; this.z = z; return this; },
+	setv: function(v) { this.x = v.x; this.y = v.y; this.z = v.z; return this; },
+	clone: function () { return new this.constructor( this.x, this.y, this.z ); },
+	add: function(v) {
+		this.x += v.x;
+		this.y += v.y;
+		this.z += v.z;
+		return this;
+	},
+	sub: function(v) {
+		this.x -= v.x;
+		this.y -= v.y;
+		this.z -= v.z;
+		return this;
+	},
+	dot: function(v) {
+		return this.x * v.x + this.y * v.y + this.z * v.z;
+	},
+	cross: function(v) {
+		return new UnityEngine.Vector3(
+			this.y * v.z - this.z * v.y,
+			this.z * v.x - this.x * v.z,
+			this.x * v.y - this.y * v.x);
+	},
+	multiply: function (v) {
+		this.x *= v.x;
+		this.y *= v.y;
+		this.z *= v.z;
+		return this;
+	},
+	multiplyScalar: function ( scalar ) {
+		if ( isFinite( scalar ) ) {
+			this.x *= scalar;
+			this.y *= scalar;
+			this.z *= scalar;
+		} else {
+			this.x = 0;
+			this.y = 0;
+			this.z = 0;
+		}
+		return this;
+	},
+	divide: function ( v ) {
+		this.x /= v.x;
+		this.y /= v.y;
+		this.z /= v.z;
+		return this;
+	},
+	divideScalar: function ( scalar ) {
+		return this.multiplyScalar( 1 / scalar );
+	},
+	normalize: function() {
+		return this.multiplyScalar(1 / this.magnitude());
+	},
+	sqrMagnitude: function () {
+		return this.x * this.x + this.y * this.y + this.z * this.z;
+	},
+	magnitude: function () {
+		return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+	},
+	ApplyTransform: function(matrix) {
+		var x = this.x, y = this.y, z = this.z;
+		var e = matrix.elements;
+		this.x = e[ 0 ] * x + e[ 4 ] * y + e[ 8 ]  * z + e[ 12 ];
+		this.y = e[ 1 ] * x + e[ 5 ] * y + e[ 9 ]  * z + e[ 13 ];
+		this.z = e[ 2 ] * x + e[ 6 ] * y + e[ 10 ] * z + e[ 14 ];
+	},
+	toString: function() {
+		return "{" + this.x + "," + this.y + "," + this.z + "}";
+	},
+};
+
+UnityEngine.Vector3.back = new UnityEngine.Vector3(0, 0, -1);
+UnityEngine.Vector3.down = new UnityEngine.Vector3(0, -1, 0);
+UnityEngine.Vector3.forward = new UnityEngine.Vector3(0, 0, 1);
+UnityEngine.Vector3.left = new UnityEngine.Vector3(1, 0, 0);
+UnityEngine.Vector3.one = new UnityEngine.Vector3(1, 1, 1);
+UnityEngine.Vector3.right = new UnityEngine.Vector3(-1, 0, 0);
+UnityEngine.Vector3.up = new UnityEngine.Vector3(0, 1, 0);
+UnityEngine.Vector3.zero = new UnityEngine.Vector3(0, 0, 0);
+
+//
+// ..\src\gui\unity3d\Vector4.js
+//
+
+UnityEngine.Vector4 = function ( x, y, z, w ) {
+	this.x = x || 0;
+	this.y = y || 0;
+	this.z = z || 0;
+	this.w = w || 0;
+};
+
+UnityEngine.Vector4.prototype = {
+	constructor: UnityEngine.Vector4,
+	set: function(x, y, z, w) { this.x = x; this.y = y; this.z = z; this.w = w; },
+	clone: function () { return new this.constructor( this.x, this.y, this.z, this.w ); },
+	add: function(v) {
+		this.x += v.x;
+		this.y += v.y;
+		this.z += v.z;
+		this.w += v.w;
+	},
+	sub: function(v) {
+		this.x -= v.x;
+		this.y -= v.y;
+		this.z -= v.z;
+		this.w -= v.w;
+	},
+	dot: function(v) {
+		return this.x * v.x + this.y * v.y + this.z * v.z + this.w * v.w;
+	},
+	multiply: function (v) {
+		this.x *= v.x;
+		this.y *= v.y;
+		this.z *= v.z;
+		this.w *= v.w;
+		return this;
+	},
+	multiplyScalar: function ( scalar ) {
+		if ( isFinite( scalar ) ) {
+			this.x *= scalar;
+			this.y *= scalar;
+			this.z *= scalar;
+			this.w *= scalar;
+		} else {
+			this.x = 0;
+			this.y = 0;
+			this.z = 0;
+			this.w = 0;
+		}
+		return this;
+	},
+	divide: function ( v ) {
+		this.x /= v.x;
+		this.y /= v.y;
+		this.z /= v.z;
+		this.w /= v.w;
+		return this;
+	},
+	divideScalar: function ( scalar ) {
+		return this.multiplyScalar( 1 / scalar );
+	},
+	sqrMagnitude: function () {
+		return this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w;
+	},
+	magnitude: function () {
+		return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w);
+	},
+	toString: function() {
+		return "{" + this.x + "," + this.y + "," + this.z + "," + this.z + "}";
+	},
+};
+
+//
+// ..\src\gui\unity3d\Quaternion.js
+//
+
+UnityEngine.Quaternion = function ( x, y, z, w ) {
+	this.x = x || 0;
+	this.y = y || 0;
+	this.z = z || 0;
+	this.w = w || 1;
+};
+
+UnityEngine.Quaternion.prototype = {
+	constructor: UnityEngine.Quaternion,
+	set: function(x, y, z, w) { this.x = x; this.y = y; this.z = z; this.w = w; },
+	setv: function(v) { this.x = v.x; this.y = v.y; this.z = v.z; this.w = v.w; },
+	clone: function () { return new this.constructor( this.x, this.y, this.z, this.w ); },
+	euler: function(x, y, z) {
+		var c1 = Math.cos( x * 0.5 );
+		var c2 = Math.cos( y * 0.5 );
+		var c3 = Math.cos( z * 0.5 );
+		var s1 = Math.sin( x * 0.5 );
+		var s2 = Math.sin( y * 0.5 );
+		var s3 = Math.sin( z * 0.5 );
+		this.x = s1 * c2 * c3 + c1 * s2 * s3;
+		this.y = c1 * s2 * c3 - s1 * c2 * s3;
+		this.z = c1 * c2 * s3 + s1 * s2 * c3;
+		this.w = c1 * c2 * c3 - s1 * s2 * s3;
+	},
+	eulerAngles: function() {
+		var matrix = UnityEngine.Matrix4x4.Temp;
+		matrix.makeRotationFromQuaternion(this);
+		var te = matrix.elements;
+		var m11 = te[ 0 ], m12 = te[ 4 ], m13 = te[ 8 ];
+		var m21 = te[ 1 ], m22 = te[ 5 ], m23 = te[ 9 ];
+		var m31 = te[ 2 ], m32 = te[ 6 ], m33 = te[ 10 ];
+		var ret = new UnityEngine.Vector3();
+		ret.y = Math.asin(Mathf.Clamp( m13, -1, 1 ));
+		if (Math.abs( m13 ) < 0.99999) {
+			ret.x = Math.atan2( - m23, m33 );
+			ret.z = Math.atan2( - m12, m11 );
+		} else {
+			ret.x = Math.atan2( m32, m22 );
+			ret.z = 0;
+		}
+		return ret;
+	},
+	multiply: function(a, b) {
+		var qax = a.x, qay = a.y, qaz = a.z, qaw = a.w;
+		var qbx = b.x, qby = b.y, qbz = b.z, qbw = b.w;
+		this.x = qax * qbw + qaw * qbx + qay * qbz - qaz * qby;
+		this.y = qay * qbw + qaw * qby + qaz * qbx - qax * qbz;
+		this.z = qaz * qbw + qaw * qbz + qax * qby - qay * qbx;
+		this.w = qaw * qbw - qax * qbx - qay * qby - qaz * qbz;
+		return this;
+	},
+	multiplyVector: function(v) {
+		var qvec = new UnityEngine.Vector3(this.x, this.y, this.z);
+		var uv = qvec.cross(v);
+		var uuv = qvec.cross(uv);
+		uv.multiplyScalar(2 * this.w);
+		uuv.multiplyScalar(2);
+		return v.clone().add(uv).add(uuv);
+	},
+};
 
 //
 // ..\src\gui\unity3d\Matrix4x4.js
@@ -810,6 +662,12 @@ UnityEngine.Matrix4x4.prototype = {
 			e[ 1 ] * x + e[ 5 ] * y + e[ 9 ]  * z + e[ 13 ],
 			e[ 2 ] * x + e[ 6 ] * y + e[ 10 ] * z + e[ 14 ]);
 	},
+	MultiplyPoint3x4v: function(x, y, z, cb) {
+		var e = this.elements;
+		cb( e[ 0 ] * x + e[ 4 ] * y + e[ 8 ]  * z + e[ 12 ],
+			e[ 1 ] * x + e[ 5 ] * y + e[ 9 ]  * z + e[ 13 ],
+			e[ 2 ] * x + e[ 6 ] * y + e[ 10 ] * z + e[ 14 ]);
+	},
 	MultiplyVector: function(v) {
 		var x = v.x, y = v.y, z = v.z;
 		var e = this.elements;
@@ -856,6 +714,701 @@ UnityEngine.Matrix4x4.prototype = {
 };
 
 UnityEngine.Matrix4x4.Temp = new UnityEngine.Matrix4x4();
+
+//
+// ..\src\gui\unity3d\Time.js
+//
+
+UnityEngine.Time = {
+    captureFramerate: -1,
+    deltaTime: 0,
+    fixedDeltaTime: 1/60,
+    fixedTime: 0,
+    frameCount: 0,
+    maximumDeltaTime: 0,
+    realtimeSinceStartup: 0,
+    renderedFrameCount: 0,
+    smoothDeltaTime: 0,
+    time: 0,
+    timeScale: 1,
+    timeSinceLevelLoad: 0,
+    unscaledDeltaTime: 0,
+    unscaledTime: 0,
+
+    lastTime: (new Date()).getTime(),
+    Update: function() {
+        var now = (new Date()).getTime();
+        this.unscaledDeltaTime = (now - this.lastTime) * 0.001;
+        this.deltaTime = this.unscaledDeltaTime * this.timeScale;
+        this.fixedTime += this.fixedDeltaTime;
+        this.frameCount++;
+        this.renderedFrameCount++;
+        this.time += this.deltaTime;
+        this.timeSinceLevelLoad += this.deltaTime;
+        this.unscaledTime += this.unscaledDeltaTime;
+        this.realtimeSinceStartup += this.unscaledDeltaTime;
+        this.lastTime = now;
+    }
+};
+
+//
+// ..\src\gui\unity3d\Ray.js
+//
+
+UnityEngine.Ray = function() {
+    this.direction = new UnityEngine.Vector3();
+    this.origin = new UnityEngine.Vector3();
+};
+
+UnityEngine.Ray.prototype = {
+    constructor: UnityEngine.Ray,
+    GetPoint: function(distance) {
+        return new UnityEngine.Vector3(
+            this.origin.x + this.direction.x * distance,
+            this.origin.y + this.direction.y * distance,
+            this.origin.z + this.direction.z * distance);
+    },
+	toString: function() {
+		return "{origin:" + this.origin + ",dir:" + this.direction + "}";
+	},
+};
+
+//
+// ..\src\gui\unity3d\Rect.js
+//
+
+UnityEngine.Rect = function(left, top, width, height) {
+	this.xMin = left;
+	this.xMax = left + width;
+	this.yMin = top;
+	this.yMax = top + height;
+};
+
+UnityEngine.Rect.prototype = {
+	constructor: UnityEngine.Rect,
+	clone: function () { return new this.constructor(this.left, this.top, this.width, this.height); },
+	set: function(left, top, width, height) {
+		this.xMin = left;
+		this.xMax = left + width;
+		this.yMin = top;
+		this.yMax = top + height;
+	},
+	get left() { return this.xMin; },
+	get top() { return this.yMin; },
+	get width() { return this.xMax - this.xMin; },
+	get height() { return this.yMax - this.yMin; },
+};
+
+//
+// ..\src\gui\unity3d\Object.js
+//
+UnityEngine.Object = function() {
+    this.instanceID = UnityEngine.Object.StaticId++;
+};
+
+UnityEngine.Object.StaticId = 10000;
+UnityEngine.Object.Map = {};
+UnityEngine.Object.Queue = {
+    Start: [],
+    Update: {},
+    OnDestroy: [],
+};
+UnityEngine.Object.Destroy = function(obj) {
+    var Object = UnityEngine.Object; 
+    var id = obj.GetInstanceID();
+    var obj = Object.Map[id];
+    if (obj === undefined)
+        return console.log('Could not delete object with id (Not found): ' + id);
+    delete Object.Map[id];
+    delete Object.Queue.Update[id];
+    Object.Queue.OnDestroy.push(obj);
+}
+UnityEngine.Object.RegisterObject = function(obj) {
+    var Object = UnityEngine.Object; 
+    var id = obj.GetInstanceID();
+    if (id === undefined)
+        return console.error('Register object failed with not id.' + obj);
+    if (Object.Map[id] !== undefined)
+        console.warn('Object with id already register, override it: ' + id);
+    Object.Map[id] = obj;
+    if (obj.Awake !== undefined) obj.Awake();
+    if (obj.Start !== undefined) Object.Queue.Start.push(obj);
+    if (obj.Update !== undefined) Object.Queue.Update[id] = obj;
+}
+UnityEngine.Object.FindObjectWithId = function(id) {
+    return UnityEngine.Object.Map[id];
+}
+UnityEngine.Object.FindObjectOfType = function(type) {
+    type = UnityEngine.GetType(type);
+    var map = UnityEngine.Object.Map;
+    for (var i in map) {
+        var obj = map[i];
+        if (obj instanceof type) return obj;
+    }
+}
+UnityEngine.Object.FindObjectsOfType = function(type) {
+    type = UnityEngine.GetType(type);
+    var map = UnityEngine.Object.Map;
+    var ret = [];
+    for (var i in map) {
+        var obj = map[i];
+        if (obj instanceof type) ret.push(obj);
+    }
+    return ret;
+}
+UnityEngine.Object.Update = function() {
+    var ObjectQueue = UnityEngine.Object.Queue;
+    while (ObjectQueue.Start.length > 0) {
+        var obj = ObjectQueue.Start.pop();
+        obj.Start();
+    }
+    for (var i in ObjectQueue.Update) {
+        var obj = ObjectQueue.Update[i];
+        obj.Update();
+    }
+    while (ObjectQueue.OnDestroy.length > 0) {
+        var obj = ObjectQueue.OnDestroy.pop();
+        obj.OnDestroy();
+    }
+}
+
+UnityEngine.Object.prototype = {
+    constructor: UnityEngine.Object,
+    GetInstanceID: function() { return this.instanceID; },
+    Load: function(json) {
+        if (json.meta_id != 0)
+            this.instanceID = json.meta_id;
+        else
+            console.warn('no id found!!!');
+        UnityEngine.Object.RegisterObject(this);
+    },
+    SendMessage: function(methodName, value) {
+        var func = this[methodName];
+        if (typeof(func) === 'function') func.call(this, value);
+     },
+};
+
+//
+// ..\src\gui\unity3d\Font.js
+//
+
+UnityEngine.Font = function() {
+
+};
+
+UnityEngine.FontStyle = {
+    Normal: 0,
+    Bold: 1,
+    Italic: 2,
+    BoldAndItalic: 3,
+};
+
+UnityEngine.Font.prototype = {
+    HasCharacter: function(c) {
+    },
+    GetCharacterInfo: function(ch, info, size, style) {
+        size = size || 0;
+        style = style || UnityEngine.FontStyle.Normal;
+        // init CharacterInfo data.
+        info.flipped = false;
+        info.index = 0;
+        info.size = size;
+        info.style = style;
+        info.uv = new UnityEngine.Rect();
+        info.vert = new UnityEngine.Rect();
+        info.width = 0;
+    },
+    RequestCharactersInTexture: function(characters, size, style) {
+    },
+};
+
+//
+// ..\src\gui\unity3d\Component.js
+//
+
+UnityEngine.Component = function(gameObject) {
+	UnityEngine.Object.call(this);
+	this.gameObject = gameObject;
+	this.transform = gameObject.transform; // UnityEngine.Transform
+};
+
+Object.extend(UnityEngine.Component.prototype = Object.create(UnityEngine.Object.prototype), {
+	constructor: UnityEngine.Component,
+	Load: function(json) {
+		UnityEngine.Object.prototype.Load.call(this, json);
+	},
+	GetComponent: function(type) { return this.gameObject.GetComponent(type); },
+	GetComponentInChildren: function(type) { return this.gameObject.GetComponentInChildren(type); },
+	GetComponentsInChildren: function(type) { return this.gameObject.GetComponentsInChildren(type); },
+});
+
+//
+// ..\src\gui\unity3d\Collider.js
+//
+
+UnityEngine.Collider = function(gameObject) {
+    UnityEngine.Component.call(this, gameObject);
+};
+
+Object.extend(UnityEngine.Collider.prototype = Object.create(UnityEngine.Component.prototype), {
+	constructor: UnityEngine.Collider,
+	Awake: function() {
+		UnityEngine.Physics.Add(this);
+	},
+	OnDestroy: function() {
+		UnityEngine.Physics.Remove(this);
+	},
+	Load: function(json) {
+		UnityEngine.Component.prototype.Load.call(this, json);
+	},
+});
+
+//
+// ..\src\gui\unity3d\BoxCollider.js
+//
+
+UnityEngine.BoxCollider = function(gameObject) {
+    UnityEngine.Collider.call(this, gameObject);
+    this.center = new UnityEngine.Vector3(0, 0, 0);
+    this.size = new UnityEngine.Vector3(0, 0, 0);
+};
+
+Object.extend(UnityEngine.BoxCollider.prototype = Object.create(UnityEngine.Collider.prototype), {
+	constructor: UnityEngine.BoxCollider,
+	Load: function(json) {
+		UnityEngine.Collider.prototype.Load.call(this, json);
+        if (json.c !== undefined) this.center.set(json.c.x || 0, json.c.y || 0, json.c.z || 0);
+        if (json.s !== undefined) this.size.set(json.s.x || 0, json.s.y || 0, json.s.z || 0);
+	},
+    RayTest: function(ray, distance) {
+        return this.Raycast(ray, undefined, distance);
+    },
+    Raycast: function(ray, hitInfo, distance) {
+        var max = 100000;
+        var min = -max;
+        var p = this.transform.TransformPoint(this.center).sub(ray.origin);
+        var h = this.size.clone().multiply(this.transform.lossyScale).multiplyScalar(0.5);
+        var dirMax = 0;
+        var dirMin = 0;
+        var dir = 0;
+        var matrixVec = [
+            this.transform.TransformDirection(UnityEngine.Vector3.right),
+            this.transform.TransformDirection(UnityEngine.Vector3.up),
+            this.transform.TransformDirection(UnityEngine.Vector3.forward)];
+        var vectorFloat = [h.x, h.y, h.z];
+        for (dir = 0; dir < 3; dir++) {
+            var e = matrixVec[dir].dot(p);
+            var f = matrixVec[dir].dot(ray.direction);
+            if (Math.abs(f) > 0.00001) {
+                var t1 = (e + vectorFloat[dir]) / f;
+                var t2 = (e - vectorFloat[dir]) / f;
+                if (t1 > t2) { var tmp = t1;t1 = t2; t2 = tmp; }
+                if (t1 > min) { min = t1; dirMin = dir; }
+                if (t2 < max) { max = t2; dirMax = dir; }
+                if (min > max) return false;
+                if (max < 0.0) return false;
+            }
+            else if((-e-vectorFloat[dir] > 0.0) || (-e + vectorFloat[dir] < 0.0))
+                return false;
+        }
+        if (hitInfo === undefined) return true;
+
+        if (min > 0.0) {
+            dir = dirMin;
+            fracOut = min;
+        } else {
+            dir = dirMax;
+            fracOut = max;
+        }
+
+        hitInfo.fracOut = Mathf.Clamp01(fracOut);
+        hitInfo.posOut = ray.GetPoint(fracOut);
+        if (matrixVec[dir].dot(ray.direction) > 0)
+            hitInfo.normalOut = matrixVec[dir].multiplyScalar(-1);
+        else
+            hitInfo.normalOut = matrixVec[dir];
+        return true;
+    },
+});
+
+
+//
+// ..\src\gui\unity3d\Camera.js
+//
+
+UnityEngine.Camera = function(gameObject) {
+	UnityEngine.Component.call(this, gameObject);
+
+	this.isOrthoGraphic = false;
+	this.orthographicSize = 1;
+	this.aspect = 1;
+	this.fieldOfView = 1;
+	this.nearClipPlane = 0.1;
+	this.farClipPlane = 1000;
+	this.rect = new UnityEngine.Rect(0, 0, 1, 1);
+
+	this.projectionMatrix = new UnityEngine.Matrix4x4();
+	this.cameraToWorldMatrix = new UnityEngine.Matrix4x4();
+	this.worldToCameraMatrix = new UnityEngine.Matrix4x4();
+
+	// cached matrix. 
+	this.viewProjMatrix = undefined;
+	this.invViewProjMatrix = undefined; 
+	this.invProjectionMatrix = undefined;
+};
+
+Object.extend(UnityEngine.Camera.prototype = Object.create(UnityEngine.Component.prototype), {
+	constructor: UnityEngine.Camera,
+	getViewProjMatrix: function() {
+		if (this.viewProjMatrix === undefined) {
+			this.viewProjMatrix = new UnityEngine.Matrix4x4();
+			this.viewProjMatrix.MultiplyMatrices(this.worldToCameraMatrix, this.projectionMatrix);
+		}
+		return this.viewProjMatrix;
+	},
+	getInvViewProjMatrix: function() {
+		if (this.invViewProjMatrix === undefined) {
+			this.invProjectionMatrix = new UnityEngine.Matrix4x4();
+			this.invProjectionMatrix.getInverse(this.projectionMatrix);
+
+			//var viewProjMatrix = this.getViewProjMatrix();
+			this.invViewProjMatrix = new UnityEngine.Matrix4x4();
+			this.invViewProjMatrix.MultiplyMatrices(this.cameraToWorldMatrix, this.invProjectionMatrix);
+		}
+		return this.invViewProjMatrix;
+	},
+	setAspect(aspect) {
+		this.aspect = aspect;
+		if (this.isOrthoGraphic === true)
+			this.projectionMatrix.Ortho(-this.aspect, this.aspect, 1, -1, this.nearClipPlane, this.farClipPlane);
+		else
+			this.projectionMatrix.Perspective(this.fieldOfView, this.aspect, this.nearClipPlane, this.farClipPlane);
+
+		this.cameraToWorldMatrix.SetTRS(this.transform.position, this.transform.rotation, new UnityEngine.Vector3(1, 1, 1));
+		this.worldToCameraMatrix.getInverse(this.cameraToWorldMatrix);
+		this.viewProjMatrix = undefined;
+		this.invViewProjMatrix = undefined;
+	},
+	Load: function(json) {
+		this.isOrthoGraphic = json.orth;
+		this.nearClipPlane = json.near;
+		this.farClipPlane = json.far;
+		this.aspect = json.aspect;
+		this.fieldOfView = json.fov;
+		this.setAspect(json.aspect);
+	},
+	GetSides: function(depth, relativeTo) {
+		var mSides = [];
+		if (this.isOrthoGraphic) {
+			var os = this.orthographicSize;
+				x0 = -os;
+				x1 = os;
+				y0 = -os;
+				y1 = os;
+			var rect = this.rect;
+			var size = NGUITools.screenSize;
+			var aspect = size.x / size.y;
+			aspect *= rect.width / rect.height;
+			x0 *= aspect;
+			x1 *= aspect;
+
+			// We want to ignore the scale, as scale doesn't affect the camera's view region in Unity
+			var t = this.transform;
+			var rot = t.rotation;
+			var pos = t.position;
+			var mat = UnityEngine.Matrix4x4.Temp;
+			mat.makeRotationFromQuaternion(rot);
+			mSides[0] = mat.MultiplyVector(new UnityEngine.Vector3(x0, 0, depth)).add(pos);
+			mSides[1] = mat.MultiplyVector(new UnityEngine.Vector3(0, y1, depth)).add(pos);
+			mSides[2] = mat.MultiplyVector(new UnityEngine.Vector3(x1, 0, depth)).add(pos);
+			mSides[3] = mat.MultiplyVector(new UnityEngine.Vector3(0, y0, depth)).add(pos);
+		} else {
+			mSides[0] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0, 0.5, depth));
+			mSides[1] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0.5, 1, depth));
+			mSides[2] = this.ViewportToWorldPoint(new UnityEngine.Vector3(1, 0.5, depth));
+			mSides[3] = this.ViewportToWorldPoint(new UnityEngine.Vector3(0.5, 0, depth));
+		}
+		
+		if (relativeTo !== undefined) {
+			for (var i = 0; i < 4; ++i)
+				mSides[i] = relativeTo.InverseTransformPoint(mSides[i]);
+		}
+		return mSides;
+	},
+	ScreenToViewportPoint: function(position) {
+		return new UnityEngine.Vector3(
+			position.x / NGUITools.screenSize.x,
+			position.y / NGUITools.screenSize.y,
+			position.z);
+	},
+	ViewportToWorldPoint: function(viewportPoint) {
+		viewportPoint.x = 2 * viewportPoint.x - 1;
+		viewportPoint.y = 1 - 2 * viewportPoint.y;
+		viewportPoint.z = 1 // TODO: ViewportToWorldPoint
+		return this.getInvViewProjMatrix().MultiplyPoint(viewportPoint);
+	},
+	WorldToViewportPoint: function(worldPos) {
+		var screenPos = this.getViewProjMatrix(worldPos);
+		screenPos.x = (screenPos.x + 1) * 0.5;
+		screenPos.y = (1 - screenPos.y) * 0.5;
+		return screenPos;
+	},
+	ScreenPointToRay: function(screenPoint) {
+		var vPos = this.ScreenToViewportPoint(screenPoint),
+			pos = this.ViewportToWorldPoint(vPos), dir;
+		if (this.isOrthoGraphic) {
+			dir = this.transform.TransformDirection(UnityEngine.Vector3.forward);
+		} else {
+			var origin = this.transform.position;
+			dir = pos.clone().sub(origin).normalize();
+		}
+		var ray = new UnityEngine.Ray();
+		ray.origin.set(pos.x, pos.y, pos.z);
+		ray.direction.set(dir.x, dir.y, dir.z);
+        //console.log('inPos:' + screenPoint + ",pos=" + vPos + ",ray:" + ray);
+		return ray;
+	},
+});
+
+
+//
+// ..\src\gui\unity3d\EventDispatcher.js
+//
+
+UnityEngine.EventDispatcher = function() {
+    this._listeners = {};
+}
+
+UnityEngine.EventDispatcher.prototype = {
+    constructor: UnityEngine.EventDispatcher,
+	on: function(type, listener) {
+		var listeners = this._listeners;
+		if (listeners[ type ] === undefined) listeners[ type ] = [];
+		if (listeners[ type ].indexOf(listener) === - 1)
+			listeners[ type ].push(listener);
+	},
+	remove: function(type, listener) {
+		var listeners = this._listeners;
+		var listenerArray = listeners[ type ];
+		if (listenerArray !== undefined) {
+			var index = listenerArray.indexOf(listener);
+			if (index !== - 1)
+				listenerArray.splice(index, 1);
+		}
+	},
+	emit: function(event) {
+		var listeners = this._listeners;
+		var listenerArray = listeners[ event.type ];
+		if (listenerArray !== undefined) {
+			event.target = this;
+			var array = [], i = 0;
+			var length = listenerArray.length;
+			for (i = 0; i < length; i ++)
+				array[ i ] = listenerArray[ i ];
+			for (i = 0; i < length; i ++)
+				array[ i ].call(this, event);
+		}
+	}
+};
+
+//
+// ..\src\gui\unity3d\GameObject.js
+//
+
+UnityEngine.GameObject = function () {
+	UnityEngine.Object.call(this);
+	this.name = '';
+	this.transform = new UnityEngine.Transform(this);
+	this.components = [];
+	this.activeSelf = true;
+	this.layer = 0;
+};
+
+Object.extend(UnityEngine.GameObject.prototype = Object.create(UnityEngine.Object.prototype), {
+	constructor: UnityEngine.GameObject,
+	GetComponent: function(typeName) {
+		var componentType = UnityEngine.GetType(typeName);
+		for (var i in this.components) {
+			var comp = this.components[i];
+			if (comp instanceof componentType)
+				return comp;
+		}
+	},
+	GetComponentInChildren: function(typeName) {
+		var type = UnityEngine.GetType(typeName);
+		var comp = this.GetComponent(type);
+		if (comp !== undefined) return comp;
+		
+		var switchList = [];
+		var testList = [this.transform];
+		while (true) {
+			switchList.length = 0;
+			for (var i in testList) {
+				var transform = testList[i]; 
+				for (var c in transform.children) {
+					var child = transform.children[c];
+					var comp = child.gameObject.GetComponent(type);
+					if (comp !== undefined) return comp; // check child.
+					if (child.children.length > 0)
+						switchList.push(child);
+				}
+			}
+			if (switchList.length === 0) break;
+			var tmp = testList;
+			testList = switchList;
+			switchList = tmp;
+		}
+	},
+	GetComponentsInChildren: function(typeName) {
+		var foundList = [];
+		var type = UnityEngine.GetType(typeName);
+		var comp = this.GetComponent(type);
+		if (comp !== undefined) foundList.push(comp);
+
+		var switchList = [];
+		var testList = [this.transform];
+		while (true) {
+			switchList.length = 0;
+			for (var i in testList) {
+				var transform = testList[i]; 
+				for (var c in transform.children) {
+					var child = transform.children[c];
+					var comp = child.gameObject.GetComponent(type);
+					if (comp !== undefined) foundList.push(comp);
+					if (child.children.length > 0)
+						switchList.push(child);
+				}
+			}
+			if (switchList.length === 0) break;
+			var tmp = testList;
+			testList = switchList;
+			switchList = tmp;
+		}
+		return foundList;
+	},
+	LoadInternal: function(datas, onCreate, onLoad) {
+		if (datas === undefined) return;
+		var createList = [];
+		for (var i in datas) {
+			var data = datas[i];
+			var obj = onCreate(data);
+			if (obj !== undefined) {
+				obj._data_ = data;
+				createList.push(obj);
+			}
+		}
+		for (var i in createList) {
+			var obj = createList[i];
+			onLoad(obj, obj._data_);
+			obj._data_ = undefined;
+		}
+	},
+	Load: function(json) {
+		UnityEngine.Object.prototype.Load.call(this, json);
+		var self = this;
+		var trans = json.t;
+		var comps = json.c;
+		var child = json.q;
+		self.name = json.n;
+		if (trans !== undefined) self.transform.Load(trans);
+		this.LoadInternal(comps, function(data) {
+			var typeName = data.meta_type;
+			var componentType = UnityEngine.GetType(typeName);
+			if (componentType !== undefined) {
+				var component = new componentType(self);
+				self.components.push(component);
+				return component;
+			}
+		}, function(component, data) {
+			component.Load(data);
+		});
+		this.LoadInternal(child, function(data) {
+			var go = new UnityEngine.GameObject();
+			go.transform.setParent(self.transform);
+			return go;
+		}, function(go, data) {
+			go.Load(data);
+		});
+		return this;
+	},
+	SetActive: function(active) {
+		this.activeSelf = active;
+	},
+    SendMessage: function(methodName, value) {
+		for (var i in this.components)
+			this.components[i].SendMessage(methodName, value);
+     },
+});
+
+//
+// ..\src\gui\unity3d\Input.js
+//
+
+UnityEngine.Input = {
+    mousePosition: new UnityEngine.Vector2(0, 0),
+    lastMouseState: undefined,
+    mouseState: undefined,
+    mouseEvents: ['mousedown', 'mousemove'], // 'mouseup' is hookup by mousemove...
+    onMouseEvent: function(event) {
+        this.lastMouseState = this.mouseState;
+        this.mouseState = event;
+        this.mousePosition.x = event.x;
+        this.mousePosition.y = event.y;
+    },
+    GetMouseButtonDown: function(button) {
+        if (!this.lastMouseState) return false;
+        var lastPress = ((button === undefined) ? this.lastMouseState.buttons : (this.lastMouseState.buttons & (1 << button))) != 0;
+        var curtPress = ((button === undefined) ? this.mouseState.buttons : (this.mouseState.buttons & (1 << button))) != 0;
+        return !lastPress && curtPress;
+    },
+    GetMouseButtonUp: function(button) {
+        if (!this.lastMouseState) return false;
+        var lastPress = ((button === undefined) ? this.lastMouseState.buttons : (this.lastMouseState.buttons & (1 << button))) != 0;
+        var curtPress = ((button === undefined) ? this.mouseState.buttons : (this.mouseState.buttons & (1 << button))) != 0;
+        return lastPress && !curtPress;
+    },
+    GetMouseButton: function(button) {
+        if (!this.lastMouseState) return false;
+        if (button === undefined) return this.mouseState.buttons != 0;
+        else return (this.mouseState.buttons & (1 << button)) != 0;
+    },
+    Start: function() {
+        for (var i in this.mouseEvents)
+            document.addEventListener(this.mouseEvents[i], UnityEngineInputOnMouseEvent, false); 
+    },
+    Stop: function() {
+        for (var i in this.mouseEvents)
+            document.removeEventListener(this.mouseEvents[i], UnityEngineInputOnMouseEvent, false); 
+    },
+};
+
+function UnityEngineInputOnMouseEvent(event) {
+    UnityEngine.Input.onMouseEvent(event);
+}
+
+// start by default.
+UnityEngine.Input.Start();
+
+//
+// ..\src\gui\unity3d\Mathf.js
+//
+
+Mathf = UnityEngine.Mathf = {
+	Deg2Rad: 0.0174532924,
+	Rad2Deg: 57.29578,
+	FloorToInt: function(v) { return Math.floor(v); },
+	RoundToInt: function(v) { return Math.floor(v + 0.5); },
+	Round: function(v) { return Math.floor(v + 0.5); },
+	Lerp: function(a, b, t) {
+		return a + t * (b - a);
+	},
+	Clamp: function(val, min, max) {
+		return Math.min(Math.max(min, val), max);
+	},
+	Clamp01: function(val) {
+		return Math.min(Math.max(0, val), 1);
+	}
+}
 
 //
 // ..\src\gui\unity3d\Mesh.js
@@ -940,7 +1493,7 @@ UnityEngine.Mesh.prototype = {
 		for (var i in this.attributes) {
 			var attrib = this.attributes[i];
 			// TODO: destroy attrib.glBuffer
-			gl.deleteBuffer(attrib.glBuffer);
+			WebGL.gl.deleteBuffer(attrib.glBuffer);
 		}
 	},
 	hasIndexBuffer: function() { return this.attributes.index !== undefined; },
@@ -976,11 +1529,11 @@ UnityEngine.Mesh.prototype = {
 		this.colors32 = undefined;
 	},
 	CopyVertexData: function(verts, uvs, colors32, triangles) {
-		this.vertexCount = verts.length;
-		this.triangleCount = (triangles !== undefined) ? triangles.length / 3 : verts.length / 3;
-		this.vertices = CopyVector3sArray(verts);
-		this.uv = CopyVector2sArray(uvs);
-		this.colors32 = CopyColors32Array(colors32);
+		this.vertexCount = verts.Length;
+		this.triangleCount = (triangles !== undefined) ? triangles.length / 3 : verts.Length / 3;
+		this.vertices = verts.ToArray();//CopyVector3sArray(verts);
+		this.uv = uvs.ToArray();//CopyVector2sArray(uvs);
+		this.colors32 = colors32.ToArray();//CopyColors32Array(colors32);
 		this.triangles = triangles;
 	},
 	SetupVertexAttrib: function(gl, vertexAttrib, programAttrib) {
@@ -1015,7 +1568,7 @@ UnityEngine.MonoBehaviour = function(gameObject) {
 	this.enabled = true;
 };
 
-Object.assign(UnityEngine.MonoBehaviour.prototype = Object.create(UnityEngine.Component.prototype), {
+Object.extend(UnityEngine.MonoBehaviour.prototype = Object.create(UnityEngine.Component.prototype), {
 	constructor: UnityEngine.MonoBehaviour,
 	Load: function(json) {
 		UnityEngine.Component.prototype.Load.call(this, json);
@@ -1043,107 +1596,6 @@ UnityEngine.Physics = {
         }
         return ret;
     },
-};
-
-//
-// ..\src\gui\unity3d\Quaternion.js
-//
-
-UnityEngine.Quaternion = function ( x, y, z, w ) {
-	this.x = x || 0;
-	this.y = y || 0;
-	this.z = z || 0;
-	this.w = w || 1;
-};
-
-UnityEngine.Quaternion.prototype = {
-	constructor: UnityEngine.Quaternion,
-	set: function(x, y, z, w) { this.x = x; this.y = y; this.z = z; this.w = w; },
-	clone: function () { return new this.constructor( this.x, this.y, this.z, this.w ); },
-	euler: function(x, y, z) {
-		var c1 = Math.cos( x * 0.5 );
-		var c2 = Math.cos( y * 0.5 );
-		var c3 = Math.cos( z * 0.5 );
-		var s1 = Math.sin( x * 0.5 );
-		var s2 = Math.sin( y * 0.5 );
-		var s3 = Math.sin( z * 0.5 );
-		this.x = s1 * c2 * c3 + c1 * s2 * s3;
-		this.y = c1 * s2 * c3 - s1 * c2 * s3;
-		this.z = c1 * c2 * s3 + s1 * s2 * c3;
-		this.w = c1 * c2 * c3 - s1 * s2 * s3;
-	},
-	eulerAngles: function() {
-		var matrix = UnityEngine.Matrix4x4.Temp;
-		matrix.makeRotationFromQuaternion(this);
-		var te = matrix.elements;
-		var m11 = te[ 0 ], m12 = te[ 4 ], m13 = te[ 8 ];
-		var m21 = te[ 1 ], m22 = te[ 5 ], m23 = te[ 9 ];
-		var m31 = te[ 2 ], m32 = te[ 6 ], m33 = te[ 10 ];
-		var ret = new UnityEngine.Vector3();
-		ret.y = Math.asin(Mathf.Clamp( m13, -1, 1 ));
-		if (Math.abs( m13 ) < 0.99999) {
-			ret.x = Math.atan2( - m23, m33 );
-			ret.z = Math.atan2( - m12, m11 );
-		} else {
-			ret.x = Math.atan2( m32, m22 );
-			ret.z = 0;
-		}
-		return ret;
-	},
-	multiply: function(a, b) {
-		var qax = a.x, qay = a.y, qaz = a.z, qaw = a.w;
-		var qbx = b.x, qby = b.y, qbz = b.z, qbw = b.w;
-		this.x = qax * qbw + qaw * qbx + qay * qbz - qaz * qby;
-		this.y = qay * qbw + qaw * qby + qaz * qbx - qax * qbz;
-		this.z = qaz * qbw + qaw * qbz + qax * qby - qay * qbx;
-		this.w = qaw * qbw - qax * qbx - qay * qby - qaz * qbz;
-		return this;
-	},
-};
-
-//
-// ..\src\gui\unity3d\Ray.js
-//
-
-UnityEngine.Ray = function() {
-    this.direction = new UnityEngine.Vector3();
-    this.origin = new UnityEngine.Vector3();
-};
-
-UnityEngine.Ray.prototype = {
-    constructor: UnityEngine.Ray,
-    GetPoint: function(distance) {
-        return new UnityEngine.Vector3(
-            this.origin.x + this.direction.x * distance,
-            this.origin.y + this.direction.y * distance,
-            this.origin.z + this.direction.z * distance);
-    },
-};
-
-//
-// ..\src\gui\unity3d\Rect.js
-//
-
-UnityEngine.Rect = function(left, top, width, height) {
-	this.xMin = left;
-	this.xMax = left + width;
-	this.yMin = top;
-	this.yMax = top + height;
-};
-
-UnityEngine.Rect.prototype = {
-	constructor: UnityEngine.Rect,
-	clone: function () { return new this.constructor(this.left, this.top, this.width, this.height); },
-	set: function(left, top, width, height) {
-		this.xMin = left;
-		this.xMax = left + width;
-		this.yMin = top;
-		this.yMax = top + height;
-	},
-	get left() { return this.xMin; },
-	get top() { return this.yMin; },
-	get width() { return this.xMax - this.xMin; },
-	get height() { return this.yMax - this.yMin; },
 };
 
 //
@@ -1277,27 +1729,6 @@ UnityEngine.Texture2D.prototype = {
 };
 
 //
-// ..\src\gui\unity3d\Time.js
-//
-
-UnityEngine.Time = {
-    captureFramerate: -1,
-    deltaTime: 0,
-    fixedDeltaTime: 0,
-    fixedTime: 0,
-    frameCount: 0,
-    maximumDeltaTime: 0,
-    realtimeSinceStartup: 0,
-    renderedFrameCount: 0,
-    smoothDeltaTime: 0,
-    time: 0,
-    timeScale: 0,
-    timeSinceLevelLoad: 0,
-    unscaledDeltaTime: 0,
-    unscaledTime: 0,
-};
-
-//
 // ..\src\gui\unity3d\Transform.js
 //
 
@@ -1305,9 +1736,9 @@ UnityEngine.Transform = function(gameObject) {
 	UnityEngine.Component.call(this, gameObject);
 
 	this.transform = this;
-	this.position = new UnityEngine.Vector3(0, 0, 0);
-	this.rotation = new UnityEngine.Quaternion();
-	this.lossyScale = new UnityEngine.Vector3(1, 1, 1);
+	this.mPosition = new UnityEngine.Vector3(0, 0, 0);
+	this.mRotation = new UnityEngine.Quaternion();
+	this.mLossyScale = new UnityEngine.Vector3(1, 1, 1);
 
 	this.localPosition = new UnityEngine.Vector3(0, 0, 0);
 	this.localRotation = new UnityEngine.Quaternion();
@@ -1322,8 +1753,15 @@ UnityEngine.Transform = function(gameObject) {
 	this.hasChanged = false;
 };
 
-Object.assign(UnityEngine.Transform.prototype = Object.create(UnityEngine.Component.prototype), {
+Object.extend(UnityEngine.Transform.prototype = Object.create(UnityEngine.Component.prototype), {
 	constructor: UnityEngine.Transform,
+	get position() { return this.mPosition; },
+	set position(v) {
+		this.localPosition.setv(v).ApplyTransform(this.worldToLocalMatrix);
+		this.setNeedUpdate(true);
+	},
+	get rotation() { return this.mRotation; },
+	get lossyScale() { return this.mLossyScale; },
 	exec: function(action, recursive) {
 		action(this); // do this action.
 		if (recursive) { for (var i in this.children) this.children[i].exec(action); }
@@ -1361,15 +1799,15 @@ Object.assign(UnityEngine.Transform.prototype = Object.create(UnityEngine.Compon
 		if (this.parent === undefined) {
 			this.localToWorldMatrix = localMatrix;
 			this.worldToLocalMatrix.getInverse(this.localToWorldMatrix);
-			this.position = this.localPosition.clone();
-			this.rotation = this.localRotation.clone();
-			this.lossyScale = this.localScale.clone();
+			this.mPosition.setv(this.localPosition);
+			this.mRotation.setv(this.localRotation);
+			this.mLossyScale.setv(this.localScale);
 		} else {
 			this.localToWorldMatrix.MultiplyMatrices(this.parent.localToWorldMatrix, localMatrix);
 			this.worldToLocalMatrix.getInverse(this.localToWorldMatrix);
-			this.position = this.parent.localToWorldMatrix.MultiplyPoint3x4(this.localPosition);
-			this.rotation.multiply(this.parent.rotation, this.localRotation);
-			this.lossyScale = this.parent.lossyScale.clone().multiply(this.localScale);
+			this.mPosition.setv(this.localPosition).ApplyTransform(this.parent.localToWorldMatrix);
+			this.mRotation.multiply(this.parent.mRotation, this.localRotation);
+			this.mLossyScale.setv(this.parent.mLossyScale).multiply(this.localScale);
 		}
 		for (var i in this.children)
 			this.children[i].Update();
@@ -1377,214 +1815,8 @@ Object.assign(UnityEngine.Transform.prototype = Object.create(UnityEngine.Compon
 	InverseTransformPoint: function(pos) { return this.worldToLocalMatrix.MultiplyPoint3x4(pos); },
 	InverseTransformDirection: function(dir) { return this.worldToLocalMatrix.MultiplyVector(dir); },
 	TransformPoint: function(pos) { return this.localToWorldMatrix.MultiplyPoint3x4(pos); },
-	TransformDirection: function(dir) { return this.localToWorldMatrix.MultiplyVector(dir); },
+	TransformDirection: function(dir) { return this.mRotation.multiplyVector(dir); },
 });
-
-//
-// ..\src\gui\unity3d\Vector2.js
-//
-
-UnityEngine.Vector2 = function ( x, y ) {
-	this.x = x || 0;
-	this.y = y || 0;
-};
-
-UnityEngine.Vector2.prototype = {
-	constructor: UnityEngine.Vector2,
-	set: function(x, y) { this.x = x; this.y = y; },
-	clone: function () { return new this.constructor( this.x, this.y ); },
-	add: function(v) {
-		this.x += v.x;
-		this.y += v.y;
-	},
-	sub: function(v) {
-		this.x -= v.x;
-		this.y -= v.y;
-	},
-	dot: function(v) {
-		return this.x * v.x + this.y * v.y;
-	},
-	multiply: function (v) {
-		this.x *= v.x;
-		this.y *= v.y;
-		return this;
-	},
-	multiplyScalar: function ( scalar ) {
-		if ( isFinite( scalar ) ) {
-			this.x *= scalar;
-			this.y *= scalar;
-		} else {
-			this.x = 0;
-			this.y = 0;
-		}
-		return this;
-	},
-	divide: function ( v ) {
-		this.x /= v.x;
-		this.y /= v.y;
-		return this;
-	},
-	divideScalar: function ( scalar ) {
-		return this.multiplyScalar( 1 / scalar );
-	},
-	sqrMagnitude: function () {
-		return this.x * this.x + this.y * this.y;
-	},
-	magnitude: function () {
-		return Math.sqrt( this.x * this.x + this.y * this.y );
-	},
-};
-
-//
-// ..\src\gui\unity3d\Vector3.js
-//
-
-UnityEngine.Vector3 = function ( x, y, z ) {
-	this.x = x || 0;
-	this.y = y || 0;
-	this.z = z || 0;
-};
-
-UnityEngine.Vector3.SqrMagnitude = function(v1, v2) {
-	if (v2 === undefined)
-		return v1.x * v1.x + v1.y * v1.y + v1.z * v1.z;
-	var x = v1.x - v2.x,
-		y = v1.y - v2.y,
-		z = v1.z - v2.z;
-	return x * x + y * y + z * z;
-}
-
-UnityEngine.Vector3.back = new UnityEngine.Vector3(0, 0, -1);
-UnityEngine.Vector3.down = new UnityEngine.Vector3(0, -1, 0);
-UnityEngine.Vector3.forward = new UnityEngine.Vector3(0, 0, 1);
-UnityEngine.Vector3.left = new UnityEngine.Vector3(1, 0, 0);
-UnityEngine.Vector3.one = new UnityEngine.Vector3(1, 1, 1);
-UnityEngine.Vector3.right = new UnityEngine.Vector3(-1, 0, 0);
-UnityEngine.Vector3.up = new UnityEngine.Vector3(0, 1, 0);
-UnityEngine.Vector3.zero = new UnityEngine.Vector3(0, 0, 0);
-
-UnityEngine.Vector3.prototype = {
-	constructor: UnityEngine.Vector3,
-	set: function(x, y, z) { this.x = x; this.y = y; this.z = z; },
-	clone: function () { return new this.constructor( this.x, this.y, this.z ); },
-	add: function(v) {
-		this.x += v.x;
-		this.y += v.y;
-		this.z += v.z;
-		return this;
-	},
-	sub: function(v) {
-		this.x -= v.x;
-		this.y -= v.y;
-		this.z -= v.z;
-		return this;
-	},
-	dot: function(v) {
-		return this.x * v.x + this.y * v.y + this.z * v.z;
-	},
-	multiply: function (v) {
-		this.x *= v.x;
-		this.y *= v.y;
-		this.z *= v.z;
-		return this;
-	},
-	multiplyScalar: function ( scalar ) {
-		if ( isFinite( scalar ) ) {
-			this.x *= scalar;
-			this.y *= scalar;
-			this.z *= scalar;
-		} else {
-			this.x = 0;
-			this.y = 0;
-			this.z = 0;
-		}
-		return this;
-	},
-	divide: function ( v ) {
-		this.x /= v.x;
-		this.y /= v.y;
-		this.z /= v.z;
-		return this;
-	},
-	divideScalar: function ( scalar ) {
-		return this.multiplyScalar( 1 / scalar );
-	},
-	sqrMagnitude: function () {
-		return this.x * this.x + this.y * this.y + this.z * this.z;
-	},
-	magnitude: function () {
-		return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
-	},
-};
-
-//
-// ..\src\gui\unity3d\Vector4.js
-//
-
-UnityEngine.Vector4 = function ( x, y, z, w ) {
-	this.x = x || 0;
-	this.y = y || 0;
-	this.z = z || 0;
-	this.w = w || 0;
-};
-
-UnityEngine.Vector4.prototype = {
-	constructor: UnityEngine.Vector4,
-	set: function(x, y, z, w) { this.x = x; this.y = y; this.z = z; this.w = w; },
-	clone: function () { return new this.constructor( this.x, this.y, this.z, this.w ); },
-	add: function(v) {
-		this.x += v.x;
-		this.y += v.y;
-		this.z += v.z;
-		this.w += v.w;
-	},
-	sub: function(v) {
-		this.x -= v.x;
-		this.y -= v.y;
-		this.z -= v.z;
-		this.w -= v.w;
-	},
-	dot: function(v) {
-		return this.x * v.x + this.y * v.y + this.z * v.z + this.w * v.w;
-	},
-	multiply: function (v) {
-		this.x *= v.x;
-		this.y *= v.y;
-		this.z *= v.z;
-		this.w *= v.w;
-		return this;
-	},
-	multiplyScalar: function ( scalar ) {
-		if ( isFinite( scalar ) ) {
-			this.x *= scalar;
-			this.y *= scalar;
-			this.z *= scalar;
-			this.w *= scalar;
-		} else {
-			this.x = 0;
-			this.y = 0;
-			this.z = 0;
-			this.w = 0;
-		}
-		return this;
-	},
-	divide: function ( v ) {
-		this.x /= v.x;
-		this.y /= v.y;
-		this.z /= v.z;
-		this.w /= v.w;
-		return this;
-	},
-	divideScalar: function ( scalar ) {
-		return this.multiplyScalar( 1 / scalar );
-	},
-	sqrMagnitude: function () {
-		return this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w;
-	},
-	magnitude: function () {
-		return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w);
-	},
-};
 
 //
 // ..\src\gui\internal\AnchorPoint.js
@@ -1657,6 +1889,83 @@ NGUI.AnchorPoint.prototype = {
 		else // Find the camera responsible for the target object
 			this.targetCam = NGUITools.FindCameraForLayer(this.target.gameObject.layer);
 	}
+};
+
+//
+// ..\src\gui\internal\BetterList.js
+//
+
+NGUI.BetterList = function() {
+    // better list.
+    this.type = undefined;
+    this.buffer = undefined;
+    this.size = 0;
+    this.stride = 1;
+}
+
+NGUI.BetterList.prototype = {
+    constructor: NGUI.BetterList,
+	allocateMore: function(type, stride, newSize) {
+        if (type) { this.type = type; this.stride = stride; }
+        newSize = Math.max(newSize || 32, this.buffer !== undefined ? Math.min(this.buffer.length + 1024, this.buffer.length * 2) : 32);
+        var newBuffer = new type(newSize);
+		if (this.buffer) newBuffer.set(this.buffer, 0);
+        this.buffer = newBuffer;
+	},
+    get RawLength() { return this.size; },
+    get Length() { return this.size / this.stride; }, 
+    get Data() { return this.buffer; },
+    get DataLength() { return this.buffer ? this.buffer.length : 0; },
+    CopyMeta(list) { this.type = list.type; this.stride = list.stride; },
+    ToArray: function() { return this.buffer ? this.buffer.subarray(0, this.size) : 0; },
+    AddList: function(list) {
+        var newSize = this.size + list.size;
+        if (this.DataLength < newSize)
+            this.allocateMore(list.type, list.stride, newSize);
+        this.buffer.set(list.ToArray(), this.size);
+        this.size = newSize;
+    },
+    Clear: function() {
+        this.size = 0;
+    },
+    Foreach3: function(cb) {
+        if (this.size === 0)  return;
+        for (var i = 0, l = this.size; i < l; i+=3)
+            cb(i, this.buffer[i], this.buffer[i+1], this.buffer[i+2]);
+    },
+    AddVector2: function(u, v) {
+        var newSize = this.size + 2;
+        if (this.buffer === undefined || this.buffer.length < newSize)
+            this.allocateMore(Float32Array, 2);
+        this.buffer[this.size++] = u;
+        this.buffer[this.size++] = v;
+    },
+    AddVector3: function(x, y, z) {
+        var newSize = this.size + 3;
+        if (this.buffer === undefined || this.buffer.length < newSize)
+            this.allocateMore(Float32Array, 3);
+        this.buffer[this.size++] = x;
+        this.buffer[this.size++] = y;
+        this.buffer[this.size++] = z;
+    },
+    AddColor32v: function(r, g, b, a) {
+        var newSize = this.size + 4;
+        if (this.buffer === undefined || this.buffer.length < newSize)
+            this.allocateMore(Uint8ClampedArray, 4);
+        this.buffer[this.size++] = r;
+        this.buffer[this.size++] = g;
+        this.buffer[this.size++] = b;
+        this.buffer[this.size++] = a;
+    },
+    AddColor32: function(color32) {
+        var newSize = this.size + 4;
+        if (this.buffer === undefined || this.buffer.length < newSize)
+            this.allocateMore(Uint8ClampedArray, 4);
+        this.buffer[this.size++] = color32.r;
+        this.buffer[this.size++] = color32.g;
+        this.buffer[this.size++] = color32.b;
+        this.buffer[this.size++] = color32.a;
+    },
 };
 
 //
@@ -1912,7 +2221,7 @@ NGUIText = {
         this.finalSize = Mathf.RoundToInt(this.fontSize / this.pixelDensity);
         this.finalSpacingX = this.spacingX * this.fontScale;
         this.finalLineHeight = (this.fontSize + this.spacingY) * this.fontScale;
-        this.useSymbols = (this.bitmapFont !== undefined && this.bitmapFont.hasSymbols()) && this.encoding && this.symbolStyle != SymbolStyle.None;
+        this.useSymbols = (this.bitmapFont !== undefined && this.bitmapFont.hasSymbols) && this.encoding && this.symbolStyle != SymbolStyle.None;
     },
 	EncodeColor24: function(c) {
 		var i = 0xFFFFFF & (NGUIMath.ColorToInt(c) >> 8);
@@ -2199,12 +2508,13 @@ NGUIText = {
 		return v;
     },
     Align: function(verts, indexOffset, printedWidth) {
+		var vData = verts.Data;
 		switch (this.alignment) {
         case TextAlignment.Right: {
             var padding = this.rectWidth - printedWidth;
             if (padding < 0) return;
-            for (var i = indexOffset; i < verts.length; ++i)
-                verts[i].x += padding;
+            for (var i = indexOffset, l = verts.Length; i < l; i++)
+                vData[i * 3] += padding;
             break;
         }
         case TextAlignment.Center: {
@@ -2216,21 +2526,21 @@ NGUIText = {
             var oddWidth = (intWidth & 1) === 1;
             if ((oddDiff && !oddWidth) || (!oddDiff && oddWidth))
                 padding += 0.5 * this.fontScale;
-            for (var i = indexOffset; i < verts.length; ++i)
-                verts[i].x += padding;
+            for (var i = indexOffset, l = verts.Length; i < l; i++)
+                vData[i*3] += padding;
             break;
         }
         case TextAlignment.Justified: {
             if (printedWidth < this.rectWidth * 0.65) return;
             var padding = (this.rectWidth - printedWidth) * 0.5;
             if (padding < 1) return;
-            var chars = (verts.length - indexOffset) / 4;
+            var chars = (verts.Length - indexOffset) / 4;
             if (chars < 1) return;
             var progressPerChar = 1 / (chars - 1);
             var scale = this.rectWidth / printedWidth;
-            for (var i = indexOffset + 4, charIndex = 1; i < verts.length; ++charIndex) {
-                var x0 = verts[i].x;
-                var x1 = verts[i + 2].x;
+            for (var i = indexOffset + 4, charIndex = 1; i < verts.Length; ++charIndex) {
+                var x0 = vData[i * 3];
+                var x1 = vData[(i + 2) * 3];
                 var w = x1 - x0;
                 var x0a = x0 * scale;
                 var x1a = x0a + w;
@@ -2241,16 +2551,16 @@ NGUIText = {
                 x1 = Mathf.Lerp(x1a, x1b, progress);
                 x0 = Mathf.Round(x0);
                 x1 = Mathf.Round(x1);
-                verts[i++].x = x0;
-                verts[i++].x = x0;
-                verts[i++].x = x1;
-                verts[i++].x = x1;
+                vData[(i++)*3] = x0;
+                vData[(i++)*3] = x0;
+                vData[(i++)*3] = x1;
+                vData[(i++)*3] = x1;
             }
             break;
         }}
     },
     Print: function(text, verts, uvs, cols) {
-		var indexOffset = verts.length;
+		var indexOffset = verts.Length;
 		this.Prepare(text);
 		this.mColors.push(new UnityEngine.Color(1, 1, 1, 1));
 		this.mAlpha = 1;
@@ -2293,7 +2603,7 @@ NGUIText = {
 				if (x > maxX) maxX = x;
 				if (this.alignment != TextAlignment.Left) {
 					this.Align(verts, indexOffset, x - this.finalSpacingX);
-					indexOffset = verts.length;
+					indexOffset = verts.Length;
 				}
 				x = 0;
 				y += this.finalLineHeight;
@@ -2332,9 +2642,9 @@ NGUIText = {
 				v0y = v1y - symbol.height * this.fontScale;
 				if (Mathf.RoundToInt(x + symbol.advance * this.fontScale) > this.regionWidth) {
 					if (x === 0) return;
-					if (this.alignment != TextAlignment.Left && indexOffset < verts.length) {
+					if (this.alignment != TextAlignment.Left && indexOffset < verts.Length) {
 						this.Align(verts, indexOffset, x - this.finalSpacingX);
-						indexOffset = verts.length;
+						indexOffset = verts.Length;
 					}
 					v0x -= x;
 					v1x -= x;
@@ -2344,10 +2654,10 @@ NGUIText = {
 					y += this.finalLineHeight;
 					prevX = 0;
 				}
-				verts.push(new UnityEngine.Vector3(v0x, v0y));
-				verts.push(new UnityEngine.Vector3(v0x, v1y));
-				verts.push(new UnityEngine.Vector3(v1x, v1y));
-				verts.push(new UnityEngine.Vector3(v1x, v0y));
+				verts.AddVector3(v0x, v0y, 0);
+				verts.AddVector3(v0x, v1y, 0);
+				verts.AddVector3(v1x, v1y, 0);
+				verts.AddVector3(v1x, v0y, 0);
 				x += this.finalSpacingX + symbol.advance * this.fontScale;
 				i += symbol.length - 1;
 				prev = 0;
@@ -2357,18 +2667,18 @@ NGUIText = {
 					var u0y = uv.yMin;
 					var u1x = uv.xMax;
 					var u1y = uv.yMax;
-					uvs.push(new UnityEngine.Vector2(u0x, u0y));
-					uvs.push(new UnityEngine.Vector2(u0x, u1y));
-					uvs.push(new UnityEngine.Vector2(u1x, u1y));
-					uvs.push(new UnityEngine.Vector2(u1x, u0y));
+					uvs.AddVector2(u0x, u0y);
+					uvs.AddVector2(u0x, u1y);
+					uvs.AddVector2(u1x, u1y);
+					uvs.AddVector2(u1x, u0y);
 				}
 				if (cols !== undefined) {
 					if (this.symbolStyle === SymbolStyle.Colored) {
-						for (var b = 0; b < 4; ++b) cols.push(uc);
+						for (var b = 0; b < 4; ++b) cols.AddColor32(uc);
 					} else {
 						var col = new UnityEngine.Color32(255, 255, 255, 255);
 						col.a = uc.a;
-						for (var b = 0; b < 4; ++b) cols.push(col);
+						for (var b = 0; b < 4; ++b) cols.AddColor32(col);
 					}
 				}
 			} else {
@@ -2397,9 +2707,9 @@ NGUIText = {
 				if (this.finalSpacingX < 0) w += this.finalSpacingX;
 				if (Mathf.RoundToInt(x + w) > this.regionWidth) {
 					if (x === 0) return;
-					if (this.alignment !== TextAlignment.Left && indexOffset < verts.length) {
+					if (this.alignment !== TextAlignment.Left && indexOffset < verts.Length) {
 						this.Align(verts, indexOffset, x - this.finalSpacingX);
-						indexOffset = verts.length;
+						indexOffset = verts.Length;
 					}
 					v0x -= x;
 					v1x -= x;
@@ -2427,15 +2737,15 @@ NGUIText = {
 					}
 					for (var j = 0, jmax = (textProp.bold === true ? 4 : 1); j < jmax; ++j) {
 						if (glyph.rotatedUVs) {
-							uvs.push(glyph.u0.clone());
-							uvs.push(new UnityEngine.Vector2(glyph.u1.x, glyph.u0.y));
-							uvs.push(glyph.u1.clone());
-							uvs.push(new UnityEngine.Vector2(glyph.u0.x, glyph.u1.y));
+							uvs.AddVector2(glyph.u0.x, glyph.u0.y);
+							uvs.AddVector2(glyph.u1.x, glyph.u0.y);
+							uvs.AddVector2(glyph.u1.x, glyph.u1.y);
+							uvs.AddVector2(glyph.u0.x, glyph.u1.y);
 						} else {
-							uvs.push(glyph.u0.clone());
-							uvs.push(new UnityEngine.Vector2(glyph.u0.x, glyph.u1.y));
-							uvs.push(glyph.u1.clone());
-							uvs.push(new UnityEngine.Vector2(glyph.u1.x, glyph.u0.y));
+							uvs.AddVector2(glyph.u0.x, glyph.u0.y);
+							uvs.AddVector2(glyph.u0.x, glyph.u1.y);
+							uvs.AddVector2(glyph.u1.x, glyph.u1.y);
+							uvs.AddVector2(glyph.u1.x, glyph.u0.y);
 						}
 					}
 				}
@@ -2449,14 +2759,14 @@ NGUIText = {
 							s_c0 = Color.Lerp(gb, gt, min);
 							s_c1 = Color.Lerp(gb, gt, max);
 							for (var j = 0, jmax = (textProp.bold === true ? 4 : 1); j < jmax; ++j) {
-								cols.push(s_c0);
-								cols.push(s_c1);
-								cols.push(s_c1);
-								cols.push(s_c0);
+								cols.AddColor32(s_c0);
+								cols.AddColor32(s_c1);
+								cols.AddColor32(s_c1);
+								cols.AddColor32(s_c0);
 							}
 						} else {
 							for (var j = 0, jmax = (textProp.bold === true ? 16 : 4); j < jmax; ++j)
-								cols.push(uc);
+								cols.AddColor32(uc);
 						}
 					} else {
 						var col = uc.clone();
@@ -2468,31 +2778,31 @@ NGUIText = {
 							case 8: col.a += 0.51; break;
 						}
 						for (var j = 0, jmax = (textProp.bold === true ? 16 : 4); j < jmax; ++j)
-							cols.push(col);
+							cols.AddColor32(col);
 					}
 				}
 				if (textProp.bold !== true) {
 					if (textProp.italic !== true) {
-						verts.push(new UnityEngine.Vector3(v0x, v0y));
-						verts.push(new UnityEngine.Vector3(v0x, v1y));
-						verts.push(new UnityEngine.Vector3(v1x, v1y));
-						verts.push(new UnityEngine.Vector3(v1x, v0y));
+						verts.AddVector3(v0x, v0y, 0);
+						verts.AddVector3(v0x, v1y, 0);
+						verts.AddVector3(v1x, v1y, 0);
+						verts.AddVector3(v1x, v0y, 0);
 					} else {
 						var slant = this.fontSize * 0.1 * ((v1y - v0y) / this.fontSize);
-						verts.push(new UnityEngine.Vector3(v0x - slant, v0y));
-						verts.push(new UnityEngine.Vector3(v0x + slant, v1y));
-						verts.push(new UnityEngine.Vector3(v1x + slant, v1y));
-						verts.push(new UnityEngine.Vector3(v1x - slant, v0y));
+						verts.AddVector3(v0x - slant, v0y, 0);
+						verts.AddVector3(v0x + slant, v1y, 0);
+						verts.AddVector3(v1x + slant, v1y, 0);
+						verts.AddVector3(v1x - slant, v0y, 0);
 					}
 				} else {
 					for (var j = 0; j < 4; ++j) {
 						var a = this.mBoldOffset[j * 2];
 						var b = this.mBoldOffset[j * 2 + 1];
 						var slant = (textProp.italic ? this.fontSize * 0.1 * ((v1y - v0y) / this.fontSize) : 0);
-						verts.push(new UnityEngine.Vector3(v0x + a - slant, v0y + b));
-						verts.push(new UnityEngine.Vector3(v0x + a + slant, v1y + b));
-						verts.push(new UnityEngine.Vector3(v1x + a + slant, v1y + b));
-						verts.push(new UnityEngine.Vector3(v1x + a - slant, v0y + b));
+						verts.AddVector3(v0x + a - slant, v0y + b, 0);
+						verts.AddVector3(v0x + a + slant, v1y + b, 0);
+						verts.AddVector3(v1x + a + slant, v1y + b, 0);
+						verts.AddVector3(v1x + a - slant, v0y + b, 0);
 					}
 				}
 
@@ -2509,10 +2819,10 @@ NGUIText = {
 						}
 						var cx = (dash.u0.x + dash.u1.x) * 0.5;
 						for (var j = 0, jmax = (textProp.bold === true ? 4 : 1); j < jmax; ++j) {
-							uvs.push(new UnityEngine.Vector2(cx, dash.u0.y));
-							uvs.push(new UnityEngine.Vector2(cx, dash.u1.y));
-							uvs.push(new UnityEngine.Vector2(cx, dash.u1.y));
-							uvs.push(new UnityEngine.Vector2(cx, dash.u0.y));
+							uvs.AddVector2(cx, dash.u0.y);
+							uvs.AddVector2(cx, dash.u1.y);
+							uvs.AddVector2(cx, dash.u1.y);
+							uvs.AddVector2(cx, dash.u0.y);
 						}
 					}
 					if (subscript === true && textProp.strikethrough === true) {
@@ -2526,16 +2836,16 @@ NGUIText = {
 						for (var j = 0; j < 4; ++j) {
 							var a = this.mBoldOffset[j * 2];
 							var b = this.mBoldOffset[j * 2 + 1];
-							verts.push(new UnityEngine.Vector3(prevX + a, v0y + b));
-							verts.push(new UnityEngine.Vector3(prevX + a, v1y + b));
-							verts.push(new UnityEngine.Vector3(x + a, v1y + b));
-							verts.push(new UnityEngine.Vector3(x + a, v0y + b));
+							verts.AddVector3(prevX + a, v0y + b, 0);
+							verts.AddVector3(prevX + a, v1y + b, 0);
+							verts.AddVector3(x + a, v1y + b, 0);
+							verts.AddVector3(x + a, v0y + b, 0);
 						}
 					} else {
-						verts.push(new UnityEngine.Vector3(prevX, v0y));
-						verts.push(new UnityEngine.Vector3(prevX, v1y));
-						verts.push(new UnityEngine.Vector3(x, v1y));
-						verts.push(new UnityEngine.Vector3(x, v0y));
+						verts.AddVector3(prevX, v0y, 0);
+						verts.AddVector3(prevX, v1y, 0);
+						verts.AddVector3(x, v1y, 0);
+						verts.AddVector3(x, v0y, 0);
 					}
 
 					if (textProp.gradient === true) {
@@ -2546,22 +2856,22 @@ NGUIText = {
 						s_c0 = UnityEngine.Color.Lerp(gb, gt, min);
 						s_c1 = UnityEngine.Color.Lerp(gb, gt, max);
 						for (var j = 0, jmax = (textProp.bold === true ? 4 : 1); j < jmax; ++j) {
-							cols.push(s_c0);
-							cols.push(s_c1);
-							cols.push(s_c1);
-							cols.push(s_c0);
+							cols.AddColor32(s_c0);
+							cols.AddColor32(s_c1);
+							cols.AddColor32(s_c1);
+							cols.AddColor32(s_c0);
 						}
 					} else {
 						for (var j = 0, jmax = (textProp.bold === true ? 16 : 4); j < jmax; ++j)
-							cols.push(uc);
+							cols.AddColor32(uc);
 					}
 				}
 			}
 		}
 
-		if (this.alignment != TextAlignment.Left && indexOffset < verts.length) {
+		if (this.alignment != TextAlignment.Left && indexOffset < verts.Length) {
 			this.Align(verts, indexOffset, x - this.finalSpacingX);
-			indexOffset = verts.length;
+			indexOffset = verts.Length;
 		}
 		this.mColors.length = 0;
     },
@@ -2709,13 +3019,13 @@ NGUIMath = {
 		return final;
 	},
 	GetPivotOffset: function(pv) {
-		var v = new UnityEngine.Vector2();
-		if (pv == WidgetPivot.Top || pv == WidgetPivot.Center || pv == WidgetPivot.Bottom) v.x = 0.5;
-		else if (pv == WidgetPivot.TopRight || pv == WidgetPivot.Right || pv == WidgetPivot.BottomRight) v.x = 1;
+		var v = UnityEngine.Vector2.temp;
+		if (pv === WidgetPivot.Top || pv === WidgetPivot.Center || pv === WidgetPivot.Bottom) v.x = 0.5;
+		else if (pv === WidgetPivot.TopRight || pv === WidgetPivot.Right || pv === WidgetPivot.BottomRight) v.x = 1;
 		else v.x = 0;
 
-		if (pv == WidgetPivot.Left || pv == WidgetPivot.Center || pv == WidgetPivot.Right) v.y = 0.5;
-		else if (pv == WidgetPivot.TopLeft || pv == WidgetPivot.Top || pv == WidgetPivot.TopRight) v.y = 1;
+		if (pv === WidgetPivot.Left || pv === WidgetPivot.Center || pv === WidgetPivot.Right) v.y = 0.5;
+		else if (pv === WidgetPivot.TopLeft || pv === WidgetPivot.Top || pv === WidgetPivot.TopRight) v.y = 1;
 		else v.y = 0;
 
 		return v;
@@ -2799,7 +3109,16 @@ NGUITools = {
 		return comp;
 	},
 	CalculateRaycastDepth: function(go) {
-		return 0;
+		var w = go.GetComponent('UIWidget');
+		if (w !== undefined) return w.raycastDepth();
+		var widgets = go.GetComponentsInChildren('UIWidget');
+		if (widgets.length == 0) return 0;
+		var depth = 1000000;
+		for (var i in widgets) {
+			w = widgets[i];
+			if (w.enabled === true) depth = Math.min(depth, w.raycastDepth());
+		}
+		return depth;
 	},
 	FindCameraForLayer: function(layer) {
 		// TODO: add layer supported.
@@ -2825,9 +3144,9 @@ NGUI.UIDrawCall = function (name, panel, texture) {
 	this.manager = panel;
 	this.panel = panel; // NGUI.UIPanel
 	
-	this.verts = [];// Vector3
-	this.uvs = [];// Vector2
-	this.cols = [];// Vector3
+	this.verts = new NGUI.BetterList();
+	this.uvs = new NGUI.BetterList();
+	this.cols = new NGUI.BetterList();
 
 	this.mMesh = undefined;
 	this.mSortingOrder = panel.mSortingOrder;
@@ -2862,19 +3181,21 @@ NGUI.UIDrawCall.prototype = {
 	},
 	UpdateGeometry: function(count) {
 		this.mMesh = new UnityEngine.Mesh();
-		this.mMesh.CopyVertexData(this.verts, this.uvs, this.cols, this.BuildTriangles(this.verts.length));
+		this.mMesh.CopyVertexData(this.verts, this.uvs, this.cols, this.BuildTriangles(this.verts.Length));
 		// clean.
-		this.verts.length = 0;
-		this.uvs.length = 0;
-		this.cols.length = 0;
+		this.verts.Clear();
+		this.uvs.Clear();
+		this.cols.Clear();
 	},
 	SetClipping: function(index, cr, soft, angle) {
 		angle *= -Mathf.Deg2Rad;
 		var sharpness = new UnityEngine.Vector2(1000.0, 1000.0);
 		if (soft.x > 0) sharpness.x = cr.z / soft.x;
 		if (soft.y > 0) sharpness.y = cr.w / soft.y;
-		this.ClipRange[index] = new UnityEngine.Vector4(-cr.x / cr.z, -cr.y / cr.w, 1 / cr.z, 1 / cr.w);
-		this.ClipArgs[index] = new UnityEngine.Vector4(sharpness.x, sharpness.y, Math.sin(angle), Math.cos(angle));
+		var clipRange = this.ClipRange[index] || new UnityEngine.Vector4();
+		var clipArgs = this.ClipArgs[index] || new UnityEngine.Vector4();
+		clipRange.set(-cr.x / cr.z, -cr.y / cr.w, 1 / cr.z, 1 / cr.w);
+		clipArgs.set(sharpness.x, sharpness.y, Math.sin(angle), Math.cos(angle));
 	},
 	OnWillRenderObject: function() {
 		var currentPanel = this.panel;
@@ -2906,32 +3227,34 @@ NGUI.UIDrawCall.prototype = {
 //
 
 NGUI.UIGeometry = function() {
-	this.verts = [];
-	this.uvs = [];
-	this.cols = [];
-	this.mRtpVerts = [];
+	this.verts = new NGUI.BetterList();
+	this.uvs = new NGUI.BetterList();
+	this.cols = new NGUI.BetterList();
+	this.mRtpVerts = new NGUI.BetterList();
 }
 
 NGUI.UIGeometry.prototype = {
 	constructor: NGUI.UIGeometry,
-	hasVertices: function() { return this.verts.length > 0; },
+	hasVertices: function() { return this.verts.Length > 0; },
 	Clear: function() {
-		this.verts.length = 0;
-		this.uvs.length = 0;
-		this.cols.length = 0;
-		this.mRtpVerts.length = 0;
+		this.verts.Clear();
+		this.uvs.Clear();
+		this.cols.Clear();
+		this.mRtpVerts.Clear();
 	},
 	ApplyTransform: function(widgetToPanel) {
-		this.mRtpVerts.length = 0;
-		for (var i in this.verts)
-			this.mRtpVerts.push(widgetToPanel.MultiplyPoint3x4(this.verts[i]));
+		var ptpVertes = this.mRtpVerts; 
+		ptpVertes.Clear();
+		this.verts.Foreach3(function(i, x, y, z) {
+			widgetToPanel.MultiplyPoint3x4v(x, y, z, function(x1, y1, z1){
+				ptpVertes.AddVector3(x1, y1, z1);
+			});
+		});
 	},
 	WriteToBuffers: function(v, u, c) {
-		for (var i in this.mRtpVerts) {
-			v.push(this.mRtpVerts[i]);
-			u.push(this.uvs[i]);
-			c.push(this.cols[i]);
-		}
+		v.AddList(this.mRtpVerts);
+		u.AddList(this.uvs);
+		c.AddList(this.cols);
 	},
 }
 
@@ -2948,7 +3271,6 @@ NGUI.UIRect = function(gameObject) {
 	this.topAnchor = undefined;//new NGUI.AnchorPoint();
 	this.finalAlpha = 1;
 	
-	this.mSides = [];
 	this.mCam = undefined;
 	this.mUpdateAnchors = true;
 	this.mUpdateFrame = -1;
@@ -2956,7 +3278,9 @@ NGUI.UIRect = function(gameObject) {
 	this.mChanged = false;
 };
 
-Object.assign(NGUI.UIRect.prototype = Object.create(UnityEngine.MonoBehaviour.prototype), {
+NGUI.UIRect.mSides = [];
+
+Object.extend(NGUI.UIRect.prototype = Object.create(UnityEngine.MonoBehaviour.prototype), {
 	constructor: NGUI.UIRect,
 	cameraRayDistance: function() {
 		var cam = this.mCam;
@@ -2979,15 +3303,18 @@ Object.assign(NGUI.UIRect.prototype = Object.create(UnityEngine.MonoBehaviour.pr
 		if (json.ta !== undefined) this.topAnchor = new NGUI.AnchorPoint(json.ta);
 		this.mChanged = true;
 	},
+	Invalidate: function(includeChildren) {
+	},
 	GetSides: function(relativeTo) {
 		if (this.mCam !== undefined) return this.mCam.GetSides(this.cameraRayDistance(), relativeTo);
+		var sides = NGUI.UIRect.mSides;
 		var pos = this.transform.position;
-		for (var i = 0; i < 4; ++i) this.mSides[i] = pos;
+		for (var i = 0; i < 4; ++i) sides[i].set(pos.x, pos.y, pos.z);
 		if (relativeTo !== undefined) {
-			for (var i = 0; i < 4; ++i)
-				this.mSides[i] = relativeTo.InverseTransformPoint(this.mSides[i]);
+			var worldToLocal = relativeTo.worldToLocalMatrix;
+			for (var i in sides) sides[i].ApplyTransform(worldToLocal);
 		}
-		return this.mSides;
+		return sides;
 	},
 	OnAnchor: function() { },
 	ResetAnchors: function(update) {
@@ -3063,6 +3390,7 @@ NGUI.UIWidget = function(gameObject) {
 	this.mOldV0 = new UnityEngine.Vector3();
 	this.mOldV1 = new UnityEngine.Vector3();
 	this.mCorners = [];//
+	this.mAlphaFrameID = 0;
 
 	// public variables.
 	this.minWidth = 2;
@@ -3074,6 +3402,8 @@ NGUI.UIWidget = function(gameObject) {
 	this.panel = undefined;
 	this.drawCall = undefined;
 	this.geometry = new NGUI.UIGeometry();
+
+	for (var i = 0; i < 4; i++) this.mCorners[i] = new UnityEngine.Vector3();
 };
 
 WidgetPivot = {
@@ -3094,13 +3424,20 @@ AspectRatioSource = {
 	BasedOnHeight: 2,
 }
 
-Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
+Object.extend(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 	constructor: NGUI.UIWidget,
+	setColor: function(value) { var alphaChanged = this.mColor.a != value.a; this.mColor = value; this.Invalidate(alphaChanged); },
+	getColor: function() { return this.mColor; },
+	getAlpha: function() { return this.mColor.a; },
+	setAlpha: function(a) { this.mColor.a = a; this.Invalidate(); },
 	pivotOffset: function() { return NGUIMath.GetPivotOffset(this.mPivot); },
 	texture: function() { return undefined; },
 	isVisible: function() { return this.mIsVisibleByAlpha && this.mIsVisibleByPanel && this.mIsInFront && this.finalAlpha > 0.001; },
 	hasVertices: function() { return this.geometry.hasVertices(); },
 	border: function() { return new UnityEngine.Vector4(0, 0, 0, 0); },
+	raycastDepth: function() {
+		return (this.panel !== undefined) ? this.mDepth + this.panel.mDepth * 1000 : this.mDepth;
+	},
 	drawingDimensions: function() {
 		var offset = this.pivotOffset();
 		var x0 = -offset.x * this.mWidth;
@@ -3126,6 +3463,20 @@ Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 		this.mHeight = json.h || 100;
 		this.mDepth = json.d || 0;
 		this.CreatePanel(); // ensure we have a parent panel.
+	},
+	Invalidate: function(includeChildren) {
+		this.mChanged = true;
+		this.UpdateFinalAlpha(UnityEngine.Time.frameCount);
+	},
+	UpdateFinalAlpha: function(frameID) {
+		this.finalAlpha = this.panel ? (this.panel.CalculateFinalAlpha(frameID) * this.mColor.a) : this.mColor.a;
+	},
+	CalculateFinalAlpha: function(frameID) {
+		if (this.mAlphaFrameID !== frameID) {
+			this.mAlphaFrameID = frameID;
+			this.UpdateFinalAlpha();
+		}
+		return this.finalAlpha;
 	},
 	CreatePanel: function() {
 		if (this.panel === undefined) {
@@ -3171,7 +3522,7 @@ Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 		var trans = this.transform;
 		var parent = trans.parent;
 		var pos = trans.localPosition;
-		var pvt = this.pivotOffset();
+		var pvt = this.pivotOffset().clone();
 
 		// Attempt to fast-path if all anchors match
 		if (this.leftAnchor !== undefined && 
@@ -3197,6 +3548,7 @@ Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 				this.mIsInFront = (!this.hideIfOffScreen || lp.z >= 0);
 			}
 		} else {
+			pvt = pvt.clone();
 			this.mIsInFront = true;
 			if (this.leftAnchor !== undefined) { // Left anchor point
 				var sides = this.leftAnchor.GetSides(parent);
@@ -3224,7 +3576,7 @@ Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 			else bt = pos.y - pvt.y * this.mHeight;
 			if (this.topAnchor !== undefined) { // Top anchor point
 				var sides = this.topAnchor.GetSides(parent);
-				if (this.sides != null)
+				if (sides !== undefined)
 					tt = Mathf.Lerp(sides[3].y, sides[1].y, this.topAnchor.relative) + this.topAnchor.absolute;
 				else
 					tt = this.GetLocalPos(this.topAnchor, parent).y + this.topAnchor.absolute;
@@ -3283,8 +3635,7 @@ Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 			if (this.fillGeometry === true) this.geometry.Clear();
 			this.mMoved = false;
 			return true;
-		}
-		else if (this.mMoved === true && this.geometry.hasVertices() === true) {
+		} else if (this.mMoved === true && this.geometry.hasVertices() === true) {
 			this.mLocalToPanel.MultiplyMatrices(this.panel.worldToLocal, this.transform.localToWorldMatrix);
 			this.geometry.ApplyTransform(this.mLocalToPanel);
 			this.mMoved = false;
@@ -3304,14 +3655,15 @@ Object.assign(NGUI.UIWidget.prototype = Object.create(NGUI.UIRect.prototype), {
 		var y1 = y0 + this.mHeight;
 		var cx = (x0 + x1) * 0.5;
 		var cy = (y0 + y1) * 0.5;
-		var trans = this.transform;
-		this.mCorners[0] = trans.TransformPoint(new UnityEngine.Vector3(x0, cy, 0));
-		this.mCorners[1] = trans.TransformPoint(new UnityEngine.Vector3(cx, y1, 0));
-		this.mCorners[2] = trans.TransformPoint(new UnityEngine.Vector3(x1, cy, 0));
-		this.mCorners[3] = trans.TransformPoint(new UnityEngine.Vector3(cx, y0, 0));
+		var localToWorld = this.transform.localToWorldMatrix;
+		this.mCorners[0].set(x0, cy, 0).ApplyTransform(localToWorld);
+		this.mCorners[1].set(cx, y1, 0).ApplyTransform(localToWorld);
+		this.mCorners[2].set(x1, cy, 0).ApplyTransform(localToWorld);
+		this.mCorners[3].set(cx, y0, 0).ApplyTransform(localToWorld);
 		if (relativeTo !== undefined) {
+			var worldToLocal = relativeTo.worldToLocalMatrix;
 			for (var i in this.mCorners)
-				this.mCorners[i] = relativeTo.InverseTransformPoint(this.mCorners[i]);
+				this.mCorners[i].ApplyTransform(worldToLocal);
 		}
 		return this.mCorners;
 	}
@@ -3362,7 +3714,7 @@ Flip = {
 gTempPos = [new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngine.Vector2()];
 gTempUVs = [new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngine.Vector2(), new UnityEngine.Vector2()];
 
-Object.assign(NGUI.UIBasicSprite.prototype = Object.create(NGUI.UIWidget.prototype), {
+Object.extend(NGUI.UIBasicSprite.prototype = Object.create(NGUI.UIWidget.prototype), {
 	constructor: NGUI.UIBasicSprite,
 	pixelSize: function() { return 1; },
 	texture: function() { return undefined; },
@@ -3414,18 +3766,18 @@ Object.assign(NGUI.UIBasicSprite.prototype = Object.create(NGUI.UIWidget.prototy
 		var v = this.drawingDimensions();
 		var u = this.drawingUVs();
 		var c = this.drawingColor();
-		verts.push(new UnityEngine.Vector3(v.x, v.y));
-		verts.push(new UnityEngine.Vector3(v.x, v.w));
-		verts.push(new UnityEngine.Vector3(v.z, v.w));
-		verts.push(new UnityEngine.Vector3(v.z, v.y));
-		uvs.push(new UnityEngine.Vector2(u.x, u.y));
-		uvs.push(new UnityEngine.Vector2(u.x, u.w));
-		uvs.push(new UnityEngine.Vector2(u.z, u.w));
-		uvs.push(new UnityEngine.Vector2(u.z, u.y));
-		cols.push(c);
-		cols.push(c);
-		cols.push(c);
-		cols.push(c);
+		verts.AddVector3(v.x, v.y, 0);
+		verts.AddVector3(v.x, v.w, 0);
+		verts.AddVector3(v.z, v.w, 0);
+		verts.AddVector3(v.z, v.y, 0);
+		uvs.AddVector2(u.x, u.y);
+		uvs.AddVector2(u.x, u.w);
+		uvs.AddVector2(u.z, u.w);
+		uvs.AddVector2(u.z, u.y);
+		cols.AddColor32(c);
+		cols.AddColor32(c);
+		cols.AddColor32(c);
+		cols.AddColor32(c);
 	},
 	SlicedFill: function(verts, uvs, cols) {
 		var br = this.border().multiplyScalar(this.pixelSize());
@@ -3435,10 +3787,8 @@ Object.assign(NGUI.UIBasicSprite.prototype = Object.create(NGUI.UIWidget.prototy
 		var c = this.drawingColor();
 		var v = this.drawingDimensions();
 
-		gTempPos[0].x = v.x;
-		gTempPos[0].y = v.y;
-		gTempPos[3].x = v.z;
-		gTempPos[3].y = v.w;
+		gTempPos[0].set(v.x, v.y);
+		gTempPos[3].set(v.z, v.w);
 
 		if (this.mFlip == Flip.Horizontally || 
 			this.mFlip == Flip.Both) {
@@ -3482,18 +3832,18 @@ Object.assign(NGUI.UIBasicSprite.prototype = Object.create(NGUI.UIWidget.prototy
 				if (this.centerType == AdvancedType.Invisible && x == 1 && y == 1)
 					continue;
 				var y2 = y + 1;
-				verts.push(new UnityEngine.Vector3(gTempPos[x].x, gTempPos[y].y));
-				verts.push(new UnityEngine.Vector3(gTempPos[x].x, gTempPos[y2].y));
-				verts.push(new UnityEngine.Vector3(gTempPos[x2].x, gTempPos[y2].y));
-				verts.push(new UnityEngine.Vector3(gTempPos[x2].x, gTempPos[y].y));
-				uvs.push(new UnityEngine.Vector2(gTempUVs[x].x, gTempUVs[y].y));
-				uvs.push(new UnityEngine.Vector2(gTempUVs[x].x, gTempUVs[y2].y));
-				uvs.push(new UnityEngine.Vector2(gTempUVs[x2].x, gTempUVs[y2].y));
-				uvs.push(new UnityEngine.Vector2(gTempUVs[x2].x, gTempUVs[y].y));
-				cols.push(c);
-				cols.push(c);
-				cols.push(c);
-				cols.push(c);
+				verts.AddVector3(gTempPos[x].x, gTempPos[y].y, 0);
+				verts.AddVector3(gTempPos[x].x, gTempPos[y2].y, 0);
+				verts.AddVector3(gTempPos[x2].x, gTempPos[y2].y, 0);
+				verts.AddVector3(gTempPos[x2].x, gTempPos[y].y, 0);
+				uvs.AddVector2(gTempUVs[x].x, gTempUVs[y].y);
+				uvs.AddVector2(gTempUVs[x].x, gTempUVs[y2].y);
+				uvs.AddVector2(gTempUVs[x2].x, gTempUVs[y2].y);
+				uvs.AddVector2(gTempUVs[x2].x, gTempUVs[y].y);
+				cols.AddColor32(c);
+				cols.AddColor32(c);
+				cols.AddColor32(c);
+				cols.AddColor32(c);
 			}
 		}
 	},
@@ -3528,21 +3878,21 @@ Object.assign(NGUI.UIBasicSprite.prototype = Object.create(NGUI.UIWidget.prototy
 			}
 		}
 
-		gTempPos[0] = new UnityEngine.Vector2(v.x, v.y);
-		gTempPos[1] = new UnityEngine.Vector2(v.x, v.w);
-		gTempPos[2] = new UnityEngine.Vector2(v.z, v.w);
-		gTempPos[3] = new UnityEngine.Vector2(v.z, v.y);
+		gTempPos[0].set(v.x, v.y);
+		gTempPos[1].set(v.x, v.w);
+		gTempPos[2].set(v.z, v.w);
+		gTempPos[3].set(v.z, v.y);
 
-		gTempUVs[0] = new UnityEngine.Vector2(u.x, u.y);
-		gTempUVs[1] = new UnityEngine.Vector2(u.x, u.w);
-		gTempUVs[2] = new UnityEngine.Vector2(u.z, u.w);
-		gTempUVs[3] = new UnityEngine.Vector2(u.z, u.y);
+		gTempUVs[0].set(u.x, u.y);
+		gTempUVs[1].set(u.x, u.w);
+		gTempUVs[2].set(u.z, u.w);
+		gTempUVs[3].set(u.z, u.y);
 
 		if (this.mFillAmount < 1) {
 			if (this.mFillDirection == FillDirection.Radial90) {
 				if (NGUI.UIBasicSprite.RadialCut(gTempPos, gTempUVs, this.mFillAmount, this.mInvert, 0)) {
 					for (var i = 0; i < 4; ++i) {
-						verts.push(gTempPos[i]);
+						verts.AddVector3(gTempPos[i]);
 						uvs.push(gTempUVs[i]);
 						cols.push(c);
 					}
@@ -3631,9 +3981,9 @@ Object.assign(NGUI.UIBasicSprite.prototype = Object.create(NGUI.UIWidget.prototy
 
 					if (NGUI.UIBasicSprite.RadialCut(gTempPos, gTempUVs, Mathf.Clamp01(val), this.mInvert, NGUIMath.RepeatIndex(corner + 2, 4))) {
 						for (var i = 0; i < 4; ++i) {
-							verts.push(gTempPos[i]);
-							uvs.push(gTempUVs[i]);
-							cols.push(c);
+							verts.AddVector3(gTempPos[i].x, gTempPos[i].y, 0);
+							uvs.AddVector2(gTempUVs[i].x, gTempUVs[i].y);
+							cols.AddColor32(c);
 						}
 					}
 				}
@@ -3643,9 +3993,9 @@ Object.assign(NGUI.UIBasicSprite.prototype = Object.create(NGUI.UIWidget.prototy
 
 		// Fill the buffer with the quad for the sprite
 		for (var i = 0; i < 4; ++i) {
-			verts.push(gTempPos[i]);
-			uvs.push(gTempUVs[i]);
-			cols.push(c);
+			verts.AddVector3(gTempPos[i].x, gTempPos[i].y, 0);
+			uvs.AddVector2(gTempUVs[i].x, gTempUVs[i].y);
+			cols.AddColor32(c);
 		}
 	},
 	TiledFill: function(verts, uvs, cols) {
@@ -3693,18 +4043,18 @@ Object.assign(NGUI.UIBasicSprite.prototype = Object.create(NGUI.UIWidget.prototy
 					u1 = Mathf.Lerp(u.x, u.z, (v.z - x0) / size.x);
 					x1 = v.z;
 				}
-				verts.push(new UnityEngine.Vector3(x0, y0));
-				verts.push(new UnityEngine.Vector3(x0, y1));
-				verts.push(new UnityEngine.Vector3(x1, y1));
-				verts.push(new UnityEngine.Vector3(x1, y0));
-				uvs.push(new UnityEngine.Vector2(u0, v0));
-				uvs.push(new UnityEngine.Vector2(u0, v1));
-				uvs.push(new UnityEngine.Vector2(u1, v1));
-				uvs.push(new UnityEngine.Vector2(u1, v0));
-				cols.push(c);
-				cols.push(c);
-				cols.push(c);
-				cols.push(c);
+				verts.AddVector3(x0, y0, 0);
+				verts.AddVector3(x0, y1, 0);
+				verts.AddVector3(x1, y1, 0);
+				verts.AddVector3(x1, y0, 0);
+				uvs.AddVector2(u0, v0);
+				uvs.AddVector2(u0, v1);
+				uvs.AddVector2(u1, v1);
+				uvs.AddVector2(u1, v0);
+				cols.AddColor32(c);
+				cols.AddColor32(c);
+				cols.AddColor32(c);
+				cols.AddColor32(c);
 				x0 += size.x;
 			}
 			y0 += size.y;
@@ -4079,6 +4429,8 @@ WebGL.Renderer = function (parameters) {
 	this.width = canvas.width;
 	this.height = canvas.height;
 	this.viewport = new UnityEngine.Vector4(0, 0, this.width, this.height );
+
+	WebGL.gl = this.gl; // assign to gloabl scope.
 	
 	function onContextLost(event) {
 	}
@@ -4115,7 +4467,7 @@ WebGL.Renderer = function (parameters) {
 				antialias: false,
 				premultipliedAlpha: true,
 				preserveDrawingBuffer: false };
-			Object.assign(attributes, parameters);
+			Object.extend(attributes, parameters);
 			glContext = canvas.getContext( 'webgl', attributes ) || canvas.getContext( 'experimental-webgl', attributes );
 			if (glContext === null) {
 				if (canvas.getContext( 'webgl' ) !== null ) {
@@ -4155,6 +4507,11 @@ NGUI.UIFont = function() {
     this.mSprite = undefined;
     this.mUVRect = new UnityEngine.Rect(0, 0, 1, 1);
 
+    // dynamic font.
+    this.mDynamicFont = undefined;
+    this.mDynamicFontSize = 16;
+    this.mDynamicFontStyle = UnityEngine.FontStyle.Normal;
+
     this.bmFont = this.mFont;
 }
 
@@ -4163,10 +4520,14 @@ NGUI.UIFont.prototype = {
     get texWidth() { return this.mFont !== undefined ? this.mFont.texWidth : 0; },
     get texHeight() { return this.mFont !== undefined ? this.mFont.texHeight : 0; },
     get uvRect() { return this.mUVRect; },
+    get dynamicFont() { return this.mDynamicFont; },
+    get dynamicFontStyle() { return this.mDynamicFontStyle; },
+    get isDynamic() { return this.mDynamicFont !== undefined; },
+    get defaultSize() { return this.isDynamic ? this.mDynamicFontSize : this.mFont.charSize; },
+    get hasSymbols() { return this.mSymbols.length > 0; },
     texture: function() { return this.mAtlas !== undefined ? this.mAtlas.texture : undefined; },
-    defaultSize: function() { return this.mFont.charSize; },
-    hasSymbols: function() { return this.mSymbols.length > 0; },
     Load: function(json) {
+        //if (json.dynamic) this.mDynamicFont
         if (json.font !== undefined) this.mFont.Load(json.font);
         if (json.symbols !== undefined) {
             for (var i in json.symbols) {
@@ -4250,11 +4611,27 @@ NGUI.UIAtlas.prototype = {
 NGUI.UICamera = function(gameObject) {
 	UnityEngine.MonoBehaviour.call(this, gameObject);
     this.camera = undefined;
+    this.hoveredObject = undefined;
+    this.currentTouch = undefined;
+    this.selectedObject = undefined;
+    this.mouseDragThreshold = 4;
+    this.mouseClickThreshold = 10;
+
+    this.mNextRaycast = 0;
+    this.mHits = [];
+    this.mHover = undefined;
+    this.mMouse = { 
+        pressed: undefined,
+        dragged: undefined,
+        last: undefined,
+        current: undefined,
+        totalDelta: new UnityEngine.Vector2(0, 0),
+     };
 };
 
 NGUI.UICamera.current = undefined;
 
-Object.assign(NGUI.UICamera.prototype = Object.create(UnityEngine.MonoBehaviour.prototype), {
+Object.extend(NGUI.UICamera.prototype = Object.create(UnityEngine.MonoBehaviour.prototype), {
 	constructor: NGUI.UICamera,
     Load: function(json) {
         UnityEngine.MonoBehaviour.prototype.Load.call(this, json);
@@ -4265,27 +4642,123 @@ Object.assign(NGUI.UICamera.prototype = Object.create(UnityEngine.MonoBehaviour.
         }
         NGUI.UICamera.current = this;
     },
+    Update: function() {
+        // Test hit...
+        this.ProcessMouse();
+    },
+    Notify: function(go, funcName, obj) {
+        //console.log('notify:' + (go && go.name) + ':' + funcName + '(' + obj + ')');
+        go && go.SendMessage(funcName, obj);
+    },
+    ProcessMouse: function() {
+        var Input = UnityEngine.Input;
+		var isPressed = false, justPressed = false;
+        if (Input.GetMouseButtonDown()) {
+            justPressed = true;
+            isPressed = true;
+        } else if (Input.GetMouseButton()) {
+            isPressed = true;
+        }
+        if (isPressed || this.mNextRaycast < UnityEngine.Time.unscaledTime) {
+             this.mNextRaycast = UnityEngine.Time.unscaledTime + 0.02;
+			if (!this.Raycast(Input.mousePosition)) 
+                this.hoveredObject = undefined;
+            this.mMouse.current = this.hoveredObject;
+        }
+		var highlightChanged = (this.mMouse.last !== this.mMouse.current);
+        if (this.mHover !== undefined && highlightChanged) {
+            this.Notify(this.mHover, "OnHover", false);
+            this.mHover = undefined;
+        }
+
+        var pressed = Input.GetMouseButtonDown();
+        var unpressed = Input.GetMouseButtonUp();
+        this.currentTouch = this.mMouse;
+        this.ProcessTouch(pressed, unpressed);
+
+        if (!isPressed && highlightChanged) {
+            this.mHover = this.mMouse.current;
+            this.Notify(this.mHover, "OnHover", true);
+        }
+
+        this.mMouse.last = this.mMouse.current;
+    },
+    ProcessTouch: function(pressed, unpressed) {
+        var currentTouch = this.currentTouch;
+		var drag = this.mouseDragThreshold;
+		var click = this.mouseClickThreshold;
+        if (pressed) {
+			currentTouch.pressStarted = true;
+			this.Notify(currentTouch.pressed, "OnPress", false);
+			currentTouch.pressed = currentTouch.current;
+			currentTouch.dragged = currentTouch.current;
+			currentTouch.totalDelta = UnityEngine.Vector2.zero;
+			currentTouch.dragStarted = false;
+			this.Notify(currentTouch.pressed, "OnPress", true);
+
+			// Update the selection
+			if (currentTouch.pressed != this.selectedObject) {
+				this.selectedObject = currentTouch.pressed;
+			}
+        } else if (currentTouch.pressed) {
+            // process dragging...
+        }
+		if (unpressed) {
+			currentTouch.pressStarted = false;
+			if (currentTouch.pressed !== undefined) {
+				if (currentTouch.dragStarted) {
+					this.Notify(currentTouch.last, "OnDragOut", currentTouch.dragged);
+					this.Notify(currentTouch.dragged, "OnDragEnd", null);
+				}
+				this.Notify(currentTouch.pressed, "OnPress", false);
+                this.Notify(currentTouch.current, "OnHover", true);
+				this.mHover = currentTouch.current;
+
+				if (currentTouch.dragStarted) // The button/touch was released on a different object
+					this.Notify(currentTouch.current, "OnDrop", currentTouch.dragged);
+
+                if (currentTouch.dragged === currentTouch.current || 
+                    currentTouch.totalDelta.sqrMagnitude() < drag) {
+                    if (currentTouch.pressed == currentTouch.current) {
+                        this.Notify(currentTouch.pressed, "OnClick", null);
+                        currentTouch.clickTime = UnityEngine.Time.unscaledTime;
+                    }
+                }
+			}
+			currentTouch.dragStarted = false;
+			currentTouch.pressed = undefined;
+			currentTouch.dragged = undefined;
+        }
+    },
     Raycast: function(inPos) {
         var currentCamera = this.camera;
         var dist = currentCamera.farClipPlane - currentCamera.nearClipPlane;
         var ray = currentCamera.ScreenPointToRay(inPos);
-        var hits = UnityEngine.Physics.RaycastAll(ray, dist, mask);
+        var hits = UnityEngine.Physics.RaycastAll(ray, dist, -1);
+        var targetObject = undefined;
         if (hits.length > 1) {
+            var minDepth = 1000000000;
             for (var i in hits) {
                 var go = hits[i].gameObject;
                 var w = go.GetComponent("UIWidget");
                 if (w !== undefined && w.isVisible() !== true)
                     continue;
                 var depth = NGUITools.CalculateRaycastDepth(go);
-                if (depth !== undefined) {
-                    
+                if (depth !== undefined && depth < minDepth) {
+                    minDepth = depth;
+                    targetObject = go;
                 }
             }
         } else if (hits.length == 1) {
-
+            targetObject = hits[0].gameObject;
         } else {
-
         }
+
+        if (targetObject) {
+            this.hoveredObject = targetObject;
+            return true;
+        }
+        return false;
     },
 });
 
@@ -4311,6 +4784,7 @@ NGUI.UIPanel = function(gameObject) {
 	this.mMax = new UnityEngine.Vector2();
 	this.mClipping = Clipping.None;
 	this.mSortWidgets = false;
+	this.mAlphaFrameID = -1;
 
 	this.startingRenderQueue = 3000;
 	this.drawCallClipRange = new UnityEngine.Vector4(0, 0, 1, 1);
@@ -4368,7 +4842,7 @@ NGUI.UIPanel.Foreach = function(action) {
 	for (var i in list) action(list[i]);
 };
 
-Object.assign(NGUI.UIPanel.prototype = Object.create(NGUI.UIRect.prototype), {
+Object.extend(NGUI.UIPanel.prototype = Object.create(NGUI.UIRect.prototype), {
 	constructor: NGUI.UIPanel,
 	hasClipping: function() { return this.mClipping === Clipping.SoftClip;  },
 	getViewSize: function() {
@@ -4404,6 +4878,13 @@ Object.assign(NGUI.UIPanel.prototype = Object.create(NGUI.UIRect.prototype), {
 		this.startingRenderQueue = json.startingRenderQueue || 3000;
 		this.mRebuild = true;
 		this.FindParent();
+	},
+	CalculateFinalAlpha: function(frameID) {
+		if (this.mAlphaFrameID !== frameID) {
+			this.mAlphaFrameID = frameID;
+			this.finalAlpha = this.parentPanel ? this.parentPanel.CalculateFinalAlpha(frameID) * this.mAlpha : this.mAlpha; 
+		}
+		return this.finalAlpha;
 	},
 	AddWidget: function(w) {
 		this.widgets.push(w);
@@ -4483,8 +4964,6 @@ Object.assign(NGUI.UIPanel.prototype = Object.create(NGUI.UIRect.prototype), {
 		}
 		this.mResized = false;
 	},
-	FindDrawCall: function(w) {
-	},
 	UpdateDrawCalls: function() {
 		var trans = this.transform;
 		if (this.mClipping != Clipping.None) {
@@ -4541,21 +5020,59 @@ Object.assign(NGUI.UIPanel.prototype = Object.create(NGUI.UIRect.prototype), {
 					dc.depthStart = w.mDepth;
 					dc.depthEnd = dc.depthStart;
 				} else {
-					var rd = w.depth;
+					var rd = w.mDepth;
 					if (rd < dc.depthStart) dc.depthStart = rd;
 					if (rd > dc.depthEnd) dc.depthEnd = rd;
 				}
 				w.drawCall = dc;
-
 				++count;
 				w.WriteToBuffers(dc.verts, dc.uvs, dc.cols);
 			}
 		}
 
-		if (dc !== undefined && dc.verts.length !== 0) {
+		if (dc !== undefined && dc.verts.Length !== 0) {
 			this.drawCalls.push(dc);
 			dc.UpdateGeometry(count);
 		}
+	},
+	FindDrawCall: function(w) {
+		var mat = w.texture();
+		var depth = w.mDepth;
+		for (var i in this.drawCalls) {
+			var dc = this.drawCalls[i];
+			var dcStart = (i == 0) ? -10000 : this.drawCalls[i - 1].depthEnd + 1;
+			var dcEnd = (i + 1 == this.drawCalls.length) ? 10000 : this.drawCalls[i + 1].depthStart - 1;
+			if (dcStart <= depth && dcEnd >= depth) {
+				if (dc.texture === mat) {
+					if (w.isVisible()) {
+						w.drawCall = dc;
+						if (w.hasVertices()) dc.isDirty = true;
+						return dc;
+					}
+				}
+				else this.mRebuild = true;
+				return;
+			}
+		}
+		this.mRebuild = true;
+	},
+	FillDrawCall: function(dc) {
+		dc.isDirty = false;
+		var count = 0;
+		for (var  i in this.widgets) {
+			var w = this.widgets[i];
+			if (w.drawCall !== dc) continue;
+			if (w.isVisible() && w.hasVertices()) {
+				++count;
+				w.WriteToBuffers(dc.verts, dc.uvs, dc.cols, null, null);
+			}
+			else w.drawCall = undefined;
+		}
+		if (dc.verts.Length !== 0) {
+			dc.UpdateGeometry(count);
+			return true;
+		}
+		return false;
 	},
 	GetSides: function(relativeTo) {
 		if (this.mClipping !== Clipping.None) {
@@ -4622,7 +5139,7 @@ NGUI.Constraint = {
 	FitHeight: 3,
 };
 
-Object.assign(NGUI.UIRoot.prototype = Object.create(UnityEngine.MonoBehaviour.prototype), {
+Object.extend(NGUI.UIRoot.prototype = Object.create(UnityEngine.MonoBehaviour.prototype), {
 	constructor: NGUI.UIRoot,
 	constraint: function() {
 		if (this.fitWidth)
@@ -4710,8 +5227,14 @@ NGUI.UISprite = function(gameObject) {
 	this.mSprite = undefined; // refrence to UISpriteData
 };
 
-Object.assign(NGUI.UISprite.prototype = Object.create(NGUI.UIBasicSprite.prototype), {
+Object.extend(NGUI.UISprite.prototype = Object.create(NGUI.UIBasicSprite.prototype), {
 	constructor: NGUI.UISprite,
+	get spriteName() { return this.mSpriteName; }, 
+	set spriteName(sp) {
+		this.mSpriteName = sp;
+		this.mSprite = undefined;
+		this.mChanged = true;
+	},
 	texture: function() { return this.mAtlas ? this.mAtlas.texture : undefined; },
 	border: function() {
 		var sp = this.GetAtlasSprite();
@@ -4724,7 +5247,7 @@ Object.assign(NGUI.UISprite.prototype = Object.create(NGUI.UIBasicSprite.prototy
 		this.mSpriteName = json.s;
 	},
 	GetAtlasSprite: function() {
-		if (this.mAtlas !== undefined && this.mSprite === undefined) 
+		if (this.mAtlas !== undefined && this.mSprite === undefined && this.mSpriteName) 
 			this.mSprite = this.mAtlas.GetSprite(this.mSpriteName);
 		return this.mSprite;
 	},
@@ -4861,10 +5384,10 @@ FontStyle = {
     BoldAndItalic: 3,
 };
 
-Object.assign(NGUI.UILabel.prototype = Object.create(NGUI.UIWidget.prototype), {
+Object.extend(NGUI.UILabel.prototype = Object.create(NGUI.UIWidget.prototype), {
 	constructor: NGUI.UILabel,
 	texture: function() { return (this.bitmapFont !== undefined) ? this.bitmapFont.texture() : undefined; },
-    defaultFontSize: function() { return (this.bitmapFont !== undefined) ? this.bitmapFont.defaultSize() : 16; },
+    defaultFontSize: function() { return (this.bitmapFont !== undefined) ? this.bitmapFont.defaultSize : 16; },
     processedText: function() {
         if (this.mLastWidth !== this.mWidth || this.mLastHeight !== this.mHeight) {
             this.mLastWidth = this.mWidth;
@@ -4948,7 +5471,7 @@ Object.assign(NGUI.UILabel.prototype = Object.create(NGUI.UIWidget.prototype), {
 			var result = { text: "" };
 			for (var ps = this.mPrintedSize; ps > 0; --ps) {
                 this.mScale = ps / this.mPrintedSize;
-                NGUIText.fontScale = (this.fontSize / this.bitmapFont.defaultSize()) * this.mScale;
+                NGUIText.fontScale = (this.fontSize / this.bitmapFont.defaultSize) * this.mScale;
 				NGUIText.Update(false);
 				var fits = NGUIText.WrapText(this.value, true, result);
                 this.mProcessedText = result.text.replace("\\n", "\n");
@@ -4991,62 +5514,399 @@ Object.assign(NGUI.UILabel.prototype = Object.create(NGUI.UIWidget.prototype), {
 		var fy = Mathf.Lerp(this.mHeight, 0, po.y) + Mathf.Lerp((this.mCalculatedSize.y - this.mHeight), 0, po.y);
 		fx = Mathf.RoundToInt(fx);
 		fy = Mathf.RoundToInt(fy);
-		for (var i = start; i < verts.length; ++i) {
-			verts[i].x += fx;
-			verts[i].y += fy;
+		var vData = verts.Data;
+		for (var i = start, l = verts.Length; i < l; ++i) {
+			vData[i * 3] += fx;
+			vData[i * 3 + 1] += fy;
 		}
 		return new UnityEngine.Vector2(fx, fy);
 	},
     ApplyShadow: function(verts, uvs, cols, start, end, x, y) {
 		var col = this.effectColor.get32();
 		col.a *= this.finalAlpha;
+		var vData = verts.Data, uData = uvs.Data, cData = cols.Data;
 		for (var i = start; i < end; ++i) {
-			var v = verts[i];
-			var uc = cols[i];
-			verts.push(v);
-			uvs.push(uvs[i]);
-			cols.push(uc);
-			v = v.clone();
-			uc = uc.clone();
-			v.x += x;
-			v.y += y;
-			if (uc.a === 255) {
-				uc.set(col.r, col.g, col.b, col.a);
-			} else {
-				uc.set(col.r, col.g, col.b, uc.a / 255 * col.a);
-			}
-			verts[i] = v;
-			cols[i] = uc;
+			var vi = i * 3, ui = i * 2, ci = i * 4;
+			var vx = vData[vi], vy = vData[vi + 1], ua = cData[ci+3];
+			verts.AddVector3(vx, vy, 0);
+			uvs.AddVector2(uData[ui], uData[ui+1]);
+			cols.AddColor32v(cData[ci], cData[ci+1], cData[ci+2], ua);
+			vData = verts.Data;
+			uData = uvs.Data;
+			cData = cols.Data;
+			vData[vi] = vx + x;
+			vData[vi+1] = vy + y;
+			cData[ci] = col.r;
+			cData[ci+1] = col.g;
+			cData[ci+2] = col.b;
+			cData[ci+3] = (ua === 255) ? col.a : ua / 255 * col.a;
 		}
     },
 	OnFill: function(verts, uvs, cols) {
         if (this.bitmapFont === undefined) return;
-        var offset = verts.length;
+        var offset = verts.Length;
 		var col = this.mColor;
 		col.a = this.finalAlpha;
 		var text = this.processedText();
-		var start = verts.length;
+		var start = verts.Length;
 		this.UpdateNGUIText();
 		NGUIText.tint = col;
 		NGUIText.Print(text, verts, uvs, cols);
 		NGUIText.bitmapFont = null;
 		var pos = this.ApplyOffset(verts, start);
 		if (this.effectStyle !== LabelEffect.None) {
-			var end = verts.length;
-			pos.x = this.effectDistance.x;
-			pos.y = this.effectDistance.y;
+			var end = verts.Length;
+			pos.set(this.effectDistance.x, this.effectDistance.y);
 			this.ApplyShadow(verts, uvs, cols, offset, end, pos.x, -pos.y);
 			if (this.effectStyle == LabelEffect.Outline) {
 				offset = end;
-				end = verts.length;
+				end = verts.Length;
 				this.ApplyShadow(verts, uvs, cols, offset, end, -pos.x, pos.y);
 				offset = end;
-				end = verts.length;
+				end = verts.Length;
 				this.ApplyShadow(verts, uvs, cols, offset, end, pos.x, pos.y);
 				offset = end;
-				end = verts.length;
+				end = verts.Length;
 				this.ApplyShadow(verts, uvs, cols, offset, end, -pos.x, -pos.y);
 			}
 		}
     },
 });
+
+//
+// ..\src\gui\interaction\UIButton.js
+//
+
+NGUI.UIButton = function(gameObject) {
+	UnityEngine.MonoBehaviour.call(this, gameObject);
+
+    this.tweenTarget = gameObject; // gameObject
+    this.duration = 0.2;
+    this.defaultColor = UnityEngine.Color.white.clone();
+    this.hover = new UnityEngine.Color(225/255,200/255,150/255,1);
+    this.pressed = new UnityEngine.Color(183/255,163/255,123/255,1);
+    this.disabledColor = UnityEngine.Color.grey.clone();
+    this.normalSprite = "";
+    this.hoverSprite = "";
+    this.pressedSprite = "";
+    this.disabledSprite = "";
+    this.isEnabled = true;
+
+    this.mInitDone = false;
+    this.mState = NGUI.UIButton.State.Normal;
+    this.mWidget = undefined;
+    this.mSprite = undefined;
+}
+
+NGUI.UIButton.State = {
+    Normal: 0,
+    Hover: 1,
+    Pressed: 2,
+    Disabled: 3,
+};
+
+Object.extend(NGUI.UIButton.prototype = Object.create(UnityEngine.MonoBehaviour.prototype), {
+	constructor: NGUI.UIButton,
+    Load: function(json) {
+        UnityEngine.MonoBehaviour.prototype.Load.call(this, json);
+        if (json.cn) this.defaultColor.set32(json.cn.r || 255, json.cn.g || 255, json.cn.b || 255, json.cn.a || 255);
+        if (json.ch) this.hover.set32(json.ch.r || 225, json.ch.g || 200, json.ch.b || 150, json.ch.a || 255);
+        if (json.cp) this.pressed.set32(json.cp.r || 183, json.cp.g || 163, json.cp.b || 123, json.cp.a || 255);
+        if (json.cd) this.disabledColor.set32(json.cd.r || 128, json.cd.g || 128, json.cd.b || 128, json.cd.a || 255);
+        if (json.sn) this.normalSprite = json.sn;
+        if (json.sh) this.hoverSprite = json.sh;
+        if (json.sp) this.pressedSprite = json.sp;
+        if (json.sd) this.disabledSprite = json.sd;
+    },
+    OnInit: function() {
+        this.mInitDone = true;
+        if (!this.tweenTarget) this.tweenTarget = this.gameObject;
+        this.mWidget = this.tweenTarget.GetComponent('UIWidget');
+        this.mSprite = this.tweenTarget.GetComponent('UISprite');
+        if (this.mWidget) this.defaultColor = this.mWidget.getColor();
+        this.mStartingColor = this.defaultColor.clone();
+    },
+    OnHover: function(isOver) {
+        if (!this.isEnabled) return;
+        if (!this.mInitDone) this.OnInit();
+        if (this.tweenTarget) this.SetState(isOver ? NGUI.UIButton.State.Hover : NGUI.UIButton.State.Normal, false);
+    },
+    OnClick: function() {
+        // SendMessages????
+    },
+    SetState: function(state, instant) {
+		if (!this.mInitDone) {
+			this.mInitDone = true;
+			this.OnInit();
+		}
+		if (this.mState != state) {
+			this.mState = state;
+			this.UpdateColor(instant);
+		}
+	},
+    SetSprite: function(spriteName) {
+		if (spriteName && this.mSprite && this.mSprite.spriteName != spriteName) {
+			this.mSprite.spriteName = spriteName;
+		}
+    },
+    UpdateColor: function(instant) {
+        var tweenTarget = this.tweenTarget;
+        if (tweenTarget === undefined) return;
+        var State = NGUI.UIButton.State, tc;
+        var TweenColor = NGUI.TweenColor;
+		switch (this.mState) {
+			case State.Hover: 
+                tc = TweenColor.Begin(tweenTarget, this.duration, this.hover);
+                this.SetSprite(this.hoverSprite); 
+                break;
+			case State.Pressed: 
+                tc = TweenColor.Begin(tweenTarget, this.duration, this.pressed); 
+                this.SetSprite(this.pressedSprite); 
+                break;
+			case State.Disabled:
+                tc = TweenColor.Begin(tweenTarget, this.duration, this.disabledColor); 
+                this.SetSprite(this.disabledSprite); 
+                break;
+			default: 
+                tc = TweenColor.Begin(tweenTarget, this.duration, this.defaultColor); 
+                this.SetSprite(this.normalSprite); 
+                break;
+		}
+		if (instant && tc != null) {
+			tc.value = tc.to;
+			tc.enabled = false;
+		}
+	},
+});
+
+
+//
+// ..\src\gui\interaction\UIToggle.js
+//
+
+
+NGUI.UIToggle = function(gameObject) {
+	UnityEngine.MonoBehaviour.call(this, gameObject);
+
+    this.group = 0;
+    this.activeSpriteId = 0;
+    this.startsActive = false;
+    this.instantTween = false;
+    this.optionCanBeNone = false;
+    this.activeSprite = undefined;
+    this.activeAnimation = undefined;
+
+    this.mIsActive = false;
+    this.mStarted = false;
+    
+	NGUI.UIToggle.list.push(this);
+}
+
+NGUI.UIToggle.list = [];
+NGUI.UIToggle.current = undefined;
+
+Object.extend(NGUI.UIToggle.prototype = Object.create(UnityEngine.MonoBehaviour.prototype), {
+	constructor: NGUI.UIToggle,
+    getValue: function() { return this.mStarted ? this.mIsActive : this.startsActive; },
+    setvalue: function(v) {
+        if (!this.mStarted) this.startsActive = v;
+        else if (this.group == 0 || v || this.optionCanBeNone || !this.mStarted) this.Set(v);
+    },
+    Load: function(json) {
+        UnityEngine.MonoBehaviour.prototype.Load.call(this, json);
+        this.group = json.g || 0;
+        this.activeSpriteId = json.as || 0;
+        this.startsActive = json.sa || false;
+        this.instantTween = json.it || false;
+        this.optionCanBeNone = json.cn || false;
+    },
+    Start: function() {
+        if (this.activeSpriteId)
+            this.activeSprite = UnityEngine.Object.FindObjectWithId(this.activeSpriteId);
+        if (this.startsChecked) {
+            this.startsChecked = false;
+            this.startsActive = true;
+        }
+        this.mIsActive = !this.startsActive;
+        this.mStarted = true;
+        var instant = this.instantTween;
+        this.instantTween = true;
+        this.Set(this.startsActive);
+        this.instantTween = instant;
+    },
+    OnClick: function() {
+        this.setvalue(!this.getValue());
+    },
+    Set: function(state) {
+		if (!this.mStarted) {
+			this.mIsActive = state;
+			this.startsActive = state;
+			if (this.activeSprite !== undefined) this.activeSprite.setAlpha(state ? 1 : 0);
+		} else if (this.mIsActive != state) {
+			if (this.group !== 0 && state) {
+                var list = NGUI.UIToggle.list;
+				for (var i = 0, imax = list.length; i < imax; ) {
+					var cb = list[i];
+					if (cb != this && cb.group == this.group) cb.Set(false);
+					if (list.length != imax) {
+						imax = list.length;
+						i = 0;
+					} else ++i;
+				}
+			}
+			this.mIsActive = state;
+			if (this.activeSprite !== undefined) {
+				if (this.instantTween)
+                    this.activeSprite.setAlpha(this.mIsActive ? 1 : 0);
+				else
+					NGUI.TweenAlpha.Begin(this.activeSprite.gameObject, 0.15, this.mIsActive ? 1 : 0);
+			}
+		}
+    },
+});
+
+
+//
+// ..\src\gui\interaction\UIProgressBar.js
+//
+
+
+NGUI.UIProgressBar = function(gameObject) {
+	UnityEngine.MonoBehaviour.call(this, gameObject);
+
+    this.mValue = 0;
+    this.mIsDirty = false;
+    this.mFG = undefined;
+
+    this.alpha = 1;
+    this.numberOfSteps = 0;
+    this.foregroundWidget = undefined;
+    this.backgroundWidget = undefined;
+    this.thumb = undefined;
+    this.fillDirection = UIProgressBarFillDirection.LeftToRight;
+}
+
+UIProgressBarFillDirection = {
+    LeftToRight: 0,
+    RightToLeft: 1,
+    BottomToTop: 2,
+    TopToBottom: 3,
+};
+
+Object.extend(NGUI.UIProgressBar.prototype = Object.create(UnityEngine.MonoBehaviour.prototype), {
+	constructor: NGUI.UIProgressBar,
+    get value() {
+        if (this.numberOfSteps > 1) return Mathf.Round(this.mValue * (this.numberOfSteps - 1)) / (this.numberOfSteps - 1);
+        return this.mValue; 
+    },
+    set value(v) {
+        var val = Mathf.Clamp01(v);
+        if (this.mValue !== val) {
+            var before = this.value;
+            this.mValue = val;
+            if (before !== this.value)
+                this.ForceUpdate();
+        }
+    },
+    get isHorizontal() { return (this.mFill === UIProgressBarFillDirection.LeftToRight || this.mFill === UIProgressBarFillDirection.RightToLeft); },
+    get isInverted() { return (this.mFill === UIProgressBarFillDirection.RightToLeft || this.mFill === UIProgressBarFillDirection.TopToBottom); },
+    Load: function(json) {
+    },
+    Start: function() {
+    },
+    ForceUpdate: function() {
+		this.mIsDirty = false;
+		if (this.mFG !== undefined) {
+			var sprite = this.mFG;
+            var value = this.value;
+			if (this.isHorizontal) {
+				if (sprite !== undefined && sprite.type === SpriteType.Filled) {
+					if (sprite.fillDirection === FillDirection.Horizontal || sprite.fillDirection === FillDirection.Vertical) {
+						sprite.fillDirection = FillDirection.Horizontal;
+						sprite.invert = this.isInverted;
+					}
+					sprite.fillAmount = value;
+				} else {
+					this.mFG.drawRegion = this.isInverted ?
+						new UnityEngine.Vector4(1 - value, 0, 1, 1) :
+						new UnityEngine.Vector4(0, 0, value, 1);
+					this.mFG.enabled = value > 0.001;
+				}
+			} else if (sprite !== undefined && sprite.type === FillDirection.Filled) {
+				if (sprite.fillDirection === FillDirection.Horizontal || sprite.fillDirection === FillDirection.Vertical) {
+					sprite.fillDirection = FillDirection.Vertical;
+					sprite.invert = this.isInverted;
+				}
+				sprite.fillAmount = value;
+			} else {
+				this.mFG.drawRegion = this.isInverted ?
+					new UnityEngine.Vector4(0, 1 - value, 1, 1) :
+					new UnityEngine.Vector4(0, 0, 1, value);
+				this.mFG.enabled = value > 0.001;
+			}
+		}
+
+		if (this.thumb && (this.mFG || this.mBG)) {
+			var corners = (this.mFG !== undefined) ? this.mFG.localCorners.clone() : this.mBG.localCorners.clone();
+			var br = (this.mFG !== undefined) ? this.mFG.border : this.mBG.border;
+			corners[0].x += br.x;
+			corners[1].x += br.x;
+			corners[2].x -= br.z;
+			corners[3].x -= br.z;
+			corners[0].y += br.y;
+			corners[1].y -= br.w;
+			corners[2].y -= br.w;
+			corners[3].y += br.y;
+			var t = (this.mFG !== undefined) ? this.mFG.transform : this.mBG.transform;
+            var localToWorld = t.localToWorldMatrix;
+			for (var i = 0; i < 4; ++i) corners[i].ApplayTransform(localToWorld);// = t.TransformPoint(corners[i]);
+			if (this.isHorizontal) {
+				var v0 = UnityEngine.Vector3.Lerp(corners[0], corners[1], 0.5);
+				var v1 = UnityEngine.Vector3.Lerp(corners[2], corners[3], 0.5);
+				this.SetThumbPosition(UnityEngine.Vector3.Lerp(v0, v1, this.isInverted ? 1 - value : value));
+			} else {
+				var v0 = UnityEngine.Vector3.Lerp(corners[0], corners[3], 0.5);
+				var v1 = UnityEngine.Vector3.Lerp(corners[1], corners[2], 0.5);
+				this.SetThumbPosition(UnityEngine.Vector3.Lerp(v0, v1, this.isInverted ? 1 - value : value));
+			}
+		}
+    },
+    SetThumbPosition: function(worldPos) {
+		var t = this.thumb.parent;
+		if (t !== undefined) {
+			worldPos.ApplayTransform(t.worldToLocalMatrix);
+			worldPos.x = Mathf.Round(worldPos.x);
+			worldPos.y = Mathf.Round(worldPos.y);
+			worldPos.z = 0;
+			if (UnityEngine.Vector3.Distance(thumb.localPosition, worldPos) > 0.001)
+				thumb.localPosition = worldPos;
+		} else if (UnityEngine.Vector3.Distance(thumb.position, worldPos) > 0.00001)
+			thumb.position = worldPos;
+    },
+});
+
+//
+// ..\src\gui\tweening\TweenColor.js
+//
+
+NGUI.TweenColor = function(gameObject) {
+    this.color = undefined;
+}
+
+NGUI.TweenColor.Begin = function(target, duration, color) {
+    var widget = target.GetComponent('UIWidget');
+    widget && widget.setColor(color); 
+}
+
+//
+// ..\src\gui\tweening\TweenAlpha.js
+//
+
+NGUI.TweenAlpha = function(gameObject) {
+    this.color = undefined;
+}
+
+NGUI.TweenAlpha.Begin = function(target, duration, alpha) {
+    var widget = target.GetComponent('UIWidget');
+    widget && widget.setAlpha(alpha); 
+}
